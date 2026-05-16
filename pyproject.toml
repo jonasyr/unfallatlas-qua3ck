@@ -25,6 +25,9 @@ dependencies = [
     "holidays>=0.48",
     "requests>=2.32",
     "tqdm>=4.66",
+    "ipykernel>=6.0",
+    "pip>=23.0",
+    "nbformat>=4.2.0",
 ]
 
 [project.optional-dependencies]
