@@ -11,3 +11,27 @@ repos:
     hooks:
       - id: nbstripout
         files: \.ipynb$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=5120]
+
+  - repo: https://github.com/tox-dev/pyproject-fmt
+    rev: 2.1.3
+    hooks:
+      - id: pyproject-fmt
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.27.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.8.5
+    hooks:
+      - id: nbqa-ruff
+        args: [--fix]

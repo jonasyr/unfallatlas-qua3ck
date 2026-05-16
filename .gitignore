@@ -1,6 +1,6 @@
-# Project data (large files, local-only — download via scripts)
-/data/
-*.parquet
+# Project data — raw source files are local-only (download via data/download_raw.sh)
+/data/raw/
+# .parquet files are tracked via Git LFS
 
 # IDE
 .vscode/
