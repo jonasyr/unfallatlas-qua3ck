@@ -1,65 +1,85 @@
+[build-system]
+build-backend = "hatchling.build"
+
+requires = [
+  "hatchling",
+]
+
 [project]
 name = "unfallatlas-qua3ck"
 version = "0.1.0"
 description = "ML-Portfolio: Verkehrsunfallschwere-Klassifikation auf dem deutschen Unfallatlas (QUA³CK-Framework)"
 readme = "README.md"
-requires-python = ">=3.11"
 license = { text = "MIT" }
 
+requires-python = ">=3.11"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "duckdb>=1.1",
-    "pandas>=2.2",
-    "polars>=1.0",
-    "pyarrow>=16.0",
-    "scikit-learn>=1.4",
-    "xgboost>=2.0",
-    "lightgbm>=4.3",
-    "catboost>=1.2",
-    "shap>=0.45",
-    "optuna>=3.6",
-    "imbalanced-learn>=0.12",
-    "folium>=0.17",
-    "streamlit>=1.35",
-    "streamlit-folium>=0.20",
-    "plotly>=5.22",
-    "holidays>=0.48",
-    "requests>=2.32",
-    "tqdm>=4.66",
-    "ipykernel>=6.0",
-    "pip>=23.0",
-    "nbformat>=4.2.0",
+  "catboost>=1.2",
+  "duckdb>=1.1",
+  "folium>=0.17",
+  "holidays>=0.48",
+  "imbalanced-learn>=0.12",
+  "ipykernel>=6",
+  "lightgbm>=4.3",
+  "nbformat>=4.2",
+  "optuna>=3.6",
+  "pandas>=2.2",
+  "pip>=23",
+  "plotly>=5.22",
+  "polars>=1",
+  "pyarrow>=16",
+  "requests>=2.32",
+  "scikit-learn>=1.4",
+  "shap>=0.45",
+  "streamlit>=1.35",
+  "streamlit-folium>=0.20",
+  "tqdm>=4.66",
+  "xgboost>=2",
 ]
 
-[project.optional-dependencies]
-geo = [
-    "h3>=4.0",
-    "osmnx>=1.9",
+optional-dependencies.dev = [
+  "black>=24",
+  "ipywidgets>=8",
+  "jupyter>=1",
+  "jupyterlab>=4",
+  "nbstripout>=0.7",
+  "pytest>=8",
+  "ruff>=0.4",
 ]
-dev = [
-    "ruff>=0.4",
-    "black>=24.0",
-    "nbstripout>=0.7",
-    "pytest>=8.0",
-    "jupyter>=1.0",
-    "jupyterlab>=4.0",
-    "ipywidgets>=8.0",
+optional-dependencies.geo = [
+  "h3>=4",
+  "osmnx>=1.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = [
+  "src/unfallatlas",
+]
+
+[tool.black]
+line-length = 100
+target-version = [
+  "py311",
 ]
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+builtins = [
+  "display",
+]
 
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP"]
-ignore = ["E501"]
-
-[tool.black]
-line-length = 100
-target-version = ["py311"]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/unfallatlas"]
+lint.select = [
+  "E",
+  "F",
+  "I",
+  "UP",
+]
+lint.ignore = [
+  "E501",
+]
