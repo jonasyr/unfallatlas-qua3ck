@@ -1,53 +1,20 @@
 ---
-title: Data Analytics und Big Data
-description: ""
-date: 05-05-2026
-time: 10:04
-index: "[[Studium]]"
+title: Einheit 1 – QUA³CK-Prozessmodell für Data-Science-Projekte
+description: Einheit 1
+date: 12-05-2026
+time: 12:11
+reference: Data Analytics und Big Data
+index: ""
 subindex: ""
-category:
-  - source
 status:
   - begin
 ---
 
-# Data Analytics und Big Data
+# Einheit 1 – QUA³CK-Prozessmodell für Data-Science-Projekte
 
->- **Index:** [[Studium]]
->- **Document Tags:**
-
-## Notizen
-
-```dataviewjs
-const pages = dv.pages('"6 - Notes"')
-  .where(p => p.reference == "Data Analytics und Big Data")
-  .sort(p => p.file.name);
-
-dv.table(["Notes", "Description", "Date", "Status"], 
-  pages.map(p => [
-    p.file.link,
-    p.description,
-    p.date,
-    (() => {
-      if (p.status) {
-        if (p.status.includes("begin") && p.status.includes("finish")) {
-          return "<span style='color:purple'>not Initialized</span>";
-        } else if (p.status.includes("begin")) {
-          return "<span style='color:red'>Begin</span>";
-        } else if (p.status.includes("finish")) {
-          return "<span style='color:green'>Finish</span>";
-        }
-      }
-      return "<span style='color:purple'>not Initialized</span>";
-    })()
-  ])
-)
-```
+>- **Reference Link:** [[Data Analytics und Big Data]]
 
 ---
-
-## Einheit 1 – QUA³CK-Prozessmodell für Data-Science-Projekte
-
 >[!summary]
 > Diese Einheit führt das **QUA³CK-Prozessmodell** als strukturierten Rahmen für Machine-Learning- und Data-Science-Projekte ein.
 > 
@@ -480,7 +447,3 @@ MLOps ergänzt den Prozess durch Experiment Tracking, Reproduzierbarkeit und Dep
 
 
 ![[Data Analytics und Big Data_Datenquellen.png]]
-
-## Einheit 2
-
-...
