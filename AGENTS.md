@@ -41,7 +41,7 @@ df = pd.read_csv(path, sep=";", decimal=",", encoding="utf-8-sig")
 | `UART` | TINYINT | Unfallart 0–9 |
 | `UTYP1` | TINYINT | Unfalltyp 1–7 |
 | `ULICHTVERH` | TINYINT | 0=Tageslicht, 1=Dämmerung, 2=Dunkelheit |
-| `STRZUSTAND` | TINYINT | 0=trocken, 1=nass, 2=winterglatt |
+| `STRZUSTAND` | TINYINT | 0=trocken, 1=nass/feucht/schlüpfrig, 2=winterglatt |
 | `IstRad` | BOOLEAN | Fahrradbeteiligung |
 | `IstPKW` | BOOLEAN | PKW-Beteiligung |
 | `IstFuss` | BOOLEAN | Fußgängerbeteiligung |
