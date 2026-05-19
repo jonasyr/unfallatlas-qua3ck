@@ -65,7 +65,7 @@ Mean wind speed in m/s. Approximately symmetric; no transform required beyond `S
 Distance in km from the accident location to the nearest DWD station. Acts as a rural-character proxy: accidents far from stations are disproportionately on rural roads with higher fatal rates (§9.4).
 
 **Join granularity**
-Weather is joined on (station_id, year, month, hour-of-day). Because `body.parquet` lacks a day-of-month column (`UTAG`), values are averaged over all days in each month-hour bucket. This introduces day-level noise but no temporal leakage.
+Weather is joined on (station_id, year, month, hour-of-day). Because `accidents.parquet` lacks a day-of-month column (`UTAG`), values are averaged over all days in each month-hour bucket. This introduces day-level noise but no temporal leakage.
 
 **cKDTree**
 A k-d tree data structure from `scipy.spatial` used to vectorise the nearest-station lookup. Euclidean distance in radian-space is accurate to < 0.1 % for distances ≤ 30 km.

@@ -319,8 +319,9 @@ unfallatlas-qua3ck/
 ├── .gitignore
 ├── .pre-commit-config.yaml   # ruff, black, nbstripout
 ├── data/
+│   ├── accidents.parquet     # LFS: konsolidiertes Unfallregister
 │   ├── raw/                  # gitignored, Skripte zum Download
-│   ├── interim/              # gejointe Stages
+│   ├── interim/              # gejointe Stages (LFS: accidents_with_weather.parquet)
 │   └── processed/            # ML-ready Parquet
 ├── notebooks/
 │   ├── 01_question.ipynb         # Q-Phase
