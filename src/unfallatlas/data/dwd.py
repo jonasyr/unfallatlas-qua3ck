@@ -337,7 +337,7 @@ def build_weather_features(
         dwd_wind_speed_ms     wind speed in m/s (float)
 
     Join granularity: (station_id, UJAHR, UMONAT, USTUNDE) — averaged over all
-    days in the same month-hour bucket because body.parquet lacks UTAG.
+    days in the same month-hour bucket because accidents.parquet lacks UTAG.
     This is a known approximation documented in §11 limitation 9 of the Q phase.
 
     Rows with no station within max_km receive NaN for all weather columns.
@@ -348,7 +348,7 @@ def build_weather_features(
     if missing_cols:
         raise RuntimeError(
             f"accidents_df is missing required columns: {missing_cols}\n"
-            "Ensure you are passing a DataFrame loaded from data/body.parquet."
+            "Ensure you are passing a DataFrame loaded from data/accidents.parquet."
         )
 
     raw_cache_dir = Path(raw_cache_dir)
@@ -413,7 +413,7 @@ def build_weather_features(
                 log.warning("Failed %s for station %s: %s", code, sid, exc)
 
     # --- Build join key: (station_id, year, month, hour-of-day) ---
-    # body.parquet lacks UTAG (day of month) → average over all days in the bucket.
+    # accidents.parquet lacks UTAG (day of month) → average over all days in the bucket.
     df["_jk"] = (
         df["UJAHR"].astype(str)
         + "_"

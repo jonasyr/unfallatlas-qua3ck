@@ -5,7 +5,7 @@ Dieses Dokument beschreibt die Projektkonventionen für KI-Agenten, die an diese
 ## Projektübersicht
 
 Multiclass-Klassifikation der Unfallschwere (`UKATGEORIE`: 1/2/3) auf dem deutschen Unfallatlas 2016–2024.
-~2,09 Mio. Zeilen, 21 Spalten. Hauptdatei: `data/body.parquet`.
+~2,09 Mio. Zeilen, 21 Spalten. Hauptdatei: `data/accidents.parquet`.
 
 ## Daten laden
 
@@ -14,7 +14,7 @@ import duckdb
 import pandas as pd
 from pathlib import Path
 
-DATA = Path("data/body.parquet")
+DATA = Path("data/accidents.parquet")
 
 # Empfohlen: DuckDB für große Abfragen
 con = duckdb.connect()

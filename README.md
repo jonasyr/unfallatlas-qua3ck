@@ -24,29 +24,53 @@ Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des
 - **Zeitraum:** 2016–2024 (9 Jahrgänge)
 - **Umfang:** ~2,09 Mio. polizeilich aufgenommene Unfälle mit Personenschaden
 - **Zielvariable:** `UKATGEORIE` — 1 = Getötet (1%), 2 = Schwer verletzt (18%), 3 = Leicht verletzt (81%)
-- **Format:** Parquet (`data/body.parquet`) — konsolidiert aus den district-level CSV-Dateien
-
-Die Rohdaten (`data/`) sind gitignored. Download über die offizielle Mobilithek-API oder MFDZ-Mirror.
+- **Format:** Parquet (`data/accidents.parquet`, ~65 MB) — konsolidiert aus den district-level CSV-Dateien, gespeichert via **Git LFS**
 
 ---
 
 ## Setup
 
+### 1 — Git LFS installieren
+
+`data/accidents.parquet` wird über Git LFS verwaltet. Ohne LFS enthält die Datei nur einen 133-Byte-Pointer und DuckDB wirft `No magic bytes found`.
+
+| Plattform | Befehl |
+|-----------|--------|
+| Arch Linux | `sudo pacman -S git-lfs` |
+| Ubuntu / Debian | `sudo apt install git-lfs` |
+| macOS (Homebrew) | `brew install git-lfs` |
+| Windows (winget) | `winget install GitHub.GitLFS` |
+
 ```bash
-# Abhängigkeiten installieren (uv empfohlen)
-uv sync
+# LFS einmalig in deinem Git-Profil registrieren
+git lfs install
 
-# Mit optionalen Geo-Packages
-uv sync --extra geo
+# Datei herunterladen (nach dem Klonen oder wenn data/ nur Pointer enthält)
+git lfs pull
+```
 
-# Jupyter starten
+### 2 — uv installieren
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 3 — Python-Abhängigkeiten
+
+```bash
+uv sync --all-extras
+```
+
+### 4 — Notebooks starten
+
+```bash
 uv run jupyter lab
 ```
 
 ### Voraussetzungen
 
-- Python ≥ 3.11
-- [uv](https://github.com/astral-sh/uv) oder pip
+- Python ≥ 3.11 (wird von uv automatisch verwaltet)
+- git-lfs (siehe Schritt 1)
 
 ### Pre-commit Hooks
 
