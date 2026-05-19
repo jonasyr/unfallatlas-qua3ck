@@ -28,7 +28,7 @@ The structural accident type (e.g., driving accident, turning accident, intersec
 Lighting conditions at the time of the accident: daylight, dusk/dawn, or darkness with/without street lighting.
 
 **STRZUSTAND (Straßenzustand)**
-Road surface condition at the time of the accident: dry, wet/moist, or winter conditions (ice/snow).
+Road surface condition at the time of the accident: dry (0), wet/moist/slippery (1), or winter conditions — ice/snow (2).
 
 **IstRad / IstPKW / IstFuss / IstKrad / IstGkfz / IstSonstig**
 Binary flags indicating which transport modes were involved: bicycle, car, pedestrian, motorcycle, heavy goods vehicle, and other.
