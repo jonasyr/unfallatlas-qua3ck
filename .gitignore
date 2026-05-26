@@ -90,6 +90,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Superpowers plans (local dev tool artefacts)
+docs/superpowers/
+
 # PyBuilder
 target/
 
