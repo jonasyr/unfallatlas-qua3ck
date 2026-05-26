@@ -124,7 +124,10 @@ Values such as `-999` or `-9999` used by DWD to signal invalid or missing measur
 Repeated rows or OBJECTID values. Exact row duplicates are negligible in this dataset; OBJECTID is unique.
 
 **Class Imbalance**
-The target distribution is approximately 1 % / 18 % / 81 % for classes 1 / 2 / 3. Naïve models will default to the majority class; mitigation options (class weights, SMOTE, threshold moving) are chosen in A³.
+The target distribution is approximately 1 % / 18 % / 81 % for classes 1 / 2 / 3. A naïve model trained without imbalance handling will exhibit *majority-class collapse*: it learns to always predict class 3 (minor injury), achieving ~81 % accuracy but macro-F1 ≈ 0.30 and recall 0.00 on classes 1 and 2. Mitigation options (class weights, SMOTE, threshold moving) are evaluated in A³.
+
+**Dunkelziffer**
+German term for the "dark figure" — the unknown quantity of accidents never reported to the police. Minor accidents are systematically under-reported, so the class distribution in the dataset reflects police reporting behaviour as much as true event frequency. This structural bias cannot be corrected from within the dataset.
 
 ---
 
@@ -141,6 +144,12 @@ The variable the model predicts. Here: `UKATGEORIE` (accident severity class).
 
 **Macro-F1**
 The arithmetic mean of per-class F1 scores, treating all classes equally regardless of support. Primary evaluation metric for this project; protects against majority-class collapse.
+
+**SHAP (SHapley Additive exPlanations)**
+A game-theoretic framework that assigns each feature a contribution value for a specific prediction. SHAP values satisfy additivity: the sum of all feature contributions equals the model's output minus the baseline. Used in Phase C for both global (feature importance across the dataset) and local (per-accident) explanations. Required by the interpretability hard constraint (§9 of the Q phase).
+
+**Gradient Boosting (XGBoost / LightGBM / CatBoost)**
+An ensemble method that fits successive decision trees, each correcting the residual errors of the previous ones, optimising a differentiable loss function via gradient descent. XGBoost is the methodological baseline from the literature anchor; LightGBM uses leaf-wise tree growth (faster on large datasets); CatBoost handles ordinal categoricals natively without one-hot encoding. All three are candidates in A³.
 
 **Recall (class 1)**
 The fraction of fatal accidents (class 1) correctly identified. Secondary acceptance criterion: must exceed 0.50 on the held-out test set.
@@ -169,6 +178,18 @@ Train / validation / test division that preserves time order: train 2016–2022,
 **TimeSeriesSplit**
 A cross-validation strategy that always trains on past folds and validates on future folds, preserving the time-series property within the training window.
 
+**SMOTE (Synthetic Minority Over-sampling Technique)**
+An oversampling strategy that synthesises new minority-class samples by interpolating between existing nearest neighbours in feature space, rather than simply duplicating rows. Used as one of the imbalance-mitigation candidates in A³ alongside class weights and threshold moving. Must be applied inside the training fold only (never to validation or test data) to avoid data leakage.
+
+**StandardScaler**
+A sklearn preprocessing step that transforms a numeric feature to zero mean and unit variance: `(x − μ) / σ`. Parameters (μ, σ) are fit on training data only and applied to val/test to prevent leakage. Used for continuous features fed to distance-based or linear baselines; not required for tree-based models. Implemented inside the sklearn `Pipeline`.
+
+**log1p transform**
+`log(1 + x)`: a variance-stabilising transform for right-skewed non-negative features. The `+1` shift makes the transform defined at zero (unlike `log(x)`). Applied to `dwd_precip_mm` and `dwd_visibility_m` to reduce the influence of extreme outliers before scaling.
+
+**sklearn Pipeline**
+A `sklearn.pipeline.Pipeline` chains preprocessing steps and a model estimator into a single object. All `fit`-based preprocessing steps (StandardScaler, target encoding, imputation statistics) are fitted only on the training fold and then applied to val/test — preventing train-test contamination. A³ wraps all preprocessing in a Pipeline so the U-phase preprocessing decisions are never accidentally applied globally.
+
 ---
 
 ## Process Model
@@ -193,3 +214,9 @@ Delivery artefacts: interactive Streamlit app, final report, and this documentat
 
 **DIG Framework**
 A sub-framework for the U phase: **D**escription (inspect structure and samples), **I**ntrospection (formulate questions, identify limitations), **G**oal setting (decide whether data is suitable and define next steps).
+
+**Vision Zero**
+A road-safety policy goal — originally Swedish, adopted as EU policy — that targets zero road fatalities and serious injuries by 2050. Referenced in the Q phase as the policy context in which this project's outputs (corridor-level risk scores) would be consumed by public-sector analysts.
+
+**BASt (Bundesanstalt für Straßenwesen)**
+Germany's Federal Highway Research Institute. Publishes the annual *Unfallentwicklung auf deutschen Straßen* report, which is used in this project to sanity-check model output patterns (e.g. the 2020 COVID-19 accident-count dip).
