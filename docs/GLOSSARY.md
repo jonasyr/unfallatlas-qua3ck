@@ -19,6 +19,14 @@ The target variable. Classifies the worst injury outcome of an accident:
 
 **UJAHR / UMONAT / USTUNDE / UWOCHENTAG**
 Temporal columns encoding the year, month, hour of day, and day of week of the accident. All are integer-coded; cyclic features (month, hour, weekday) receive sin/cos encoding before modelling.
+`UWOCHENTAG` uses a Sunday-first encoding: 1 = Sonntag, 2 = Montag, …, 7 = Samstag.
+
+**ULAND (Bundesland)**
+Two-digit code identifying the federal state in which the accident occurred.
+Together with `UREGBEZ`, `UKREIS`, and `UGEMEINDE`, it forms the official municipality key (*Amtlicher Gemeindeschlüssel*). Coverage start year varies by state (e.g. Nordrhein-Westfalen from 2019, Mecklenburg-Vorpommern from 2020).
+
+**OBJECTID**
+Unique integer identifier per accident row. No two rows share an OBJECTID; used in the §9.3 no-overlap check to confirm the chronological split contains no duplicate accidents across train / val / test sets. Dropped before model fitting.
 
 **UART (Unfallart)**
 The type of accident, recorded in the police report after the event. Subject to leakage audit in §9.1 of the U phase (conditional entropy reduction: 3.4 %, well below the 50 % trigger).
@@ -64,6 +72,12 @@ Geographic identifiers at Regierungsbezirk (administrative region), Kreis (distr
 
 **LAT / LON** *(source columns: `YGCSWGS84` / `XGCSWGS84`)*
 WGS-84 geographic coordinates (decimal degrees) of the accident location, renamed from the DSB source columns during parquet consolidation. Used for spatial analysis and for the nearest-station lookup in the DWD enrichment.
+
+**LINREFX / LINREFY**
+UTM coordinates (ETRS89, Zone 32N) of the accident location projected onto the nearest road segment. Distinct from `XGCSWGS84 / YGCSWGS84` (WGS-84 decimal degrees). Not used in this project; the join and spatial analysis use the WGS-84 columns.
+
+**PLST (Plausibilisierungsstufe)**
+Geocoding quality indicator. `1` = accident location geocoded by the standard procedure; `2` = geocoded by the extended procedure for accidents involving bicycles. Only accidents that pass plausibility checks are included in the published dataset (~92 % of all recorded events); the remaining ~8 % are excluded, introducing a documented selection bias.
 
 ---
 
