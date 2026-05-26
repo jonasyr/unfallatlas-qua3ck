@@ -10,7 +10,9 @@ This glossary explains key terms, methods, and metrics used in the Unfallatlas Q
 A publicly available dataset published by the statistical offices of Germany's federal states. It records every police-reported road accident resulting in personal injury, one record per accident, since 2016.
 
 **UKATGEORIE (Unfallkategorie)**
+Source-data misspelling of *UKATEGORIE*; the project adopts the source spelling without correction.
 The target variable. Classifies the worst injury outcome of an accident:
+
 - `1` — at least one person killed (Getötet)
 - `2` — at least one person severely injured, none killed (Schwer verletzt)
 - `3` — only light injuries (Leicht verletzt)
@@ -19,25 +21,49 @@ The target variable. Classifies the worst injury outcome of an accident:
 Temporal columns encoding the year, month, hour of day, and day of week of the accident. All are integer-coded; cyclic features (month, hour, weekday) receive sin/cos encoding before modelling.
 
 **UART (Unfallart)**
-The type of accident (e.g., collision with oncoming traffic, rear-end collision, pedestrian crossing). Recorded after the event; subject to leakage audit in §9.1 of the U phase.
+The type of accident, recorded in the police report after the event. Subject to leakage audit in §9.1 of the U phase (conditional entropy reduction: 3.4 %, well below the 50 % trigger).
+
+- `0` — Other accident type (Unfall anderer Art; ~15 % of records; 58 % bicycle involvement)
+- `1` — Collision with a stationary/stopping/parked vehicle
+- `2` — Rear-end collision with a preceding or waiting vehicle
+- `3` — Sideswipe collision (same direction)
+- `4` — Head-on collision
+- `5` — Collision with a turning or crossing vehicle (most frequent)
+- `6` — Collision between vehicle and pedestrian
+- `7` — Impact with an obstacle on the roadway
+- `8` — Run-off road to the right
+- `9` — Run-off road to the left (codes 8/9 carry the highest fatality rate)
 
 **UTYP1 (Unfalltyp)**
-The structural accident type (e.g., driving accident, turning accident, intersection accident). Also recorded post-event and subject to the same leakage probe as `UART`.
+The structural accident type, recorded post-event. Subject to the same leakage probe as `UART` (§9.1; conditional entropy reduction: 2.2 %).
+
+- `1` — Fahrunfall (driving accident)
+- `2` — Abbiegeunfall (turning accident)
+- `3` — Einbiegen/Kreuzen-Unfall (merging/crossing accident)
+- `4` — Überschreiten-Unfall (pedestrian crossing accident)
+- `5` — Unfall durch ruhenden Verkehr (accident involving parked/stationary traffic)
+- `6` — Unfall im Längsverkehr (longitudinal-traffic accident)
+- `7` — Sonstiger Unfall (other)
 
 **ULICHTVERH (Lichtverhältnisse)**
-Lighting conditions at the time of the accident: daylight, dusk/dawn, or darkness with/without street lighting.
+Lighting conditions at the time of the accident:
+
+- `0` — Tageslicht (daylight)
+- `1` — Dämmerung (dusk/dawn)
+- `2` — Dunkelheit (darkness)
 
 **STRZUSTAND (Straßenzustand)**
 Road surface condition at the time of the accident: dry (0), wet/moist/slippery (1), or winter conditions — ice/snow (2).
 
-**IstRad / IstPKW / IstFuss / IstKrad / IstGkfz / IstSonstig**
-Binary flags indicating which transport modes were involved: bicycle, car, pedestrian, motorcycle, heavy goods vehicle, and other.
+**IstRad / IstPKW / IstFuss / IstKrad / IstGkfz / IstSonstige**
+Binary flags indicating which transport modes were involved: bicycle (`IstRad`), car (`IstPKW`), pedestrian (`IstFuss`), motorcycle or moped (`IstKrad`), heavy goods vehicle > 3.5 t (`IstGkfz`), and other (`IstSonstige`).
+Note: `IstGkfz` is only available from 2018 onward; in 2016 and 2017 its accidents are subsumed under `IstSonstige`.
 
 **UREGBEZ / UKREIS / UGEMEINDE**
 Geographic identifiers at Regierungsbezirk (administrative region), Kreis (district), and Gemeinde (municipality) level. `UREGBEZ` and `UKREIS` are used as target-encoded features; `UGEMEINDE` is dropped due to very high cardinality.
 
-**LAT / LON**
-WGS-84 geographic coordinates of the accident location. Used for spatial analysis and for the nearest-station lookup in the DWD enrichment.
+**LAT / LON** *(source columns: `YGCSWGS84` / `XGCSWGS84`)*
+WGS-84 geographic coordinates (decimal degrees) of the accident location, renamed from the DSB source columns during parquet consolidation. Used for spatial analysis and for the nearest-station lookup in the DWD enrichment.
 
 ---
 
