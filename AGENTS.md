@@ -1,126 +1,187 @@
-# AGENTS.md — AI Agent Workflow
+# AGENTS.md
 
-Dieses Dokument beschreibt die Projektkonventionen für KI-Agenten, die an diesem Repository arbeiten.
+This file provides guidance to AI coding agents when working with code in this repository.
 
-## Projektübersicht
+<!-- AUTO-MANAGED: project-description -->
+## Overview
 
-Multiclass-Klassifikation der Unfallschwere (`UKATGEORIE`: 1/2/3) auf dem deutschen Unfallatlas 2016–2024.
+**unfallatlas-qua3ck** — ML portfolio project: multiclass classification of German traffic accident severity (`UKATGEORIE`: 1=Getötet, 2=Schwerverletzt, 3=Leichtverletzt) on the federal Unfallatlas dataset 2016–2024.
 
-- Umfang: ca. 2,09 Mio. Zeilen, 21 Spalten
-- Hauptdatei: `data/accidents.parquet`
-- Prozessmodell: QUA³CK
+- Dataset: ~2.09M rows, 21 columns — primary file `data/accidents.parquet`
+- Process model: **QUA³CK** (Frage → Untersuchung → Analyse → Auswertung → Kommunikation)
+- Class imbalance: ~1% / 18% / 81% — primary metric is macro-F1
+- Chronological split: Train 2016–2022, Val 2023, Test 2024 (no random splits)
 
-## Notebook editing policy
+<!-- END AUTO-MANAGED -->
 
-The Jupyter notebooks in `notebooks/*.ipynb` are the source of truth.
-
-If paired files such as `notebooks/*.py` exist, they are generated Jupytext/Serena mirror files only. They exist so Serena MCP and other symbolic tools can inspect notebook code as Python.
-
-Agents must **never edit paired notebook `.py` files directly**.
-
-Allowed:
-
-- Read `notebooks/*.py` for symbolic navigation, search, and understanding.
-- Edit `notebooks/*.ipynb` when changing notebook content.
-- Regenerate paired `.py` files from the notebooks using Jupytext.
-
-Forbidden:
-
-- Do not manually modify `notebooks/*_Phase.py`.
-- Do not treat paired `.py` notebook mirrors as source files.
-- Do not commit changes where a paired `.py` notebook mirror changed without the corresponding `.ipynb` being updated.
-
-If notebook code needs to become reusable production logic, move it into `src/unfallatlas/` and import it from the notebook.
-
-## Notebook sync command
-
-After editing notebooks, regenerate paired Serena mirror files:
+<!-- AUTO-MANAGED: build-commands -->
+## Build & Development Commands
 
 ```bash
+# Install all dependencies (including dev extras)
+uv sync --all-extras
+
+# Run tests
+uv run pytest
+
+# Lint
+uv run ruff check .
+
+# Format
+uv run black .
+
+# Sync Jupytext notebook mirrors (after editing .ipynb files)
 uv run jupytext --sync notebooks/*.ipynb
+
+# Re-index Serena after notebook sync
 serena project index
-````
 
-## Daten laden
+# Launch Streamlit demo
+uv run streamlit run app/streamlit_app.py
 
+# Install package in editable mode
+uv pip install -e .
+```
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: architecture -->
+## Architecture
+
+```
+unfallatlas-qua3ck/
+├── notebooks/              # QUA³CK phase notebooks (source of truth)
+│   ├── 01_Q_Phase.ipynb    # Research question & hypotheses (done)
+│   ├── 02_U_Phase.ipynb    # EDA & feature engineering (in progress)
+│   ├── 03_A3_Phase.ipynb   # Modelling & tuning (TODO)
+│   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO)
+├── src/unfallatlas/        # Reusable production library
+│   ├── data/               # download.py, dwd.py (weather), osm.py
+│   ├── features/           # enrich.py, spatial.py, temporal.py
+│   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py
+│   └── viz/                # geo.py, shap_plots.py, streamlit_app.py
+├── app/                    # Streamlit demo entry point
+├── data/
+│   ├── accidents.parquet   # Main dataset (Git LFS)
+│   └── raw/                # Local-only raw CSVs (not committed)
+├── tests/                  # pytest test suite
+├── scripts/                # Utility scripts
+├── docs/                   # Glossary and documentation
+├── reports/figures/        # Generated output figures
+└── pyproject.toml          # Project config (hatchling, ruff, black, jupytext)
+```
+
+**Notebook → library boundary**: Reusable logic moves from notebook cells into `src/unfallatlas/` and is imported back into the notebook.
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: conventions -->
+## Code Conventions
+
+**Formatting**
+- Formatter: `ruff` + `black`, line-length 100
+- Python target: 3.11+
+- Ruff rules: E, F, I (isort), UP (pyupgrade); E501 ignored
+
+**Coding rules**
+- No `print()` in modules — use `logging`
+- All paths via `pathlib.Path`, never raw strings
+- Model artefacts saved to `data/processed/`
+- Notebook outputs stripped before commits via `nbstripout`
+
+**Notebook policy**
+- `notebooks/*.ipynb` are the **source of truth** — edit these, not the `.py` mirrors
+- `notebooks/*.py` are Jupytext/Serena mirrors for symbolic navigation — read-only for agents
+- After editing a notebook, regenerate mirrors: `uv run jupytext --sync notebooks/*.ipynb`
+- Never commit a changed `.py` mirror without the matching `.ipynb` also being updated
+
+**Data loading**
 ```python
 import duckdb
-import pandas as pd
 from pathlib import Path
 
 DATA = Path("data/accidents.parquet")
 
-# Empfohlen: DuckDB für große Abfragen
+# Preferred for large queries
 con = duckdb.connect()
-
 df = con.execute(f"SELECT * FROM '{DATA}' WHERE UJAHR = 2024").df()
 
-# Alternativ: pandas für kleinere Subsets
-df = pd.read_parquet(DATA)
-```
-
-Rohe CSV-Dateien in `data/raw/unfalldaten/unfalldaten_XXXXX.csv`:
-
-```python
+# Raw CSVs (decimal comma, UTF-8-BOM)
 df = pd.read_csv(path, sep=";", decimal=",", encoding="utf-8-sig")
 ```
 
-## Schlüsselspalten
+<!-- END AUTO-MANAGED -->
 
-| Spalte       | Typ      | Bedeutung                                          |
-| ------------ | -------- | -------------------------------------------------- |
-| `UKATGEORIE` | TINYINT  | Zielvariable: 1=Getötet, 2=Schwer, 3=Leicht        |
-| `UJAHR`      | SMALLINT | Unfalljahr 2016–2024                               |
-| `UMONAT`     | TINYINT  | Monat 1–12                                         |
-| `USTUNDE`    | TINYINT  | Stunde 0–23                                        |
-| `UWOCHENTAG` | TINYINT  | 1=Sonntag, 2=Montag, … 7=Samstag                   |
-| `UART`       | TINYINT  | Unfallart 0–9                                      |
-| `UTYP1`      | TINYINT  | Unfalltyp 1–7                                      |
-| `ULICHTVERH` | TINYINT  | 0=Tageslicht, 1=Dämmerung, 2=Dunkelheit            |
-| `STRZUSTAND` | TINYINT  | 0=trocken, 1=nass/feucht/schlüpfrig, 2=winterglatt |
-| `IstRad`     | BOOLEAN  | Fahrradbeteiligung                                 |
-| `IstPKW`     | BOOLEAN  | PKW-Beteiligung                                    |
-| `IstFuss`    | BOOLEAN  | Fußgängerbeteiligung                               |
-| `IstKrad`    | BOOLEAN  | Krad-Beteiligung                                   |
-| `IstGkfz`    | BOOLEAN  | Güterkraftfahrzeug                                 |
-| `IstSonstig` | BOOLEAN  | Sonstiges Verkehrsmittel                           |
-| `LON`        | DOUBLE   | Längengrad WGS84                                   |
-| `LAT`        | DOUBLE   | Breitengrad WGS84                                  |
-| `UREGBEZ`    | VARCHAR  | Regierungsbezirk-Code                              |
-| `UKREIS`     | VARCHAR  | Kreis-Code                                         |
-| `UGEMEINDE`  | VARCHAR  | Gemeinde-Code                                      |
+<!-- AUTO-MANAGED: patterns -->
+## Detected Patterns
 
-## Bekannte Stolpersteine
+**Target variable**
+- Column is `UKATGEORIE` (typo, not `UKATEGORIE`) — always use the misspelled name
+- Derive Bundesland: `df["ULAND"] = df["UKREIS"].str[:2].astype(int)`
 
-* **Tippfehler im Spaltennamen:** `UKATGEORIE`, nicht `UKATEGORIE`.
-* **Kein `ULAND`-Feld** im Parquet. Bundesland aus `UKREIS` ableiten: `df["ULAND"] = df["UKREIS"].str[:2].astype(int)`.
-* **CSV-Dezimaltrennzeichen:** Rohe CSVs nutzen Komma als Dezimalzeichen, daher `decimal=","`.
-* **Klassenimbalance:** ca. 1% / 18% / 81%. Immer stratified splits und macro-F1 als primäre Metrik verwenden.
-* **Chronologischer Split:** Train 2016–2022, Val 2023, Test 2024. Kein zufälliger Split.
-
-## Test-Split-Strategie
-
+**Train/val/test split**
 ```python
 train = df[df.UJAHR <= 2022]
-val = df[df.UJAHR == 2023]
-test = df[df.UJAHR == 2024]
+val   = df[df.UJAHR == 2023]
+test  = df[df.UJAHR == 2024]
 ```
 
-## Coding-Konventionen
+**Evaluation**
+- Always use stratified splits and macro-F1 as primary metric
+- No `ULAND` column in parquet — derive from `UKREIS` prefix
 
-* Formatter: `ruff` + `black`, line-length 100
-* Kein `print()` in Modulen, stattdessen `logging`
-* Pfade immer mit `pathlib.Path`
-* Modell-Artefakte in `data/processed/` speichern
-* Notebook-Outputs werden per `nbstripout` vor Commits entfernt
-* Reusable Logik gehört nach `src/unfallatlas/`, nicht dauerhaft in Notebook-Zellen
+**ML stack**
+- Boosting: LightGBM, XGBoost, CatBoost
+- Imbalance handling: SMOTE via `imbalanced-learn`
+- Hyperparameter tuning: Optuna
+- Explainability: SHAP
+- Spatial enrichment: DWD weather data, OSM road features, optional H3/osmnx
 
-## Phasen-Übersicht
+**Key column reference**
 
-| Datei                  | Zweck                        | Status |
-| ---------------------- | ---------------------------- | ------ |
-| `01_Q_Phase.ipynb`     | Forschungsfrage + Hypothesen | Fertig |
-| `02_U_Phase.ipynb`     | EDA + Feature Engineering    | TODO   |
-| `03_A3_Phase.ipynb`    | Modellierung + Tuning        | TODO   |
-| `04_C_Phase.ipynb`     | Vergleich + SHAP + Fazit     | TODO   |
-| `app/streamlit_app.py` | Streamlit-Demo               | TODO   |
+| Column       | Type     | Meaning                                           |
+|--------------|----------|---------------------------------------------------|
+| `UKATGEORIE` | TINYINT  | Target: 1=Getötet, 2=Schwerverletzt, 3=Leicht     |
+| `UJAHR`      | SMALLINT | Year 2016–2024                                    |
+| `UMONAT`     | TINYINT  | Month 1–12                                        |
+| `USTUNDE`    | TINYINT  | Hour 0–23                                         |
+| `UWOCHENTAG` | TINYINT  | 1=Sunday … 7=Saturday                             |
+| `UART`       | TINYINT  | Accident type 0–9                                 |
+| `UTYP1`      | TINYINT  | Accident category 1–7                             |
+| `ULICHTVERH` | TINYINT  | 0=daylight, 1=dusk, 2=darkness                    |
+| `STRZUSTAND` | TINYINT  | 0=dry, 1=wet/slippery, 2=wintry                   |
+| `IstRad`     | BOOLEAN  | Bicycle involved                                  |
+| `IstPKW`     | BOOLEAN  | Car involved                                      |
+| `IstFuss`    | BOOLEAN  | Pedestrian involved                               |
+| `LON`/`LAT`  | DOUBLE   | WGS84 coordinates                                 |
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: git-insights -->
+## Git Insights
+
+- Serena MCP + Jupytext workflow configured for symbolic notebook inspection
+- Notebook `.py` mirrors regenerated and committed alongside `.ipynb` changes
+- Notebook outputs stripped pre-commit via `nbstripout` hook
+- `docs/superpowers/` excluded from version control (local dev artefact)
+- Raw CSV data is local-only; `data/accidents.parquet` tracked via Git LFS
+
+<!-- END AUTO-MANAGED -->
+
+<!-- AUTO-MANAGED: best-practices -->
+## Best Practices
+
+- Keep `CLAUDE.md` / `AGENTS.md` current — auto-memory updates them on file changes
+- Never edit `notebooks/*.py` mirror files directly; they are regenerated by Jupytext
+- Avoid data leakage: features must be derivable at accident-report time; no post-hoc columns
+- Prefer DuckDB for queries over loading the full parquet into pandas
+- Use `uv` (not pip/conda) for all dependency management in this project
+
+<!-- END AUTO-MANAGED -->
+
+<!-- MANUAL -->
+## Custom Notes
+
+Add project-specific notes here. This section is never auto-modified.
+
+<!-- END MANUAL -->
