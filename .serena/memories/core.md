@@ -55,4 +55,12 @@ DATA = Path("data/accidents.parquet")
 df = duckdb.connect().execute(f"SELECT * FROM '{DATA}' WHERE UJAHR = 2024").df()
 ```
 
+## Notebook policy
+
+`notebooks/*.ipynb` are the **source of truth**. Paired `notebooks/*.py` files are generated Jupytext/Serena mirrors — read-only for symbolic inspection. **Never edit `.py` mirrors directly.**
+
+- Edit the `.ipynb`; then sync: `uv run jupytext --sync notebooks/*.ipynb && serena project index`
+- The pre-commit hook `scripts/check_notebook_mirrors.py` blocks commits where a `.py` mirror changed without its `.ipynb` counterpart.
+- Reusable logic extracted from notebooks belongs in `src/unfallatlas/`, imported back into the notebook.
+
 See `mem:tech_stack` for dependencies, `mem:conventions` for code style, `mem:suggested_commands` for CLI usage, `mem:task_completion` for done checklist.

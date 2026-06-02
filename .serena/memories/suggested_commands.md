@@ -9,6 +9,15 @@ uv run jupyter lab                          # Launch JupyterLab
 uv run streamlit run app/streamlit_app.py   # Run Streamlit demo
 ```
 
+## Notebooks
+
+```bash
+uv run jupytext --sync notebooks/*.ipynb    # Regenerate .py mirrors after editing .ipynb files
+serena project index                        # Re-index Serena after mirror sync
+```
+
+Always run both commands together after any notebook change before committing.
+
 ## Quality
 
 ```bash
@@ -30,6 +39,6 @@ bash data/download_raw.sh                  # Download raw CSVs from BASt
 ```bash
 uv add <package>                           # Add dependency
 uv sync                                    # Sync venv to lockfile
-uv sync --extra dev                        # Include dev extras
-uv sync --extra geo                        # Include geo extras (h3, osmnx)
+uv sync --all-extras                       # Include all extras (dev + geo)
+uv sync --extra geo                        # Include geo extras only (h3, osmnx)
 ```
