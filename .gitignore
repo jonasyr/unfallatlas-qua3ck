@@ -133,3 +133,7 @@ cython_debug/
 .serena/cache/
 .serena/logs/
 .serena/project.local.yml
+
+# Claude Code auto-memory
+.claude/auto-memory/dirty-files*
+.claude/auto-memory/config.json
