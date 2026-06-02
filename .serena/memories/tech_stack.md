@@ -26,6 +26,7 @@
 | ruff | 0.4.x | lint + format |
 | black | 24+ | secondary formatter |
 | pytest | 8+ | tests |
+| jupytext | 1.19+ | sync `.ipynb` ↔ `.py` percent mirrors for Serena |
 | nbstripout | 0.7.x | strip notebook outputs pre-commit |
 | pre-commit | — | hooks (ruff, nbstripout, commitizen, detect-private-key, check-large-files≤5MB, pyproject-fmt, nbqa-ruff) |
 | commitizen | 3.27.x | conventional commits enforcement |

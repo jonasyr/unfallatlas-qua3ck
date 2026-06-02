@@ -14,6 +14,13 @@
 - Model artefacts → `data/processed/` (gitignored)
 - Notebook outputs stripped by `nbstripout` in pre-commit
 
+## Notebook policy
+
+- `notebooks/*.ipynb` — source of truth; edit these, never the paired `.py` mirrors.
+- `notebooks/*.py` — Jupytext/Serena mirrors for symbolic navigation only (read-only for agents).
+- After editing a notebook: `uv run jupytext --sync notebooks/*.ipynb` then `serena project index`.
+- Pre-commit hook `scripts/check_notebook_mirrors.py` (local hook, `check-notebook-mirrors` id) rejects commits where a `notebooks/*.py` mirror changed without its `.ipynb` counterpart.
+
 ## Git / commits
 
 - Conventional Commits enforced by commitizen (pre-commit `commit-msg` stage)
