@@ -128,3 +128,8 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Serena local runtime files
+.serena/cache/
+.serena/logs/
+.serena/project.local.yml
