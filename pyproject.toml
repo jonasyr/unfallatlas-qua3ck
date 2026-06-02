@@ -84,3 +84,11 @@ lint.select = [
 lint.ignore = [
   "E501",
 ]
+
+[tool.jupytext]
+formats = "ipynb,py:percent"
+
+[dependency-groups]
+dev = [
+  "jupytext>=1.19.3",
+]

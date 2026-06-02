@@ -35,3 +35,11 @@ repos:
     hooks:
       - id: nbqa-ruff
         args: [--fix]
+
+  - repo: local
+    hooks:
+      - id: check-notebook-mirrors
+        name: Prevent direct edits to notebook .py mirrors
+        entry: scripts/check_notebook_mirrors.py
+        language: system
+        pass_filenames: false
