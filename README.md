@@ -2,10 +2,10 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=flat-square&logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square&logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python&logoColor=white)](pyproject.toml)
-[![Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-261230?style=flat-square&logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
-[![uv](https://img.shields.io/badge/deps-uv-de5fe9?style=flat-square)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=flat-square)](https://github.com/astral-sh/uv)
 
 Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024.
 
