@@ -66,8 +66,11 @@ unfallatlas-qua3ck/
 │   └── raw/                # Local-only raw CSVs (not committed)
 ├── tests/                  # pytest test suite
 ├── scripts/                # Utility scripts
-├── docs/                   # Glossary and documentation
-│   └── prompts/            # AI prompts used per QUA³CK phase (01_..., 02_..., referenced by AI_TOOL_DISCLOSURE.md)
+├── docs/                   # Disclosure + glossary (hard requirements) and supporting docs
+│   ├── prompts/            # AI prompts used per QUA³CK phase (01_..., 02_..., referenced by AI TOOL DISCLOSURE.md)
+│   ├── course-material/    # Lecture notes used as AI context (Einheit 1/2, Data Analytics und Big Data, ChatGPT best-practice notes)
+│   ├── dataset/            # Unfallatlas dataset description (DSB_Unfallatlas.md/.pdf), used for citing + coded-label lookups
+│   └── project/            # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md)
 ├── reports/figures/        # Generated output figures
 └── pyproject.toml          # Project config (hatchling, ruff, black, jupytext)
 ```
@@ -167,7 +170,8 @@ test  = df[df.UJAHR == 2024]
 - `docs/superpowers/` excluded from version control (local dev artefact)
 - Raw CSV data is local-only; `data/accidents.parquet` tracked via Git LFS
 - AI prompts per QUA³CK phase live at `docs/prompts/` (corrected from earlier `docs/docs/prompts/` typo)
-- U-Phase plotting conventions documented in `docs/prompts/02_prompts_phase_u.md`: human-readable label dicts (`FEATURE_LABELS`, `UKATGEORIE_LABELS`, `COL_CODE_LABELS`, etc.) + helpers (`feature_label()`, `severity_label()`, `apply_code_labels()`) sourced from `docs/DSB_Unfallatlas.md`; consistent `sns.set_theme(style="whitegrid", palette="colorblind")` styling
+- U-Phase plotting conventions documented in `docs/prompts/02_prompts_phase_u.md`: human-readable label dicts (`FEATURE_LABELS`, `UKATGEORIE_LABELS`, `COL_CODE_LABELS`, etc.) + helpers (`feature_label()`, `severity_label()`, `apply_code_labels()`) sourced from `docs/dataset/DSB_Unfallatlas.md`; consistent `sns.set_theme(style="whitegrid", palette="colorblind")` styling
+- `docs/` reorganized into `prompts/`, `course-material/`, `dataset/`, `project/`; `GLOSSARY.md` and `AI TOOL DISCLOSURE.md` stay at `docs/` top level (hard requirements)
 
 <!-- END AUTO-MANAGED -->
 
