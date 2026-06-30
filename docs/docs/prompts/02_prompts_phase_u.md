@@ -784,3 +784,335 @@ List unresolved issues or assumptions that should be revisited.
 Do not paste the entire notebook into the final response unless explicitly requested.
 
 ```
+
+## Follow Up Prompt After Review
+
+**Claude Code (Sonnet 4.6) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
+
+````md
+You are working in Claude Code with full repository access.
+
+Your task is to revise the existing **U-Phase notebook and visualization outputs** to fix all visualization layout, alignment, readability, and labeling issues.
+
+Do not redesign the U-Phase.
+Do not add new analysis unless required to fix or clarify an existing visualization.
+Focus only on improving the visual presentation and human readability of the existing U-Phase figures.
+
+---
+
+# Objective
+
+Review every visualization in the U-Phase notebook and make it publication-quality.
+
+Fix:
+
+* overlapping labels
+* cramped titles
+* unreadable legends
+* truncated axis text
+* poor figure sizing
+* inconsistent label naming
+* raw coded category values shown without explanation
+* unclear axis labels
+* unclear legend labels
+* inconsistent color palettes
+* rotated text that is still unreadable
+* figures that are too small or too dense
+* charts where ordering is confusing
+* saved plot exports that do not match notebook display quality
+
+Use the official Unfallatlas codebook at:
+
+`docs/DSB_Unfallatlas.md`
+
+to replace coded categorical values with human-readable German labels wherever possible.
+
+---
+
+# Required Label Mapping
+
+Add or centralize the following label dictionaries in the U-Phase notebook or an appropriate helper location if one already exists.
+
+Use these labels consistently for axes, legends, tick labels, titles, and captions.
+
+```python
+# ── Human-readable labels for all coded categoricals ────────────────────────
+# Source: Datensatzbeschreibung Unfallatlas (Stand 10.06.2025)
+
+ULICHTVERH_LABELS = {
+    0: "Tageslicht",
+    1: "Dämmerung",
+    2: "Dunkelheit",
+}
+
+STRZUSTAND_LABELS = {
+    0: "Trocken",
+    1: "Nass/feucht/schlüpfrig",
+    2: "Winterglatt",
+}
+
+UART_LABELS = {
+    0: "Anderer Art",
+    1: "Zzs. ruhendes Fz.",
+    2: "Zzs. vorausfahrendes Fz.",
+    3: "Zzs. seitlich gleichfahrendes Fz.",
+    4: "Zzs. Gegenverkehr",
+    5: "Zzs. einbiegendes/kreuzendes Fz.",
+    6: "Zzs. Fußgänger",
+    7: "Aufprall Fahrbahnhindernis",
+    8: "Abkommen nach rechts",
+    9: "Abkommen nach links",
+}
+
+UTYP1_LABELS = {
+    1: "Fahrunfall",
+    2: "Abbiegeunfall",
+    3: "Einbiegen/Kreuzen",
+    4: "Überschreiten",
+    5: "Ruhender Verkehr",
+    6: "Längsverkehr",
+    7: "Sonstiger Unfall",
+}
+
+MODE_LABELS = {
+    "IstRad": "Fahrrad",
+    "IstPKW": "PKW",
+    "IstFuss": "Fußgänger",
+    "IstKrad": "Kraftrad",
+    "IstGkfz": "Güterkraftfahrzeug",
+    "IstSonstig": "Sonstiges Fahrzeug",
+}
+
+DWD_COL_LABELS = {
+    "dwd_temp_air_2m": "Lufttemperatur (°C)",
+    "dwd_precip_mm": "Niederschlag (mm)",
+    "dwd_visibility_m": "Sichtweite (m)",
+    "dwd_wind_speed_ms": "Windgeschwindigkeit (m/s)",
+    "dwd_station_dist_km": "DWD-Stationsabstand (km)",
+    "_precip_bucket": "Niederschlagsmenge",
+}
+
+FEATURE_LABELS = {
+    "UKATGEORIE": "Unfallkategorie (Ziel)",
+    "UART": "Unfallart",
+    "UTYP1": "Unfalltyp",
+    "ULICHTVERH": "Lichtverhältnisse",
+    "STRZUSTAND": "Straßenzustand",
+    "UWOCHENTAG": "Wochentag",
+    "UMONAT": "Monat",
+    "IstRad": "Fahrrad",
+    "IstPKW": "PKW",
+    "IstFuss": "Fußgänger",
+    "IstKrad": "Kraftrad",
+    "IstGkfz": "Güterkraftfahrzeug",
+    "IstSonstig": "Sonstiges Fahrzeug",
+    **DWD_COL_LABELS,
+}
+
+COL_CODE_LABELS = {
+    "ULICHTVERH": ULICHTVERH_LABELS,
+    "STRZUSTAND": STRZUSTAND_LABELS,
+    "UART": UART_LABELS,
+    "UTYP1": UTYP1_LABELS,
+}
+```
+
+Also add a readable target-label mapping if it is not already present:
+
+```python
+UKATGEORIE_LABELS = {
+    1: "Getötet",
+    2: "Schwer verletzt",
+    3: "Leicht verletzt",
+}
+```
+
+Use this for every target-related legend, hue, axis, and table where possible.
+
+---
+
+# Visualization Fix Requirements
+
+For every U-Phase plot:
+
+1. Replace raw feature names with labels from `FEATURE_LABELS`.
+2. Replace coded categorical values with labels from `COL_CODE_LABELS`.
+3. Replace target class codes with `UKATGEORIE_LABELS`.
+4. Ensure titles are concise but descriptive.
+5. Ensure axis labels are readable and human-friendly.
+6. Increase figure size where labels overlap.
+7. Use `tight_layout()` or `constrained_layout=True` where appropriate.
+8. Rotate long x-axis labels only when necessary.
+9. Prefer horizontal bar charts for long category names.
+10. Use consistent severity ordering:
+
+* `Getötet`
+* `Schwer verletzt`
+* `Leicht verletzt`
+
+11. Use consistent categorical ordering based on the official codebook where applicable.
+12. Use percentage labels where they improve interpretation.
+13. Avoid overcrowding plots with too many annotations.
+14. Save updated plots with the same or improved filenames in the U-Phase figure directory.
+
+---
+
+# Specific Charts to Check
+
+Review and fix at least the following visualization types if they exist:
+
+* target class distribution
+* target class distribution by year
+* severity by hour
+* severity by month
+* severity by weekday
+* severity by Bundesland or region
+* `ULICHTVERH` plots
+* `STRZUSTAND` plots
+* `UART` plots
+* `UTYP1` plots
+* transport-mode plots using `IstRad`, `IstPKW`, `IstFuss`, `IstKrad`, `IstGkfz`, `IstSonstig`
+* DWD weather feature distributions
+* DWD missingness plots
+* DWD station-distance plots
+* correlation heatmaps
+* Cramér’s V heatmaps
+* categorical association plots
+* missingness heatmaps or matrices
+
+---
+
+# Layout Standards
+
+Use these standards unless the repository already has a better established convention:
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_theme(
+    style="whitegrid",
+    context="notebook",
+    palette="colorblind"
+)
+
+plt.rcParams.update({
+    "figure.dpi": 120,
+    "savefig.dpi": 200,
+    "axes.titlesize": 13,
+    "axes.labelsize": 11,
+    "xtick.labelsize": 9,
+    "ytick.labelsize": 9,
+    "legend.fontsize": 9,
+})
+```
+
+For long category labels, prefer:
+
+```python
+fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
+```
+
+or horizontal bars:
+
+```python
+fig, ax = plt.subplots(figsize=(9, 5), constrained_layout=True)
+sns.barplot(data=plot_df, y="label", x="value", ax=ax)
+```
+
+For heatmaps:
+
+```python
+fig, ax = plt.subplots(figsize=(10, 8), constrained_layout=True)
+sns.heatmap(
+    matrix,
+    annot=True,
+    fmt=".2f",
+    cmap="viridis",
+    square=False,
+    linewidths=0.5,
+    cbar_kws={"shrink": 0.8},
+    ax=ax,
+)
+```
+
+---
+
+# Helper Functions
+
+Create small helper functions if useful, for example:
+
+```python
+def feature_label(col: str) -> str:
+    return FEATURE_LABELS.get(col, col)
+
+
+def apply_code_labels(series: pd.Series, column: str) -> pd.Series:
+    mapping = COL_CODE_LABELS.get(column)
+    if mapping is None:
+        return series
+    return series.map(mapping).fillna(series.astype(str))
+
+
+def severity_label(series: pd.Series) -> pd.Series:
+    return series.map(UKATGEORIE_LABELS).fillna(series.astype(str))
+```
+
+Use helper functions consistently instead of manually relabeling each plot.
+
+---
+
+# Documentation Updates
+
+Update the surrounding Markdown only where necessary to reflect the improved visuals.
+
+Do not rewrite the whole U-Phase.
+
+For any plot whose interpretation changes because labels are now clearer, adjust the interpretation text briefly.
+
+Keep all wording aligned with the existing Q-Phase and U-Phase style.
+
+---
+
+# Boundary Rules
+
+This is a visualization cleanup task only.
+
+Do not add:
+
+* model training
+* baseline models
+* feature selection
+* SHAP
+* hyperparameter tuning
+* deployment material
+* Streamlit code
+* MLflow
+* CI/CD
+* production monitoring
+
+Do not expand the U-Phase scope.
+
+---
+
+# Final Response Format
+
+After completing the fixes, respond with:
+
+## Summary of Visualization Fixes
+
+Briefly list what was improved.
+
+## Files Changed
+
+List modified notebooks, scripts, or figure files.
+
+## Labeling Improvements
+
+Mention which coded variables now use human-readable labels.
+
+## Remaining Issues
+
+List any plots that still need manual review and why.
+
+````
