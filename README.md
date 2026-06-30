@@ -6,7 +6,7 @@
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230.svg)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/badge/dependency%20manager-uv-de5fe9.svg)](https://github.com/astral-sh/uv)
-[![QUA³CK Phase](https://img.shields.io/badge/QUA³CK%20phase-U-orange.svg)](docs/course-material/Einheit%201%20–%20QUA³CK-Prozessmodell%20für%20Data-Science-Projekte.md)
+
 
 Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024.
 
