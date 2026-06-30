@@ -1,4 +1,5 @@
 import pandas as pd
+
 from unfallatlas.data.dwd import find_nearest_station
 
 STATIONS = pd.DataFrame(
