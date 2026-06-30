@@ -1,5 +1,13 @@
 # Unfallatlas Deutschland — QUA³CK ML-Portfolio
 
+[![CI](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml/badge.svg)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck/branch/main/graph/badge.svg)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230.svg)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/badge/dependency%20manager-uv-de5fe9.svg)](https://github.com/astral-sh/uv)
+[![QUA³CK Phase](https://img.shields.io/badge/QUA³CK%20phase-U-orange.svg)](docs/course-material/Einheit%201%20–%20QUA³CK-Prozessmodell%20für%20Data-Science-Projekte.md)
+
 Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024.
 
 > **Forschungsfrage:** Welche raumzeitlichen, infrastrukturellen und meteorologischen Faktoren bestimmen die Schwere eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten zuverlässig vorhersagen?
@@ -94,4 +102,15 @@ uv run pre-commit install
 
 ## Lizenz
 
-Code: MIT. Daten: [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0). Quellenangabe: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland.
+Code: [MIT](LICENSE). Daten: [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0). Quellenangabe: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland.
+
+---
+
+## Dokumentation
+
+- [GLOSSARY.md](docs/GLOSSARY.md) — Glossar der Fachbegriffe und Spaltenbezeichnungen
+- [AI TOOL DISCLOSURE.md](docs/AI%20TOOL%20DISCLOSURE.md) — Offenlegung der verwendeten KI-Tools je QUA³CK-Phase
+- [docs/prompts/](docs/prompts/) — vollständige KI-Prompt-Transkripte je Phase
+- [docs/dataset/](docs/dataset/) — Datensatzbeschreibung (DSB_Unfallatlas)
+- [docs/course-material/](docs/course-material/) — Kursunterlagen als KI-Kontext
+- [docs/project/](docs/project/) — Repo-/Prozessdokumentation (Conventional Commits, Projektplan)
