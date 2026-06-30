@@ -1,5 +1,7 @@
 # AI Prompt for Phase U
 
+## Build the U-Phase from the Q-Phase Contract
+
 **Claude Code (Sonnet 4.6) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
 ```markdown
 You are a senior Data Scientist, Machine Learning Engineer, curriculum designer, technical reviewer, and repository-quality documentation architect.
@@ -785,55 +787,173 @@ Do not paste the entire notebook into the final response unless explicitly reque
 
 ```
 
-## Follow Up Prompt After Review
+## Final U-Phase Polish & Alignment Pass
 
 **Claude Code (Sonnet 4.6) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
 
 ````md
 You are working in Claude Code with full repository access.
 
-Your task is to revise the existing **U-Phase notebook and visualization outputs** to fix all visualization layout, alignment, readability, and labeling issues.
+Your task is to perform a final polish, consistency, alignment, and visualization-cleanup pass over the completed **U-Phase** implementation of the QUA³CK Unfallatlas project.
 
-Do not redesign the U-Phase.
-Do not add new analysis unless required to fix or clarify an existing visualization.
-Focus only on improving the visual presentation and human readability of the existing U-Phase figures.
+This is a follow-up task after the main U-Phase implementation has already been completed.
+
+Do not redesign the whole project.
+Do not rewrite the entire U-Phase from scratch.
+Do not add modeling work.
+Do not expand the scope beyond U-Phase documentation, EDA clarity, visualization quality, glossary consistency, README consistency, and Q/U alignment.
+
+Your job is to make the existing work visually clean, internally consistent, human-readable, and repository-ready.
 
 ---
 
-# Objective
+# Current Repository State
 
-Review every visualization in the U-Phase notebook and make it publication-quality.
+The repository already contains a completed or near-completed U-Phase implementation.
+
+The previous U-Phase work included:
+
+* Full U-Phase data analysis and EDA, especially sections §1–§9
+* Notebook writing for all major U-Phase sections
+* Creation of `GLOSSARY.md`
+* Updates to `README.md`
+* DWD CDC weather enrichment implementation in `src/unfallatlas/data/dwd.py`
+* DWD station-list parsing
+* nearest-station spatial lookup using `scipy.spatial.cKDTree`
+* per-station DWD download logic with directory-listing URL discovery
+* left-join weather enrichment pipeline
+* weather features for:
+
+  * temperature
+  * precipitation
+  * visibility
+  * wind speed
+  * DWD station distance
+* U-Phase extension with:
+
+  * §8.5 weather coverage
+  * §8.6 weather distributions
+  * §8.7 weather bivariate analysis
+  * §9.4 temporal leakage probe
+* §10 preprocessing decision table updated with DWD-related decisions
+* §11 summary updated with DWD-related findings
+* Q-Phase back-filled with:
+
+  * data-source table
+  * feasibility section
+  * limitations section
+
+Your task is to inspect all of this and fix remaining presentation, alignment, naming, labeling, documentation, and consistency issues.
+
+---
+
+# Primary Objective
+
+Make the completed U-Phase package feel like a polished professional educational repository.
+
+Focus especially on:
+
+* visualization alignment
+* plot layout
+* human-readable labels
+* figure consistency
+* notebook readability
+* section numbering consistency
+* README consistency
+* glossary consistency
+* Q-Phase and U-Phase alignment
+* DWD terminology consistency
+* file naming consistency
+* German/English terminology consistency
+* avoiding U-Phase scope creep into A³, C, or K
+
+The final state should be suitable for direct inclusion in a portfolio-grade open-source repository.
+
+---
+
+# Files and Areas to Review
+
+Inspect and update as needed:
+
+* `notebooks/02_U_Phase.ipynb`
+* paired Jupytext file for the U-Phase, if present
+* `notebooks/01_Q_Phase.ipynb`
+* paired Jupytext file for the Q-Phase, if present
+* `README.md`
+* `GLOSSARY.md`
+* `docs/DSB_Unfallatlas.md`
+* `src/unfallatlas/data/dwd.py`
+* any U-Phase helper scripts
+* any generated U-Phase figures
+* any generated U-Phase tables
+* any reports or docs folders used by the U-Phase
+
+Preserve the existing repository structure and naming conventions unless a small correction is clearly needed.
+
+---
+
+# Critical Scope Boundary
+
+This is a cleanup and consistency pass.
+
+Do NOT add:
+
+* model training
+* baseline models
+* algorithm comparison
+* SMOTE implementation
+* target encoding implementation
+* hyperparameter tuning
+* SHAP analysis
+* confusion matrices
+* ROC curves
+* PR curves
+* test-set evaluation
+* Streamlit application logic
+* MLflow
+* CI/CD
+* production monitoring
+* final deployment material
+
+The U-Phase may discuss preprocessing decisions and leakage risks, but implementation of modeling pipelines belongs to A³.
+
+---
+
+# Task 1 — Fix All Visualization Layout and Alignment Issues
+
+Review every visualization in the U-Phase notebook and saved figure outputs.
 
 Fix:
 
 * overlapping labels
 * cramped titles
 * unreadable legends
-* truncated axis text
-* poor figure sizing
-* inconsistent label naming
+* truncated tick labels
+* inconsistent plot sizes
+* inconsistent colors
+* too-small figures
+* dense charts that should be horizontal
 * raw coded category values shown without explanation
-* unclear axis labels
-* unclear legend labels
-* inconsistent color palettes
-* rotated text that is still unreadable
-* figures that are too small or too dense
-* charts where ordering is confusing
-* saved plot exports that do not match notebook display quality
+* raw feature names shown where human-readable labels should be used
+* legends with unclear ordering
+* severity classes ordered inconsistently
+* charts whose exported version looks worse than the notebook version
 
-Use the official Unfallatlas codebook at:
+Use `constrained_layout=True`, `tight_layout()`, larger figure sizes, horizontal bar charts, wrapped labels, or shortened labels where appropriate.
 
-`docs/DSB_Unfallatlas.md`
-
-to replace coded categorical values with human-readable German labels wherever possible.
+Do not remove useful plots unless they are genuinely redundant or misleading.
 
 ---
 
-# Required Label Mapping
+# Task 2 — Use Human-Readable Unfallatlas Labels Everywhere
+
+Use the official Unfallatlas data description in:
+
+`docs/DSB_Unfallatlas.md`
+
+as the source of truth for coded categorical labels.
 
 Add or centralize the following label dictionaries in the U-Phase notebook or an appropriate helper location if one already exists.
-
-Use these labels consistently for axes, legends, tick labels, titles, and captions.
 
 ```python
 # ── Human-readable labels for all coded categoricals ────────────────────────
@@ -900,6 +1020,14 @@ FEATURE_LABELS = {
     "STRZUSTAND": "Straßenzustand",
     "UWOCHENTAG": "Wochentag",
     "UMONAT": "Monat",
+    "USTUNDE": "Stunde",
+    "UJAHR": "Jahr",
+    "ULAND": "Bundesland",
+    "UREGBEZ": "Regierungsbezirk",
+    "UKREIS": "Kreis",
+    "UGEMEINDE": "Gemeinde",
+    "LAT": "Breitengrad",
+    "LON": "Längengrad",
     "IstRad": "Fahrrad",
     "IstPKW": "PKW",
     "IstFuss": "Fußgänger",
@@ -917,7 +1045,7 @@ COL_CODE_LABELS = {
 }
 ```
 
-Also add a readable target-label mapping if it is not already present:
+Also add or verify:
 
 ```python
 UKATGEORIE_LABELS = {
@@ -925,66 +1053,69 @@ UKATGEORIE_LABELS = {
     2: "Schwer verletzt",
     3: "Leicht verletzt",
 }
+
+UKATGEORIE_ORDER = [
+    "Getötet",
+    "Schwer verletzt",
+    "Leicht verletzt",
+]
 ```
 
-Use this for every target-related legend, hue, axis, and table where possible.
+Use these labels consistently for:
+
+* plot titles
+* axis labels
+* legends
+* heatmap labels
+* table labels
+* markdown interpretation text where helpful
+* saved figure filenames only where appropriate
+
+Do not show raw codes like `ULICHTVERH = 2` in final visual outputs unless the code itself is being explained.
 
 ---
 
-# Visualization Fix Requirements
+# Task 3 — Add Label Helper Functions
 
-For every U-Phase plot:
+Create small helper functions if not already present.
 
-1. Replace raw feature names with labels from `FEATURE_LABELS`.
-2. Replace coded categorical values with labels from `COL_CODE_LABELS`.
-3. Replace target class codes with `UKATGEORIE_LABELS`.
-4. Ensure titles are concise but descriptive.
-5. Ensure axis labels are readable and human-friendly.
-6. Increase figure size where labels overlap.
-7. Use `tight_layout()` or `constrained_layout=True` where appropriate.
-8. Rotate long x-axis labels only when necessary.
-9. Prefer horizontal bar charts for long category names.
-10. Use consistent severity ordering:
+Use them consistently instead of manually relabeling every plot.
 
-* `Getötet`
-* `Schwer verletzt`
-* `Leicht verletzt`
+Recommended helpers:
 
-11. Use consistent categorical ordering based on the official codebook where applicable.
-12. Use percentage labels where they improve interpretation.
-13. Avoid overcrowding plots with too many annotations.
-14. Save updated plots with the same or improved filenames in the U-Phase figure directory.
+```python
+def feature_label(col: str) -> str:
+    return FEATURE_LABELS.get(col, col)
 
----
 
-# Specific Charts to Check
+def apply_code_labels(series: pd.Series, column: str) -> pd.Series:
+    mapping = COL_CODE_LABELS.get(column)
+    if mapping is None:
+        return series
+    return series.map(mapping).fillna(series.astype(str))
 
-Review and fix at least the following visualization types if they exist:
 
-* target class distribution
-* target class distribution by year
-* severity by hour
-* severity by month
-* severity by weekday
-* severity by Bundesland or region
-* `ULICHTVERH` plots
-* `STRZUSTAND` plots
-* `UART` plots
-* `UTYP1` plots
-* transport-mode plots using `IstRad`, `IstPKW`, `IstFuss`, `IstKrad`, `IstGkfz`, `IstSonstig`
-* DWD weather feature distributions
-* DWD missingness plots
-* DWD station-distance plots
-* correlation heatmaps
-* Cramér’s V heatmaps
-* categorical association plots
-* missingness heatmaps or matrices
+def severity_label(series: pd.Series) -> pd.Series:
+    return series.map(UKATGEORIE_LABELS).fillna(series.astype(str))
+
+
+def ordered_severity_dtype(series: pd.Series) -> pd.Series:
+    return pd.Categorical(
+        severity_label(series),
+        categories=UKATGEORIE_ORDER,
+        ordered=True,
+    )
+```
+
+If a better helper system already exists, improve that instead of duplicating it.
 
 ---
 
-# Layout Standards
+# Task 4 — Apply Consistent Plot Styling
 
-Use these standards unless the repository already has a better established convention:
+Use a consistent visual theme unless the repository already has one.
+
+Recommended default:
 
 ```python
 import matplotlib.pyplot as plt
@@ -993,7 +1124,7 @@ import seaborn as sns
 sns.set_theme(
     style="whitegrid",
     context="notebook",
-    palette="colorblind"
+    palette="colorblind",
 )
 
 plt.rcParams.update({
@@ -1007,16 +1138,10 @@ plt.rcParams.update({
 })
 ```
 
-For long category labels, prefer:
+For long category labels, prefer horizontal layouts:
 
 ```python
 fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
-```
-
-or horizontal bars:
-
-```python
-fig, ax = plt.subplots(figsize=(9, 5), constrained_layout=True)
 sns.barplot(data=plot_df, y="label", x="value", ax=ax)
 ```
 
@@ -1036,83 +1161,435 @@ sns.heatmap(
 )
 ```
 
----
-
-# Helper Functions
-
-Create small helper functions if useful, for example:
-
-```python
-def feature_label(col: str) -> str:
-    return FEATURE_LABELS.get(col, col)
-
-
-def apply_code_labels(series: pd.Series, column: str) -> pd.Series:
-    mapping = COL_CODE_LABELS.get(column)
-    if mapping is None:
-        return series
-    return series.map(mapping).fillna(series.astype(str))
-
-
-def severity_label(series: pd.Series) -> pd.Series:
-    return series.map(UKATGEORIE_LABELS).fillna(series.astype(str))
-```
-
-Use helper functions consistently instead of manually relabeling each plot.
+Make sure exported figures use the same visual quality as notebook-rendered figures.
 
 ---
 
-# Documentation Updates
+# Task 5 — Review Specific U-Phase Visualizations
 
-Update the surrounding Markdown only where necessary to reflect the improved visuals.
+Check and fix all relevant plots, including:
 
-Do not rewrite the whole U-Phase.
+* target class distribution
+* target class distribution by year
+* severity by hour
+* severity by month
+* severity by weekday
+* severity by Bundesland or region
+* Unfallart (`UART`) plots
+* Unfalltyp (`UTYP1`) plots
+* Lichtverhältnisse (`ULICHTVERH`) plots
+* Straßenzustand (`STRZUSTAND`) plots
+* transport-mode plots:
 
-For any plot whose interpretation changes because labels are now clearer, adjust the interpretation text briefly.
+  * `IstRad`
+  * `IstPKW`
+  * `IstFuss`
+  * `IstKrad`
+  * `IstGkfz`
+  * `IstSonstig`
+* DWD weather coverage plots
+* DWD weather distribution plots
+* DWD weather bivariate plots
+* precipitation bucket plots
+* DWD station-distance plots
+* weather missingness plots
+* missingness matrices
+* missingness heatmaps
+* numeric histograms
+* KDE plots
+* boxplots
+* violin plots
+* categorical count plots
+* correlation heatmaps
+* Cramér’s V heatmaps
+* leakage-probe visualizations
+* temporal leakage probe charts
+* preprocessing-decision supporting visuals
 
-Keep all wording aligned with the existing Q-Phase and U-Phase style.
+For every plot, verify:
+
+* labels are human-readable
+* title is concise
+* axes are understandable
+* legend order is meaningful
+* target severity order is consistent
+* colors are readable
+* layout is not cramped
+* interpretation text still matches the visual
+* saved plot file is updated if plots are exported
 
 ---
 
-# Boundary Rules
+# Task 6 — Check README Consistency
 
-This is a visualization cleanup task only.
+Review `README.md` and fix inconsistencies caused by the new U-Phase and DWD enrichment.
 
-Do not add:
+In particular, check this current QUA³CK table entry:
 
-* model training
-* baseline models
-* feature selection
-* SHAP
-* hyperparameter tuning
-* deployment material
-* Streamlit code
-* MLflow
-* CI/CD
-* production monitoring
+`U — Understanding | DIG-Description, EDA, Geo-Visualisierung, Feature Engineering`
 
-Do not expand the U-Phase scope.
+This likely overstates the U-Phase because advanced feature engineering belongs to A³.
+
+Update the README so the U-Phase description is strict and accurate.
+
+Suggested wording:
+
+`Schema-Audit, EDA, Datenqualität, Wetter-Enrichment, Leakage-Prüfung, Preprocessing-Plan`
+
+Also check:
+
+* dataset description
+* DWD weather enrichment mention
+* setup instructions
+* data file descriptions
+* notebook list
+* phase descriptions
+* metric descriptions
+* chronological split statement
+* license and source attribution
+
+Add a concise DWD data-source note if it is missing.
+
+Make sure the README does not imply that U performs model training or feature engineering beyond preprocessing planning.
+
+---
+
+# Task 7 — Check Glossary Consistency
+
+Review `GLOSSARY.md`.
+
+Fix:
+
+* spelling inconsistencies
+* column-name inconsistencies
+* raw codes that should have labels
+* terminology that conflicts with Q or U
+* duplicated definitions
+* unclear DWD explanations
+* outdated statements after the U-Phase changes
+* phase-boundary issues
+
+Pay special attention to these terms:
+
+* `IstSonstig` vs `IstSonstige`
+* `UKATGEORIE` source spelling
+* `UART`
+* `UTYP1`
+* `ULICHTVERH`
+* `STRZUSTAND`
+* `UWOCHENTAG`
+* `OBJECTID`
+* `PLST`
+* `LAT` / `LON`
+* `LINREFX` / `LINREFY`
+* `dwd_temp_air_2m`
+* `dwd_precip_mm`
+* `dwd_visibility_m`
+* `dwd_wind_speed_ms`
+* `dwd_station_dist_km`
+* DWD join granularity
+* cKDTree
+* chronological split
+* conditional entropy reduction
+* target leakage
+* preprocessing leakage
+* QUA³CK phase definitions
+
+Important: Keep the glossary plain-language and useful for readers.
+
+Do not turn the glossary into a modeling chapter.
+
+If terms like target encoding, SMOTE, SHAP, CatBoost, and TimeSeriesSplit are included, ensure they are clearly marked as later-phase concepts and do not imply they are implemented in U.
+
+---
+
+# Task 8 — Check Q-Phase / U-Phase Alignment
+
+Review the Q-Phase and U-Phase together.
+
+Ensure they agree on:
+
+* research question
+* target variable
+* target labels
+* unit of analysis
+* years covered
+* row count
+* source data
+* DWD enrichment
+* weather join assumptions
+* known limitations
+* leakage boundary
+* chronological split
+* success metrics
+* out-of-scope uses
+* transition from Q to U
+* transition from U to A³
+
+If the U-Phase found evidence that corrects the Q-Phase, update the Q-Phase carefully and minimally.
+
+Do not backfill the Q-Phase with EDA findings unless they belong there as feasibility or limitation notes.
+
+---
+
+# Task 9 — Check DWD Enrichment Documentation and Code Clarity
+
+Review `src/unfallatlas/data/dwd.py`.
+
+Do not rewrite the full DWD module unless necessary.
+
+Check for:
+
+* clear function names
+* clear docstrings
+* robust handling of DWD directory listings
+* clear station-list parsing
+* clear nearest-station lookup logic
+* correct cKDTree usage
+* clear left-join behavior
+* clear sentinel-value handling
+* clear output column names
+* consistent names with U-Phase and Glossary
+* no hard-coded fragile assumptions that contradict the notebook
+* no silent data loss
+* no accidental inner join where a left join is required
+* no weather feature naming mismatch
+
+If code comments are missing around complex parts, add concise comments.
+
+Do not add heavy infrastructure.
+
+---
+
+# Task 10 — Verify DWD Terminology Everywhere
+
+Ensure DWD weather enrichment is described consistently across:
+
+* Q-Phase
+* U-Phase
+* README
+* GLOSSARY
+* `src/unfallatlas/data/dwd.py`
+
+Use consistent language for:
+
+* “DWD CDC hourly observations”
+* “nearest station”
+* “left join”
+* “station distance”
+* “temperature”
+* “precipitation”
+* “visibility”
+* “wind speed”
+* “day-level averaging noise”
+* “no temporal leakage”
+* “missing station coverage”
+* “rural proxy”
+
+Do not overclaim accuracy of weather attribution.
+
+State clearly that the join is an approximation caused by the absence of day-of-month in `accidents.parquet`.
+
+---
+
+# Task 11 — Verify Section Numbering and Notebook Layout
+
+Review the U-Phase notebook section numbering.
+
+The previous implementation includes:
+
+* §1–§9 main analysis
+* §8.5 weather coverage
+* §8.6 weather distributions
+* §8.7 weather bivariate analysis
+* §9.4 temporal leakage probe
+* §10 preprocessing decision table
+* §11 summary
+
+Ensure:
+
+* section numbers are sequential
+* subsection numbers are not duplicated
+* cross-references point to real sections
+* markdown headings match references
+* tables are not too wide
+* callouts are visually consistent
+* summary tables are readable
+* code cells are not mixed with unrelated markdown
+* long code helper sections are hidden, collapsed, or cleanly organized where possible
+
+Do not over-format at the expense of notebook usability.
+
+---
+
+# Task 12 — Fix German/English Terminology Drift
+
+The project mixes German source terminology with English technical explanations.
+
+That is acceptable, but make it consistent.
+
+Use German labels for source categories, for example:
+
+* `Getötet`
+* `Schwer verletzt`
+* `Leicht verletzt`
+* `Tageslicht`
+* `Dämmerung`
+* `Dunkelheit`
+* `Trocken`
+* `Nass/feucht/schlüpfrig`
+* `Winterglatt`
+
+Use English for technical explanations where the notebook already does so.
+
+Avoid switching between multiple translations for the same concept.
+
+For example, do not alternate between:
+
+* “fatal”
+* “killed”
+* “Getötet”
+
+unless the mapping is explicit.
+
+Preferred style:
+
+* In plots: German category labels
+* In technical prose: English explanation with German label in parentheses where helpful
+
+---
+
+# Task 13 — Update Interpretation Text After Visual Cleanup
+
+Because labels and ordering may change, review the interpretation text below each major plot.
+
+Fix any text that no longer matches the plot.
+
+For each major visualization, ensure the text answers:
+
+* What does the plot show?
+* What is the key observation?
+* Why does it matter for U?
+* Does it create a preprocessing requirement?
+* Does it create a later A³ consideration?
+* What is a common interpretation pitfall?
+
+Keep the interpretations concise.
+
+Do not add long speculative causal claims.
+
+---
+
+# Task 14 — Review Saved Figures and Tables
+
+If the notebook exports figures or tables, verify that:
+
+* output directories exist
+* filenames are clear
+* old duplicate figures are not left behind
+* regenerated plots overwrite or clearly version old ones
+* saved figures use readable DPI
+* saved figures do not clip labels
+* saved tables are consistent with notebook tables
+* figure paths in markdown still work
+
+Suggested U-Phase asset paths, only if consistent with the repo:
+
+* `reports/figures/u_phase/`
+* `reports/tables/u_phase/`
+
+Do not reorganize the entire repository.
+
+---
+
+# Task 15 — Keep U-Phase Boundary Clean
+
+During cleanup, remove or reword U-Phase content that sounds like A³, C, or K.
+
+Examples:
+
+* Replace “we will use this feature because it improves performance” with “this feature should be reviewed in A³ because it has a descriptive association with the target.”
+* Replace “target encoding is used” with “target encoding is a candidate preprocessing strategy for A³ and must be fit inside the training fold only.”
+* Replace “SHAP will show” with “interpretability is deferred to C.”
+* Replace “deployment will use” with “Knowledge Transfer is deferred to K.”
+
+The U-Phase should end with a clean U-to-A³ handoff, not with model conclusions.
+
+---
+
+# Task 16 — Final Validation Pass
+
+Run or validate the notebook execution as far as practical.
+
+Check for:
+
+* broken imports
+* missing helper functions
+* stale variable names
+* undefined label dictionaries
+* plots depending on old raw-code columns
+* broken paths
+* inconsistent figure exports
+* markdown references to missing plots
+* outdated README statements
+* outdated glossary definitions
+* inconsistent `IstSonstig` / `IstSonstige` spelling
+* DWD column-name mismatches
+
+Do not make the notebook slower unless absolutely necessary.
+
+If full execution is too expensive, run the changed cells or perform a targeted validation and document what was checked.
+
+---
+
+# Expected Final State
+
+After this task, the repository should have:
+
+* U-Phase visualizations with readable labels and clean layout
+* consistent severity ordering
+* official Unfallatlas labels in all relevant plots
+* consistent DWD terminology across notebook, README, glossary, and code
+* README accurately describing the U-Phase
+* glossary aligned with actual repository implementation
+* Q-Phase and U-Phase aligned
+* no accidental U-to-A³ scope creep
+* cleaner section numbering and cross-references
+* updated saved figures where applicable
 
 ---
 
 # Final Response Format
 
-After completing the fixes, respond with:
+After completing the cleanup, respond with:
 
-## Summary of Visualization Fixes
+## Summary of Fixes
 
-Briefly list what was improved.
+Briefly list the main improvements.
+
+## Visualization Improvements
+
+List which visualization categories were fixed.
+
+## Documentation Updates
+
+List README, glossary, Q-Phase, or U-Phase documentation changes.
+
+## Code Updates
+
+List any helper functions or `dwd.py` changes.
 
 ## Files Changed
 
-List modified notebooks, scripts, or figure files.
+List modified files.
 
-## Labeling Improvements
+## Boundary Notes
 
-Mention which coded variables now use human-readable labels.
+Mention anything intentionally deferred to A³, C, or K.
 
 ## Remaining Issues
 
-List any plots that still need manual review and why.
+List unresolved issues, skipped validations, or plots that still need manual review.
+
 
 ````
