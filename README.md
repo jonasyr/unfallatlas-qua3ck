@@ -7,6 +7,11 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=flat-square)](https://github.com/astral-sh/uv)
 
+<!-- TODO(visual): add a hero image once a result is worth leading with --
+     e.g. SHAP summary plot or geo accident-density map from A³/C phase,
+     exported as static PNG/SVG to reports/figures/ (not the interactive
+     .html exports, those can't be embedded). Drop it here below the badges. -->
+
 Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024.
 
 > **Forschungsfrage:** Welche raumzeitlichen, infrastrukturellen und meteorologischen Faktoren bestimmen die Schwere eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten zuverlässig vorhersagen?
