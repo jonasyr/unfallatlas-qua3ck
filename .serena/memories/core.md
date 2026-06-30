@@ -63,4 +63,4 @@ df = duckdb.connect().execute(f"SELECT * FROM '{DATA}' WHERE UJAHR = 2024").df()
 - The pre-commit hook `scripts/check_notebook_mirrors.py` blocks commits where a `.py` mirror changed without its `.ipynb` counterpart.
 - Reusable logic extracted from notebooks belongs in `src/unfallatlas/`, imported back into the notebook.
 
-See `mem:tech_stack` for dependencies, `mem:conventions` for code style, `mem:suggested_commands` for CLI usage, `mem:task_completion` for done checklist.
+See `mem:tech_stack` for dependencies, `mem:conventions` for code style, `mem:suggested_commands` for CLI usage, `mem:task_completion` for done checklist, `mem:documentation` for the `docs/` folder layout.

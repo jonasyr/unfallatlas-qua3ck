@@ -24,7 +24,7 @@
 ## Git / commits
 
 - Conventional Commits enforced by commitizen (pre-commit `commit-msg` stage)
-- Files in `docs/ConventionalCommitsGuide.md` for reference
+- Files in `docs/project/ConventionalCommitsGuide.md` for reference
 - Large files blocked at >5 MB; private keys detected automatically
 
 ## ML-specific invariants
