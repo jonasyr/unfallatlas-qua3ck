@@ -67,6 +67,7 @@ unfallatlas-qua3ck/
 ├── tests/                  # pytest test suite
 ├── scripts/                # Utility scripts
 ├── docs/                   # Glossary and documentation
+│   └── prompts/            # AI prompts used per QUA³CK phase (01_..., 02_..., referenced by AI_TOOL_DISCLOSURE.md)
 ├── reports/figures/        # Generated output figures
 └── pyproject.toml          # Project config (hatchling, ruff, black, jupytext)
 ```
@@ -165,6 +166,8 @@ test  = df[df.UJAHR == 2024]
 - Notebook outputs stripped pre-commit via `nbstripout` hook
 - `docs/superpowers/` excluded from version control (local dev artefact)
 - Raw CSV data is local-only; `data/accidents.parquet` tracked via Git LFS
+- AI prompts per QUA³CK phase live at `docs/prompts/` (corrected from earlier `docs/docs/prompts/` typo)
+- U-Phase plotting conventions documented in `docs/prompts/02_prompts_phase_u.md`: human-readable label dicts (`FEATURE_LABELS`, `UKATGEORIE_LABELS`, `COL_CODE_LABELS`, etc.) + helpers (`feature_label()`, `severity_label()`, `apply_code_labels()`) sourced from `docs/DSB_Unfallatlas.md`; consistent `sns.set_theme(style="whitegrid", palette="colorblind")` styling
 
 <!-- END AUTO-MANAGED -->
 
