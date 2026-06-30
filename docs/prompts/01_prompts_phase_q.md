@@ -6,8 +6,8 @@
 
 **Kontext**:
 
-- `docs/Master Data Analysis with ChatGPT.md`
-- `docs/Data Analytics und Big Data.md`
+- `docs/course-material/Master Data Analysis with ChatGPT.md`
+- `docs/course-material/Data Analytics und Big Data.md`
 
 ```markdown
 # Rolle
