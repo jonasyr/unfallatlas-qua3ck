@@ -1,18 +1,15 @@
 # Unfallatlas Deutschland — QUA³CK ML-Portfolio
 
-[![CI](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml/badge.svg)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck/branch/main/graph/badge.svg)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230.svg)](https://github.com/astral-sh/ruff)
-[![uv](https://img.shields.io/badge/dependency%20manager-uv-de5fe9.svg)](https://github.com/astral-sh/uv)
-
+[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=flat-square&logo=codecov&logoColor=white&label=coverage)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
+[![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue?style=flat-square&logo=python&logoColor=white)](pyproject.toml)
+[![Ruff](https://img.shields.io/badge/lint%2Fformat-ruff-261230?style=flat-square&logo=ruff&logoColor=white)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/badge/deps-uv-de5fe9?style=flat-square)](https://github.com/astral-sh/uv)
 
 Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024.
 
 > **Forschungsfrage:** Welche raumzeitlichen, infrastrukturellen und meteorologischen Faktoren bestimmen die Schwere eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten zuverlässig vorhersagen?
-
----
 
 ## QUA³CK-Phasen
 
@@ -24,8 +21,6 @@ Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des
 | **C** — Conclude & Compare | `notebooks/04_C_Phase.ipynb` | SHAP, Modellvergleich, Limitationen |
 | **K** — Knowledge Transfer | `app/streamlit_app.py` | Interaktive Risikoprofil-App (Streamlit) |
 
----
-
 ## Datensatz
 
 - **Quelle:** [Unfallatlas auf GovData](https://www.govdata.de/suche/daten/unfallatlas) (Mobilithek), Datenlizenz Deutschland 2.0
@@ -33,8 +28,6 @@ Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des
 - **Umfang:** ~2,09 Mio. polizeilich aufgenommene Unfälle mit Personenschaden
 - **Zielvariable:** `UKATGEORIE` — 1 = Getötet (1%), 2 = Schwer verletzt (18%), 3 = Leicht verletzt (81%)
 - **Format:** Parquet (`data/accidents.parquet`, ~65 MB) — konsolidiert aus den district-level CSV-Dateien, gespeichert via **Git LFS**
-
----
 
 ## Setup
 
@@ -75,18 +68,13 @@ uv sync --all-extras
 uv run jupyter lab
 ```
 
-### Voraussetzungen
-
-- Python ≥ 3.11 (wird von uv automatisch verwaltet)
-- git-lfs (siehe Schritt 1)
+Voraussetzungen: Python ≥ 3.11 (wird von uv automatisch verwaltet) · git-lfs (siehe Schritt 1)
 
 ### Pre-commit Hooks
 
 ```bash
 uv run pre-commit install
 ```
-
----
 
 ## Ziele
 
@@ -98,14 +86,6 @@ uv run pre-commit install
 
 **Test-Strategie:** Chronologischer Split — Train 2016–2022 · Val 2023 · Test 2024.
 
----
-
-## Lizenz
-
-Code: [MIT](LICENSE). Daten: [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0). Quellenangabe: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland.
-
----
-
 ## Dokumentation
 
 - [GLOSSARY.md](docs/GLOSSARY.md) — Glossar der Fachbegriffe und Spaltenbezeichnungen
@@ -114,3 +94,7 @@ Code: [MIT](LICENSE). Daten: [Datenlizenz Deutschland – Namensnennung – Vers
 - [docs/dataset/](docs/dataset/) — Datensatzbeschreibung (DSB_Unfallatlas)
 - [docs/course-material/](docs/course-material/) — Kursunterlagen als KI-Kontext
 - [docs/project/](docs/project/) — Repo-/Prozessdokumentation (Conventional Commits, Projektplan)
+
+## Lizenz
+
+Code: [MIT](LICENSE). Daten: [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0). Quellenangabe: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland.
