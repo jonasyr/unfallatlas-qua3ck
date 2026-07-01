@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -102,3 +104,23 @@ def test_build_preprocessor_scale_for_linear_changes_passthrough_columns():
     linear_out = linear_pre.transform(X)
     # Same number of rows either way; scaling changes values, not row count.
     assert tree_out.shape[0] == linear_out.shape[0] == len(X)
+
+
+def test_fitted_preprocessor_is_picklable():
+    """Regression test: a lambda inside build_preprocessor's dwd_station_dist_km
+    log-transform previously made the fitted ColumnTransformer unpicklable
+    (joblib.dump raised PicklingError), which only surfaced once the A3
+    notebook tried to checkpoint a fitted pipeline to disk. Every model
+    artefact this project saves goes through joblib.dump, so this must hold.
+    """
+    df = _toy_frame()
+    train, _, _ = chronological_split(df)
+    X, y = split_features_target(train)
+    preprocessor = build_preprocessor().fit(X, y)
+
+    pickled = pickle.dumps(preprocessor)
+    restored = pickle.loads(pickled)
+    restored_out = restored.transform(X)
+    original_out = preprocessor.transform(X)
+
+    np.testing.assert_array_equal(restored_out, original_out)

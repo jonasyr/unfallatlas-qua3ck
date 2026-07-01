@@ -18,6 +18,14 @@ from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardSc
 
 from unfallatlas.features.temporal import cyclic_encode
 
+
+def _log_with_offset(values: np.ndarray) -> np.ndarray:
+    """log(x + 1e-6) for dwd_station_dist_km — a module-level function so the
+    fitted preprocessor (and any Pipeline containing it) can be pickled by
+    joblib. A lambda here would raise PicklingError on joblib.dump()."""
+    return np.log(values + 1e-6)
+
+
 TARGET_COLUMN = "UKATGEORIE"
 SPLIT_YEAR_COLUMN = "UJAHR"
 NON_FEATURE_COLUMNS = ["OBJECTID", "UGEMEINDE"]
@@ -131,7 +139,7 @@ def build_preprocessor(scale_for_linear: bool = False) -> ColumnTransformer:
             ("impute", SimpleImputer(strategy="median")),
             (
                 "log",
-                FunctionTransformer(lambda a: np.log(a + 1e-6), feature_names_out="one-to-one"),
+                FunctionTransformer(_log_with_offset, feature_names_out="one-to-one"),
             ),
         ]
     )
@@ -143,7 +151,12 @@ def build_preprocessor(scale_for_linear: bool = False) -> ColumnTransformer:
     transformers.append(("plain_numeric", plain_numeric_pipeline, PLAIN_NUMERIC_COLUMNS))
 
     if scale_for_linear:
-        transformers.append(("passthrough_scaled", StandardScaler(), PASSTHROUGH_COLUMNS))
+        passthrough_scaled_pipeline = Pipeline(
+            steps=[("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]
+        )
+        transformers.append(
+            ("passthrough_scaled", passthrough_scaled_pipeline, PASSTHROUGH_COLUMNS)
+        )
     else:
         transformers.append(("passthrough", "passthrough", PASSTHROUGH_COLUMNS))
 
