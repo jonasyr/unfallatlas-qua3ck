@@ -7,6 +7,7 @@ from unfallatlas.models.boosting import (
     build_lightgbm_pipeline,
     build_random_forest_pipeline,
     build_xgboost_pipeline,
+    gpu_available,
 )
 
 
@@ -85,3 +86,32 @@ def test_xgboost_pipeline_does_not_require_zero_indexed_labels():
     preds = pipe.predict(X)
     assert set(preds) <= {1, 2, 3}
     assert 0 not in set(preds)
+
+
+def test_gpu_available_returns_bool_and_is_consistent():
+    result = gpu_available()
+    assert isinstance(result, bool)
+    assert gpu_available() == result  # lru_cache'd, must be stable within a process
+
+
+def test_builders_accept_explicit_use_gpu_false_forcing_cpu():
+    """use_gpu=False must always work, regardless of what's auto-detected on
+    this machine — this is the portability guarantee for non-GPU machines."""
+    X, y = _toy_X_y()
+    preprocessor = build_preprocessor()
+
+    rf_pipe = build_random_forest_pipeline(preprocessor)
+    rf_pipe.fit(X, y)
+    assert set(rf_pipe.predict(X)).issubset({1, 2, 3})
+
+    xgb_pipe = build_xgboost_pipeline(preprocessor, use_gpu=False)
+    xgb_pipe.fit(X, y)
+    assert set(xgb_pipe.predict(X)).issubset({1, 2, 3})
+
+    lgbm_pipe = build_lightgbm_pipeline(preprocessor, use_gpu=False)
+    lgbm_pipe.fit(X, y)
+    assert set(lgbm_pipe.predict(X)).issubset({1, 2, 3})
+
+    cb_pipe = build_catboost_pipeline(preprocessor, use_gpu=False)
+    cb_pipe.fit(X, y)
+    assert set(np.asarray(cb_pipe.predict(X)).ravel()).issubset({1, 2, 3})
