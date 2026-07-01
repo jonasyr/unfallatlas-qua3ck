@@ -137,15 +137,24 @@ print(f"GPU acceleration: {'ON' if _use_gpu_resolved else 'OFF'}  (USE_GPU={USE_
 # `_log_progress()` appends timestamped lines directly to
 # `reports/a3_progress.log` (flushed immediately, so `tail -f` shows it live).
 # `_fit_or_checkpoint()` saves each fitted pipeline to
-# `data/processed/a3_checkpoints/` right after training and reloads from there
-# on a re-run instead of refitting — so a crash in, say, CatBoost training does
-# not require redoing Random Forest/XGBoost/LightGBM.
+# `data/processed/a3_checkpoints/<git-commit>/` right after training and
+# reloads from there on a re-run instead of refitting — so a crash in, say,
+# CatBoost training does not require redoing Random Forest/XGBoost/LightGBM.
+#
+# The checkpoint directory is scoped by the current short git commit hash
+# (uncommitted changes still share the last commit's directory — clear
+# `data/processed/a3_checkpoints/` manually while actively iterating on
+# uncommitted model-builder changes). Any *committed* change to a model
+# builder's hyperparameters lands in a new commit, which gets a fresh,
+# empty checkpoint directory automatically — a stale checkpoint from a
+# previous configuration can never silently be loaded as if it reflected
+# the current code.
 
 # %%
 PROGRESS_LOG = BASE_DIR / "reports" / "a3_progress.log"
 PROGRESS_LOG.parent.mkdir(parents=True, exist_ok=True)
 
-CHECKPOINT_DIR = PROCESSED_DIR / "a3_checkpoints"
+CHECKPOINT_DIR = PROCESSED_DIR / "a3_checkpoints" / _git_short_sha()
 CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -161,8 +170,10 @@ def _log_progress(message: str) -> None:
 def _fit_or_checkpoint(name: str, build_fn, fit_kwargs: dict | None = None):
     """Load a cached fitted pipeline for `name` if present, else fit + save it.
 
-    Lets a re-run after a crash skip every model that already finished,
-    rather than refitting everything from scratch.
+    Checkpoints live under CHECKPOINT_DIR, which is scoped by the current
+    git commit hash — so a committed change to any model builder's
+    hyperparameters automatically gets a fresh cache directory instead of
+    silently reusing a stale checkpoint from a different configuration.
     """
     checkpoint_path = CHECKPOINT_DIR / f"{name}.joblib"
     if checkpoint_path.exists():
@@ -177,21 +188,68 @@ def _fit_or_checkpoint(name: str, build_fn, fit_kwargs: dict | None = None):
     return pipeline
 
 
+def _extract_family(name: str) -> str:
+    """'random_forest_balanced' -> 'random_forest'. Same-family runs
+    (default/balanced) cost nearly identical time; different families can
+    differ by 10x+ (e.g. Random Forest vs. GPU-accelerated CatBoost)."""
+    return name.removesuffix("_default").removesuffix("_balanced")
+
+
+def _eta_seconds(
+    remaining_names: list[str],
+    family_durations: dict[str, list[float]],
+    last_duration: float | None,
+) -> float | None:
+    """Family-aware ETA.
+
+    For each remaining stage, use its own family's observed average if
+    we've already timed that family (default/balanced pairs cost almost
+    the same). For a family not yet seen at all, fall back to the most
+    recently observed single duration (of ANY family) rather than the
+    overall historical average — so the estimate reacts within one step
+    when training shifts from a slow family (Random Forest) to a fast one
+    (XGBoost/LightGBM/CatBoost), instead of staying dragged down by the
+    slow models seen earlier.
+    """
+    if last_duration is None:
+        return None
+    total = 0.0
+    for name in remaining_names:
+        family = _extract_family(name)
+        family_seen = family_durations.get(family)
+        total += (sum(family_seen) / len(family_seen)) if family_seen else last_duration
+    return total
+
+
 def run_stage(
-    name: str, build_fn, fit_kwargs: dict | None, index: int, total: int, durations: list[float]
+    name: str,
+    build_fn,
+    fit_kwargs: dict | None,
+    index: int,
+    total: int,
+    all_names: list[str],
+    timing_state: dict,
 ):
-    """Fit-or-load one model with progress/ETA logging, then score it on validation."""
+    """Fit-or-load one model with family-aware progress/ETA logging, then score it.
+
+    `timing_state` is a per-stage-group dict `{"family_durations": {}, "last_duration": None}`,
+    shared and mutated across every call within one Stufe 0 / Stufe 1 loop
+    (kept separate between the two loops since baselines and tree ensembles
+    have unrelated cost profiles).
+    """
+    remaining_names = all_names[index:]  # stages after this one
+    eta_seconds = _eta_seconds(
+        remaining_names, timing_state["family_durations"], timing_state["last_duration"]
+    )
     pct = 100 * (index - 1) / total
-    if durations:
-        eta_seconds = (sum(durations) / len(durations)) * (total - index + 1)
-        eta_str = f"{eta_seconds / 60:.1f} min"
-    else:
-        eta_str = "unknown"
+    eta_str = f"{eta_seconds / 60:.1f} min" if eta_seconds is not None else "unknown"
     _log_progress(f"[{index}/{total}] ({pct:.0f}%) training {name} ... ETA remaining: {eta_str}")
     start = time.time()
     pipeline = _fit_or_checkpoint(name, build_fn, fit_kwargs)
     elapsed = time.time() - start
-    durations.append(elapsed)
+    family = _extract_family(name)
+    timing_state["family_durations"].setdefault(family, []).append(elapsed)
+    timing_state["last_duration"] = elapsed
     _score_on_validation(name, pipeline)
     _log_progress(f"  -> {name} done in {elapsed:.1f}s")
     return pipeline
@@ -267,13 +325,20 @@ stufe0_specs = [
     ("majority_class", lambda: build_majority_class_classifier(), None),
     ("logistic_regression", lambda: build_logreg_pipeline(linear_preprocessor), None),
 ]
+stufe0_names = [name for name, _, _ in stufe0_specs]
 
 fitted_baselines: dict = {}
-_stufe0_durations: list[float] = []
+_stufe0_timing: dict = {"family_durations": {}, "last_duration": None}
 _log_progress(f"Starting Stufe 0: {len(stufe0_specs)} baselines.")
 for i, (name, build_fn, fit_kwargs) in enumerate(stufe0_specs, start=1):
     fitted_baselines[name] = run_stage(
-        name, build_fn, fit_kwargs, index=i, total=len(stufe0_specs), durations=_stufe0_durations
+        name,
+        build_fn,
+        fit_kwargs,
+        index=i,
+        total=len(stufe0_specs),
+        all_names=stufe0_names,
+        timing_state=_stufe0_timing,
     )
 _log_progress(
     f"Stufe 0 complete: {len(stufe0_specs)}/{len(stufe0_specs)} (100%) baselines trained."
@@ -343,13 +408,20 @@ stufe1_specs = [
         None,
     ),
 ]
+stufe1_names = [name for name, _, _ in stufe1_specs]
 
 fitted_models: dict = {}
-_stufe1_durations: list[float] = []
+_stufe1_timing: dict = {"family_durations": {}, "last_duration": None}
 _log_progress(f"Starting Stufe 1: {len(stufe1_specs)} tree-ensemble configurations.")
 for i, (name, build_fn, fit_kwargs) in enumerate(stufe1_specs, start=1):
     fitted_models[name] = run_stage(
-        name, build_fn, fit_kwargs, index=i, total=len(stufe1_specs), durations=_stufe1_durations
+        name,
+        build_fn,
+        fit_kwargs,
+        index=i,
+        total=len(stufe1_specs),
+        all_names=stufe1_names,
+        timing_state=_stufe1_timing,
     )
 _log_progress(f"Stufe 1 complete: {len(stufe1_specs)}/{len(stufe1_specs)} (100%) models trained.")
 
