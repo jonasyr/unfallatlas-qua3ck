@@ -83,6 +83,12 @@ def build_xgboost_pipeline(preprocessor) -> Pipeline:
     applied via ``sample_weight`` at ``.fit()`` time in the notebook
     (computed by ``unfallatlas.models.imbalance.balanced_sample_weight``),
     not inside this pipeline builder.
+
+    ``subsample``/``colsample_bytree`` < 1.0 (row/column subsampling per
+    boosting round) is standard anti-overfitting regularisation for gradient
+    boosting at this data volume — each of the 300 trees sees a different
+    80% slice of rows and features, reducing variance without needing a
+    validation-based early-stopping loop inside the Pipeline.
     """
     return Pipeline(
         steps=[
@@ -94,6 +100,9 @@ def build_xgboost_pipeline(preprocessor) -> Pipeline:
                         n_estimators=300,
                         max_depth=6,
                         learning_rate=0.1,
+                        subsample=0.8,
+                        colsample_bytree=0.8,
+                        reg_lambda=1.0,
                         objective="multi:softprob",
                         num_class=3,
                         random_state=42,
@@ -107,6 +116,12 @@ def build_xgboost_pipeline(preprocessor) -> Pipeline:
 
 
 def build_lightgbm_pipeline(preprocessor, class_weight: str | dict | None = "balanced") -> Pipeline:
+    """Same row/column subsampling rationale as ``build_xgboost_pipeline``.
+
+    LightGBM requires ``bagging_freq`` set alongside ``subsample`` for the
+    row-subsampling to actually take effect every boosting round (otherwise
+    ``subsample`` is silently ignored).
+    """
     return Pipeline(
         steps=[
             ("preprocess", preprocessor),
@@ -114,6 +129,10 @@ def build_lightgbm_pipeline(preprocessor, class_weight: str | dict | None = "bal
                 "classify",
                 LGBMClassifier(
                     n_estimators=300,
+                    subsample=0.8,
+                    subsample_freq=1,
+                    colsample_bytree=0.8,
+                    reg_lambda=1.0,
                     class_weight=class_weight,
                     random_state=42,
                     n_jobs=-1,
