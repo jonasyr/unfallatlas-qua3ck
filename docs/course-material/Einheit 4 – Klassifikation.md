@@ -319,7 +319,10 @@ chain_clf.fit(X_train[:2000], y_multilabel[:2000])
 # Denoising-Beispiel:
 noise = np.random.randint(0, 100, (len(X_train), 784))
 X_train_mod = X_train + noise
+noise = np.random.randint(0, 100, (len(X_test), 784))
+X_test_mod = X_test + noise
 y_train_mod = X_train  # Ziel: die sauberen Originalbilder
+y_test_mod = X_test
 
 knn_clf = KNeighborsClassifier()
 knn_clf.fit(X_train_mod, y_train_mod)
