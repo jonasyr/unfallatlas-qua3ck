@@ -168,4 +168,3 @@ executed cell, not a fabricated value.
 
 ## Key A³-Phase Findings (champion, winning strategy, final test metrics, PASS/FAIL)
 ```
-```
