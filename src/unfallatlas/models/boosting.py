@@ -45,8 +45,21 @@ class _ZeroIndexedXGBClassifier(BaseEstimator, ClassifierMixin):
 
 
 def build_random_forest_pipeline(
-    preprocessor, class_weight: str | dict | None = "balanced"
+    preprocessor,
+    class_weight: str | dict | None = "balanced",
+    max_depth: int | None = 20,
+    min_samples_leaf: int = 5,
 ) -> Pipeline:
+    """Random Forest with bounded tree size.
+
+    ``max_depth=None`` (sklearn's default) grows every tree to full purity,
+    which on ~1.6M training rows produces extremely large trees that overfit
+    (especially harmful for the ~1%-share class 1) and are prohibitively slow
+    to train. Bounding depth and minimum leaf size is standard practice at
+    this data volume and does not weaken validation macro-F1 in practice —
+    it typically improves it by preventing leaves fit to a handful of
+    training rows.
+    """
     return Pipeline(
         steps=[
             ("preprocess", preprocessor),
@@ -54,6 +67,8 @@ def build_random_forest_pipeline(
                 "classify",
                 RandomForestClassifier(
                     n_estimators=300,
+                    max_depth=max_depth,
+                    min_samples_leaf=min_samples_leaf,
                     class_weight=class_weight,
                     random_state=42,
                     n_jobs=-1,
