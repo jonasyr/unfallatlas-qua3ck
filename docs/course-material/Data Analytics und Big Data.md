@@ -59,3 +59,21 @@ dv.table(["Notes", "Description", "Date", "Status"],
 >[!summary]
 > Diese Einheit vertieft die **U-Phase** des QUA³CK-Modells: **Understanding the Data**.
 > Im Mittelpunkt steht die Frage, wie Rohdaten vor der eigentlichen Modellierung systematisch untersucht, bereinigt, visualisiert und vorbereitet werden. Genau hier entscheidet sich oft, ob ein Machine-Learning-Projekt später brauchbare Ergebnisse liefert oder nur hübsch scheitert, wie so viele digitale Hoffnungsprojekte der Menschheit.
+
+---
+## [[Einheit 3 – Die Machine-Learning-Umgebung]]
+
+>[!summary]
+> Diese Einheit legt die Begriffsgrundlage für alle folgenden ML-Kapitel: Was Machine Learning ist, welche Arten von Lernsystemen es gibt (überwacht, unüberwacht, Reinforcement, Batch/Online, instanzbasiert/modellbasiert) und warum Modelle scheitern — an schlechten Daten oder an schlechten Algorithmen (Overfitting/Underfitting).
+
+---
+## [[Einheit 4 – Klassifikation]]
+
+>[!summary]
+> Diese Einheit vertieft die **A³-Phase** anhand von Klassifikationsaufgaben auf dem MNIST-Datensatz: Konfusionsmatrix, Präzision/Sensitivität, ROC-Kurve sowie Multiklassen-, Multilabel- und Multioutput-Klassifikation. Zeigt, warum Accuracy allein selten die richtige Metrik ist.
+
+---
+## [[Einheit 5 – Trainieren von Modellen]]
+
+>[!summary]
+> Diese Einheit öffnet die "Black Box" des Modelltrainings: Normalengleichung und Gradientenverfahren (Batch/Stochastic/Mini-Batch), Regularisierung (Ridge, Lasso, Elastic Net), Early Stopping sowie logistische und Softmax-Regression.
