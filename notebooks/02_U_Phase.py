@@ -1609,8 +1609,17 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
 # historical-OSM-snapshot service, out of scope here.
 
 # %%
+import logging  # noqa: E402
+
 from unfallatlas.data.osm import GERMAN_STATES, build_spatial_features  # noqa: E402
 from unfallatlas.features.spatial import ROAD_CLASS_RANK  # noqa: E402
+
+# Enables the log.info(...) progress calls already inside download_road_network/
+# build_weather_features to actually print somewhere - without a configured
+# handler, Python's logging module stays silent by default even at INFO level.
+# force=True re-applies this even if something else already called
+# basicConfig earlier in the kernel session.
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s", force=True)
 
 RAW_DIR = BASE_DIR / "data" / "raw"
 INTERIM_DIR = BASE_DIR / "data" / "interim"

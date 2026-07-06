@@ -10,6 +10,7 @@ flagged in docs/project/PROJEKTPLAN_SETUP.md's risk log).
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 
 import geopandas as gpd
@@ -130,6 +131,14 @@ def build_spatial_features(
 
     The enriched DataFrame is cached to
     interim_cache_dir/accidents_with_weather_spatial.parquet.
+
+    Progress: prints (not just logs) a "[i/16] fetching <state>..." line
+    before each state and a "-> done in Xs (N ways)" line after, via
+    print(..., flush=True) - this shows up in a live Jupyter cell's output
+    immediately regardless of whether Python's logging module has a
+    configured handler, unlike the log.info calls in download_road_network
+    itself. Each state's per-state cache (see download_road_network) means
+    a re-run after an interruption resumes instead of restarting.
     """
     required = {"LAT", "LON"}
     missing_cols = required - set(accidents_df.columns)
@@ -147,12 +156,27 @@ def build_spatial_features(
     out_path = interim_cache_dir / "accidents_with_weather_spatial.parquet"
     if out_path.exists() and not force_refresh:
         log.info("Using cached spatially-enriched DataFrame at %s", out_path)
+        print(f"Using cached spatially-enriched DataFrame at {out_path}", flush=True)
         return pd.read_parquet(out_path)
 
     # --- Fetch + aggregate every state's road network ---
     all_cell_aggregates = []
-    for state in GERMAN_STATES:
+    total = len(GERMAN_STATES)
+    for i, state in enumerate(GERMAN_STATES, start=1):
+        state_cache_path = (
+            raw_cache_dir
+            / "osm"
+            / f"{state.lower().replace(' ', '_').replace('ü', 'ue').replace('ä', 'ae')}.parquet"
+        )
+        already_cached = state_cache_path.exists() and not force_refresh
+        status = (
+            "cached" if already_cached else "fetching from OSM (can take a while for large states)"
+        )
+        print(f"[{i}/{total}] {state}: {status}...", flush=True)
+        start = time.time()
         roads = download_road_network(state, raw_cache_dir / "osm", force_refresh=force_refresh)
+        elapsed = time.time() - start
+        print(f"  -> {state} done in {elapsed:.1f}s ({len(roads):,} ways)", flush=True)
         all_cell_aggregates.append(aggregate_roads_to_h3(roads, resolution=resolution))
     cell_features = pd.concat(all_cell_aggregates, ignore_index=True)
     # A cell straddling a state boundary query could appear in two states'
@@ -170,4 +194,5 @@ def build_spatial_features(
 
     df.to_parquet(out_path, index=False)
     log.info("Saved spatially-enriched DataFrame → %s (%d rows)", out_path, len(df))
+    print(f"Saved spatially-enriched DataFrame -> {out_path} ({len(df):,} rows)", flush=True)
     return df
