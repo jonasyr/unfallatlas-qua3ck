@@ -14,6 +14,7 @@ Thumbs.db
 reports/figures/*
 !reports/figures/.gitkeep
 reports/a3_progress.log
+reports/u_phase_osm_progress.log
 
 # A3 per-model checkpoints (resume cache, not a deliverable)
 data/processed/a3_checkpoints/

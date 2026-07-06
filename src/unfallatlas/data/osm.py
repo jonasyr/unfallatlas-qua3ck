@@ -102,6 +102,26 @@ def download_road_network(
     [osmid, highway, maxspeed, oneway, reversed, length, geometry], no
     tag explosion.
 
+    simplify=True (NOT simplify=False, the original implementation) -
+    root-caused via journalctl evidence after the tag-explosion fix above
+    still crashed silently ~10 minutes in, every time: the Linux OOM
+    killer was killing the process (confirmed: "Out of memory: Killed
+    process ... anon-rss:27643136kB" - a SIGKILL that Python can never
+    catch or log, which is why no traceback ever appeared). Root cause:
+    simplify=False keeps every raw OSM shape-point as its own NetworkX
+    graph node - for a whole Bundesland (Baden-Württemberg: 12.1M nodes,
+    2.01M ways with simplify=False) this is enormous. Verified
+    empirically (Frankfurt am Main, same query/filter): simplify=False
+    gave 131,045 nodes / 280,962 edges / 654MB RSS; simplify=True gave
+    31,780 nodes / 82,540 edges / 50.5MB RSS - a 13x memory reduction,
+    same underlying road geometry (osmnx's simplification consolidates
+    chains of pass-through nodes into single edges but keeps their full
+    detailed LineString shape, so aggregate_roads_to_h3's per-vertex H3
+    assignment is unaffected). One semantic change: osm_way_count now
+    counts simplified topological segments, not raw OSM way IDs, when
+    several ways get merged into one edge - arguably a more meaningful
+    "distinct road" complexity signal, not a defect.
+
     ox.settings.log_file = True (NOT log_console) surfaces osmnx's own
     internal progress messages (request/pause/download timing, sub-query
     counts, node/edge counts) - large states get subdivided into many
@@ -133,7 +153,7 @@ def download_road_network(
     highway_filter = "|".join(sorted(_VEHICLE_HIGHWAY_VALUES))
     custom_filter = f'["highway"~"^({highway_filter})$"]'
     graph = ox.graph_from_place(
-        f"{state}, Germany", custom_filter=custom_filter, simplify=False, retain_all=True
+        f"{state}, Germany", custom_filter=custom_filter, simplify=True, retain_all=True
     )
     edges = ox.graph_to_gdfs(graph, nodes=False, edges=True).reset_index(drop=True)
     if "maxspeed" not in edges.columns:
@@ -170,13 +190,22 @@ def build_spatial_features(
     The enriched DataFrame is cached to
     interim_cache_dir/accidents_with_weather_spatial.parquet.
 
-    Progress: prints (not just logs) a "[i/16] fetching <state>..." line
-    before each state and a "-> done in Xs (N ways)" line after, via
-    print(..., flush=True) - this shows up in a live Jupyter cell's output
-    immediately regardless of whether Python's logging module has a
-    configured handler, unlike the log.info calls in download_road_network
-    itself. Each state's per-state cache (see download_road_network) means
-    a re-run after an interruption resumes instead of restarting.
+    Progress: logs (via log.info, NOT print) a "[i/16] fetching <state>..."
+    line before each state and a "-> done in Xs (N ways)" line after.
+    Deliberately NOT print() - confirmed empirically that neither print()
+    nor any logging handler writing to sys.stdout/sys.__stdout__ (including
+    osmnx's own log_console) is visible when this runs under
+    `jupyter nbconvert --execute`: nbconvert captures each cell's stdout
+    into the notebook's own cell-output JSON, not into nbconvert's own
+    process-level stdout stream - so redirecting nbconvert's stdout to a
+    file (`nbconvert ... > file.log`) never receives it, confirmed with a
+    minimal reproduction. This only ever worked when watching a live
+    Jupyter kernel (e.g. VSCode's interactive window), which renders cell
+    output directly. log.info() itself is unaffected by this - it's real
+    behavior depends entirely on which handlers are attached to the
+    logger, so callers (the notebook) must attach a logging.FileHandler
+    (direct OS-level file write, immune to nbconvert's stdout capture) if
+    they need progress visibility under nbconvert specifically.
     """
     required = {"LAT", "LON"}
     missing_cols = required - set(accidents_df.columns)
@@ -194,7 +223,6 @@ def build_spatial_features(
     out_path = interim_cache_dir / "accidents_with_weather_spatial.parquet"
     if out_path.exists() and not force_refresh:
         log.info("Using cached spatially-enriched DataFrame at %s", out_path)
-        print(f"Using cached spatially-enriched DataFrame at {out_path}", flush=True)
         return pd.read_parquet(out_path)
 
     # --- Fetch + aggregate every state's road network ---
@@ -210,11 +238,11 @@ def build_spatial_features(
         status = (
             "cached" if already_cached else "fetching from OSM (can take a while for large states)"
         )
-        print(f"[{i}/{total}] {state}: {status}...", flush=True)
+        log.info("[%d/%d] %s: %s...", i, total, state, status)
         start = time.time()
         roads = download_road_network(state, raw_cache_dir / "osm", force_refresh=force_refresh)
         elapsed = time.time() - start
-        print(f"  -> {state} done in {elapsed:.1f}s ({len(roads):,} ways)", flush=True)
+        log.info("  -> %s done in %.1fs (%d ways)", state, elapsed, len(roads))
         all_cell_aggregates.append(aggregate_roads_to_h3(roads, resolution=resolution))
     cell_features = pd.concat(all_cell_aggregates, ignore_index=True)
     # A cell straddling a state boundary query could appear in two states'
@@ -232,5 +260,4 @@ def build_spatial_features(
 
     df.to_parquet(out_path, index=False)
     log.info("Saved spatially-enriched DataFrame → %s (%d rows)", out_path, len(df))
-    print(f"Saved spatially-enriched DataFrame -> {out_path} ({len(df):,} rows)", flush=True)
     return df

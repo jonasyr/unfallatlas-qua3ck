@@ -1616,21 +1616,35 @@ from unfallatlas.data.osm import GERMAN_STATES, build_spatial_features  # noqa: 
 from unfallatlas.features.spatial import ROAD_CLASS_RANK  # noqa: E402
 
 # Enables the log.info(...) progress calls already inside download_road_network/
-# build_weather_features to actually print somewhere - without a configured
-# handler, Python's logging module stays silent by default even at INFO level.
-# stream=sys.stdout (not the logging default of sys.stderr) keeps this in the
-# same output stream as the notebook's own print() progress lines, and both
-# are captured by Jupyter's cell output the normal way - unlike
-# osmnx's own ox.settings.log_console, which deliberately bypasses Jupyter's
-# stdout capture (writes to sys.__stdout__ directly, "in case Jupyter has
-# captured stdout" - by design, that never reaches a Jupyter cell's rendered
-# output). ox.settings.log_file=True (set in download_road_network) routes
-# osmnx's internal progress messages through the standard logging module
-# instead, which propagates to this handler normally.
+# build_weather_features to actually show up somewhere. Two handlers, for two
+# different execution contexts:
+#   - StreamHandler(sys.stdout): visible live in a real Jupyter kernel
+#     (e.g. VSCode's interactive window), which renders cell stdout directly.
+#   - FileHandler(PROGRESS_LOG): confirmed empirically REQUIRED for
+#     `jupyter nbconvert --execute` - nbconvert captures each cell's stdout
+#     into the notebook's own cell-output JSON, not into nbconvert's own
+#     process-level stdout stream, so redirecting nbconvert's stdout to a
+#     file (`nbconvert ... > file.log`) never receives it (reproduced with
+#     a minimal test notebook). A FileHandler does a direct OS-level write,
+#     bypassing stdout/stdout-capture entirely, so it works the same way
+#     regardless of which of the two ways this notebook gets executed.
+# osmnx's own ox.settings.log_console was tried first and confirmed NOT to
+# work in EITHER context: it deliberately writes to sys.__stdout__ ("print
+# explicitly to terminal in case Jupyter has captured stdout"), bypassing
+# Jupyter's stdout capture entirely, by design - so it never reaches a
+# Jupyter cell's rendered output. ox.settings.log_file=True (set in
+# download_road_network) routes osmnx's internal progress messages through
+# the standard logging module instead, which propagates to both handlers
+# below the normal way.
 # force=True re-applies this even if something else already called
 # basicConfig earlier in the kernel session.
+PROGRESS_LOG = BASE_DIR / "reports" / "u_phase_osm_progress.log"
+PROGRESS_LOG.parent.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s", stream=sys.stdout, force=True
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler(PROGRESS_LOG)],
+    force=True,
 )
 
 RAW_DIR = BASE_DIR / "data" / "raw"
@@ -1639,6 +1653,7 @@ INTERIM_DIR = BASE_DIR / "data" / "interim"
 print(
     f"Fetching OSM road networks for {len(GERMAN_STATES)} states (uses per-state cache if present)..."
 )
+print(f"Progress log (works under nbconvert too): {PROGRESS_LOG}")
 df_spatial = build_spatial_features(df_weather, RAW_DIR, INTERIM_DIR, resolution=8)
 print(f"Spatially-enriched frame: {len(df_spatial):,} rows, {df_spatial.shape[1]} columns")
 
