@@ -721,6 +721,27 @@ comparison_df = pd.DataFrame(comparison_rows)
 comparison_df.sort_values("macro_f1", ascending=False)
 
 
+# NOTE (hotfix, discovered during live execution): the balanced branch
+# below must rebuild a FRESH, unfitted pipeline from its builder function -
+# it must NOT clone(candidate_pipelines[family]), which clones an already-
+# FITTED estimator. That worked by accident for Random Forest in an earlier
+# iteration of this notebook (RandomForestClassifier's get_params()/
+# constructor happen to round-trip cleanly), but CatBoostClassifier's fitted
+# `class_weights` does not round-trip through sklearn's clone() the same way
+# once fitted, and raises "RuntimeError: Cannot clone object ..., as the
+# constructor either does not set or modifies parameter class_weights".
+# Rebuilding from the same builder used in Stufe 1 (§4) avoids relying on
+# clone()'s fragile fitted-estimator support entirely.
+balanced_builder = {
+    "catboost": lambda pre, **kw: build_catboost_pipeline(
+        pre, class_weights=catboost_weights, use_gpu=_use_gpu_resolved, **kw
+    ),
+    "lightgbm": lambda pre, **kw: build_lightgbm_pipeline(
+        pre, class_weight="balanced", use_gpu=_use_gpu_resolved, **kw
+    ),
+}
+
+
 def _build_pipeline_for(family: str, strategy_model_name: str):
     """Unfitted pipeline matching the given (family, strategy) combination -
     NOT unweighted_builder's always-unweighted baseline, which exists only
@@ -728,12 +749,12 @@ def _build_pipeline_for(family: str, strategy_model_name: str):
     unweighted opponent in the §6 comparison above. Tuning/refitting the
     unweighted builder directly here would silently retune the wrong
     configuration regardless of which strategy actually won - e.g. if the
-    plain balanced classifier (`candidate_pipelines[family]`) beat every
+    plain balanced classifier (`{family}_balanced`) beat every
     resampling/ordinal treatment, §7/§8 must tune and refit *that*, not
     the unweighted variant.
     """
     if strategy_model_name == candidate_names[family]:
-        return clone(candidate_pipelines[family])
+        return balanced_builder[family](tree_preprocessor)
     if strategy_model_name == f"{family}_unweighted":
         return unweighted_builder[family](tree_preprocessor)
     raise NotImplementedError(
