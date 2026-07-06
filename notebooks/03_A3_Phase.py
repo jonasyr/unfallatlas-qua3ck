@@ -898,24 +898,40 @@ for family in candidate_families:
 # split — the single time this notebook touches the test set.
 
 # %%
-# TODO(Task 5): this §8 refit/eval cell still references the pre-pivot
-# champion_family/_build_winning_pipeline single-champion variables
-# removed in §6's rewrite (Task 3) - it is superseded by a per-family
-# cross-family selection + single refit and will be replaced wholesale by
-# Task 5. The lint suppressions below are a deliberate, temporary bridge
-# between Task 3's commit and Task 5's, not a fix.
-_log_progress("Refitting tuned configuration on the FULL 2016-2022 training set...")
-best_params = {f"classify__{k}": v for k, v in study.best_params.items()}
-if champion_family == "xgboost":  # noqa: F821
-    best_params = {
-        k.replace("classify__", "classify__estimator__", 1): v for k, v in best_params.items()
-    }
+# Pick the final cross-family winner using each family's TUNED CV scores
+# (not a second full-data validation refit for both candidates - that
+# would roughly double the expensive full-refit cost just to compare two
+# candidates, for a comparison that CV, using year-grouped folds, already
+# answers with acceptable noise for this purpose).
+family_comparison = pd.DataFrame(
+    [
+        {"model": family, "macro_f1": v["cv_macro_f1"], "recall_class_1": v["cv_recall_class_1"]}
+        for family, v in tuned_candidates.items()
+    ]
+)
+final_row = select_best_candidate(family_comparison)
+final_family = final_row["model"]
+_log_progress(
+    f"Final champion (post-tuning, gate-aware selection across families): {final_family}  "
+    f"CV macro-F1={final_row['macro_f1']:.3f}  CV recall(1)={final_row['recall_class_1']:.3f}"
+)
+print(f"Final champion: {final_family}")
+family_comparison.sort_values("macro_f1", ascending=False)
+
+# %%
+_log_progress(
+    f"Refitting {final_family}'s tuned configuration on the FULL 2016-2022 training set..."
+)
+final_winning_strategy_name = winning_strategy_per_family[final_family]["model"]
+final_best_params = {
+    f"classify__{k}": v for k, v in tuned_candidates[final_family]["best_params"].items()
+}
 
 final_pipeline = _load_or_fit(
-    f"{champion_family}_final_tuned",  # noqa: F821
+    f"{final_family}_final_tuned",
     lambda: (
-        _build_winning_pipeline(tree_preprocessor)  # noqa: F821
-        .set_params(**best_params)
+        _build_pipeline_for(final_family, final_winning_strategy_name)
+        .set_params(**final_best_params)
         .fit(X_train, y_train)
     ),
 )
@@ -925,10 +941,11 @@ final_metrics = evaluate_predictions(y_test, test_preds)
 passes = meets_acceptance_criteria(final_metrics)
 
 _log_progress(
-    f"FINAL TEST-2024: macro-F1={final_metrics['macro_f1']:.3f} recall(1)={final_metrics['recall_class_1']:.3f} "
-    f"gate={'PASS' if passes else 'FAIL'}"
+    f"FINAL TEST-2024 ({final_family}): macro-F1={final_metrics['macro_f1']:.3f} "
+    f"recall(1)={final_metrics['recall_class_1']:.3f} gate={'PASS' if passes else 'FAIL'}"
 )
 print("=== FINAL TEST-2024 EVALUATION ===")
+print(f"Champion family: {final_family}")
 print(f"macro-F1:        {final_metrics['macro_f1']:.3f}  (threshold >= 0.55)")
 print(f"recall(class 1): {final_metrics['recall_class_1']:.3f}  (threshold >= 0.50)")
 print(f"Q-phase acceptance gate: {'PASS' if passes else 'FAIL'}")
@@ -942,19 +959,23 @@ print(np.array(final_metrics["confusion_matrix"]))
 model_path = PROCESSED_DIR / "a3_best_model.joblib"
 joblib.dump(final_pipeline, model_path)
 
-# TODO(Task 5): champion_family/winning_strategy_row are pre-pivot
-# single-champion variables removed in §6's rewrite (Task 3) - superseded
-# by a per-family model card and will be replaced wholesale by Task 5.
 model_card = {
-    "champion_family": champion_family,  # noqa: F821
-    "winning_strategy": winning_strategy_row["model"],  # noqa: F821
-    "tuned_hyperparameters": study.best_params,
+    "champion_family": final_family,
+    "winning_strategy": final_winning_strategy_name,
+    "candidate_families_considered": candidate_families,
+    "selection_rule": "highest macro-F1 among candidates with recall(class_1) >= 0.50; "
+    "falls back to highest (macro_f1 + recall_class_1) / 2 if none clear the gate",
+    "per_family_untuned_comparison": {
+        family: winning_strategy_per_family[family].to_dict() for family in candidate_families
+    },
+    "per_family_tuned_cv_scores": tuned_candidates,
+    "tuned_hyperparameters": tuned_candidates[final_family]["best_params"],
     "test_2024_metrics": final_metrics,
     "acceptance_gate_passed": passes,
     "provenance": provenance,
 }
 card_path = PROCESSED_DIR / "a3_model_card.json"
-card_path.write_text(json.dumps(model_card, indent=2))
+card_path.write_text(json.dumps(model_card, indent=2, default=str))
 model_size_mb = model_path.stat().st_size / 1_048_576
 _log_progress(f"Saved {model_path.name} ({model_size_mb:.1f} MB) and {card_path.name}.")
 print(f"Saved: {model_path} ({model_size_mb:.1f} MB)")
@@ -965,9 +986,11 @@ print(f"Saved: {card_path}")
 #
 # ### Model-comparison table (central portfolio artefact)
 #
-# See §5 and §6 above — 8 baseline/tree configurations + 4 imbalance
-# strategies on the champion + 1 tuned final configuration, all scored on
-# the 2023 validation split, with exactly one test-2024 evaluation.
+# See §5 and §6 above — 8 baseline/tree configurations + up to 8 imbalance
+# strategies (4 per candidate family: CatBoost, LightGBM) + 2 tuned final
+# configurations, all scored on the 2023 validation split (Optuna tuning
+# additionally cross-validated on the training subsample), with exactly
+# one test-2024 evaluation for the final cross-family winner.
 #
 # ### A³-phase acceptance checklist
 #
@@ -975,11 +998,15 @@ print(f"Saved: {card_path}")
 # [ ] U-phase §10 preprocessing implemented as a single sklearn Pipeline
 # [ ] Baselines (random guess, majority class, logistic regression) scored
 # [ ] 4 tree families x {default, class-weighted} scored on validation
-# [ ] Champion selected by validation macro-F1
+# [ ] Champion candidates (CatBoost, LightGBM) selected by a recall-gate-
+#     aware rule, not macro-F1 alone (Random Forest's macro-F1 "win" had
+#     recall(class 1)=0.229, far below the Q-phase gate)
 # [ ] SMOTE / ADASYN / threshold moving / ordinal classification compared
-#     on the champion only
-# [ ] Winning (model, strategy) combination tuned with Optuna (<= 40 trials)
-# [ ] Tuned configuration refit on the FULL 2016-2022 training set
+#     on both candidate families
+# [ ] Each family's winning (model, strategy) combination tuned with
+#     Optuna (<= 9 trials per family, 18 total)
+# [ ] Final cross-family champion selected by the same recall-gate-aware
+#     rule, then refit on the FULL 2016-2022 training set
 # [ ] Exactly one evaluation on the 2024 test set
 # [ ] PASS/FAIL stated explicitly against macro-F1 >= 0.55 and recall(1) >= 0.50
 # [ ] Winning pipeline + model card saved to data/processed/
