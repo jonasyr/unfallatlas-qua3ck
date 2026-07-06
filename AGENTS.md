@@ -53,12 +53,12 @@ unfallatlas-qua3ck/
 ├── notebooks/              # QUA³CK phase notebooks (source of truth)
 │   ├── 01_Q_Phase.ipynb    # Research question & hypotheses (done)
 │   ├── 02_U_Phase.ipynb    # EDA & feature engineering (in progress)
-│   ├── 03_A3_Phase.ipynb   # Modelling & tuning (TODO)
+│   ├── 03_A3_Phase.ipynb   # Modelling & tuning (done)
 │   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO)
 ├── src/unfallatlas/        # Reusable production library
 │   ├── data/               # download.py, dwd.py (weather), osm.py
-│   ├── features/           # enrich.py, spatial.py, temporal.py
-│   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py
+│   ├── features/           # enrich.py, spatial.py, temporal.py, preprocessing.py
+│   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py
 │   └── viz/                # geo.py, shap_plots.py, streamlit_app.py
 ├── app/                    # Streamlit demo entry point
 ├── data/

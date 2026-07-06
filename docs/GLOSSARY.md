@@ -190,6 +190,21 @@ A sklearn preprocessing step that transforms a numeric feature to zero mean and 
 **sklearn Pipeline**
 A `sklearn.pipeline.Pipeline` chains preprocessing steps and a model estimator into a single object. All `fit`-based preprocessing steps (StandardScaler, target encoding, imputation statistics) are fitted only on the training fold and then applied to val/test — preventing train-test contamination. A³ wraps all preprocessing in a Pipeline so the U-phase preprocessing decisions are never accidentally applied globally.
 
+**Threshold Moving**
+Adjusting the decision threshold for a specific class's predicted probability after training, instead of relying on the default arg-max rule. Used in A³ to raise recall on class 1 (Getötet) without retraining the model.
+
+**Ordinal Classification (Frank–Hall decomposition)**
+Decomposes a K-class ordinal target into K−1 binary "is y greater than threshold i" classifiers, then recovers per-class probabilities by differencing consecutive cumulative probabilities. Exploits the natural ordering of `UKATGEORIE` (1 < 2 < 3) rather than treating the classes as unordered categories.
+
+**Optuna**
+A hyperparameter-optimisation library using sequential model-based search (TPE — Tree-structured Parzen Estimator — by default). Used in A³ to tune the winning (model, imbalance-strategy) combination of each champion candidate, bounded to a fixed trial count per family to respect the project's single-workstation compute budget.
+
+**GroupKFold**
+A cross-validation splitter that guarantees all rows sharing a group value (here: `UJAHR`, the accident year) fall in the same fold. Used instead of a random `StratifiedKFold` to prevent a model from training and validating on the same year, which would leak temporal structure during model selection.
+
+**Champion candidates**
+The (model, configuration) combinations carried forward from Stufe 0/1 into the imbalance-strategy comparison and hyperparameter tuning. Selected by `select_best_candidate()`: highest validation macro-F1 among candidates that clear the recall(class 1) ≥ 0.50 gate, not by macro-F1 alone — Random Forest had the single highest raw macro-F1 among the 8 Stufe-1 configurations but recall(class 1) far below the gate, so CatBoost and LightGBM (which cleared the gate untuned) were carried forward instead.
+
 ---
 
 ## Process Model
