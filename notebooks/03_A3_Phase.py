@@ -721,17 +721,27 @@ comparison_df = pd.DataFrame(comparison_rows)
 comparison_df.sort_values("macro_f1", ascending=False)
 
 
-# NOTE (hotfix, discovered during live execution): the balanced branch
-# below must rebuild a FRESH, unfitted pipeline from its builder function -
-# it must NOT clone(candidate_pipelines[family]), which clones an already-
-# FITTED estimator. That worked by accident for Random Forest in an earlier
-# iteration of this notebook (RandomForestClassifier's get_params()/
-# constructor happen to round-trip cleanly), but CatBoostClassifier's fitted
-# `class_weights` does not round-trip through sklearn's clone() the same way
-# once fitted, and raises "RuntimeError: Cannot clone object ..., as the
-# constructor either does not set or modifies parameter class_weights".
-# Rebuilding from the same builder used in Stufe 1 (§4) avoids relying on
-# clone()'s fragile fitted-estimator support entirely.
+# NOTE (hotfix, discovered during live execution, diagnosis corrected
+# after a second failure - see §7's objective() for the full root cause):
+# the balanced branch below must rebuild a FRESH pipeline from its builder
+# function - it must NOT clone(candidate_pipelines[family]).
+#
+# CORRECTED diagnosis: this is NOT about fitted-vs-unfitted state (an
+# earlier version of this comment wrongly assumed that, and the "rebuild
+# fresh" fix alone did not resolve the crash on retry). Verified
+# empirically: sklearn's clone() can NEVER succeed on a CatBoostClassifier
+# configured with a non-None `class_weights` (list or dict, numpy or plain
+# floats) - CatBoost's own __init__/get_params() never preserves the exact
+# object identity of that parameter, which unconditionally fails sklearn's
+# clone() safety check ("Cannot clone object ..., as the constructor
+# either does not set or modifies parameter class_weights"), regardless of
+# fit state - reproduces identically on a brand-new, never-fitted
+# CatBoostClassifier(class_weights=[...]).
+#
+# Building fresh here (instead of clone()-ing a fitted Stufe-1 model)
+# is still correct and necessary, but the REAL fix for the crash is in
+# §7's objective(), which must never clone() this pipeline either -
+# see the hotfix #2 comment there.
 balanced_builder = {
     "catboost": lambda pre, **kw: build_catboost_pipeline(
         pre, class_weights=catboost_weights, use_gpu=_use_gpu_resolved, **kw
@@ -836,11 +846,26 @@ tuned_candidates: dict[str, dict] = {}
 
 for family in candidate_families:
     winning_strategy_name = winning_strategy_per_family[family]["model"]
-    base_pipeline = _build_pipeline_for(family, winning_strategy_name)
 
-    def objective(trial: optuna.Trial, family=family, base_pipeline=base_pipeline) -> float:
+    # NOTE (hotfix #2, discovered during live execution): do NOT clone() a
+    # pre-built pipeline here. Verified empirically: sklearn's clone() can
+    # NEVER succeed on a CatBoostClassifier configured with a non-None
+    # class_weights (list or dict, numpy or plain floats) - CatBoost's own
+    # __init__/get_params() never preserves the exact object identity of
+    # that parameter, which unconditionally fails sklearn's clone() safety
+    # check ("Cannot clone object ..., as the constructor either does not
+    # set or modifies parameter class_weights"), regardless of fit state.
+    # This is NOT about fitted-vs-unfitted (a prior hotfix wrongly assumed
+    # that) - it reproduces identically on a brand-new, never-fitted
+    # CatBoostClassifier(class_weights=[...]). The only reliable fix is to
+    # never call clone() on this pipeline at all: rebuild it fresh from
+    # _build_pipeline_for() inside objective() on every trial call instead
+    # of cloning a single pre-built base_pipeline.
+    def objective(
+        trial: optuna.Trial, family=family, winning_strategy_name=winning_strategy_name
+    ) -> float:
         params = PARAM_SPACES[family](trial)
-        pipeline = clone(base_pipeline).set_params(**params)
+        pipeline = _build_pipeline_for(family, winning_strategy_name).set_params(**params)
         cv_results = cross_validate(
             pipeline,
             X_train_sub,
