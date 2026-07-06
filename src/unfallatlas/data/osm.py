@@ -83,10 +83,24 @@ def download_road_network(
     """Fetch and cache OSM road ways (as a GeoDataFrame) for one German state.
 
     Returns a GeoDataFrame with columns [highway, maxspeed, geometry],
-    filtered to vehicle-relevant road types via _clean_road_gdf. Uses
-    osmnx.features.features_from_place rather than osmnx.graph_from_place -
-    this only needs road attributes for aggregation, not a routable graph,
-    which avoids osmnx's (expensive) graph-consolidation step entirely.
+    filtered to vehicle-relevant road types via _clean_road_gdf.
+
+    Uses osmnx.graph_from_place with an explicit custom_filter matching
+    _VEHICLE_HIGHWAY_VALUES exactly, NOT osmnx.features.features_from_place
+    (the original implementation) - features_from_place returns every raw
+    OSM tag as its own DataFrame column with no way to restrict this, and
+    for a query as large as a whole Bundesland this produced a GeoDataFrame
+    with 3,400+ columns (every tag key seen anywhere in the result:
+    addr:*, name:*, wikidata, opening_hours, ...) across millions of rows
+    (it also matches highway-tagged NODES like traffic_signals/crossings/
+    bus_stops, not just ways) - confirmed empirically to raise MemoryError
+    trying to allocate ~79 GiB for one state (Baden-Württemberg).
+    graph_from_place, by contrast, respects ox.settings.useful_tags_way to
+    limit columns to just what we need, and custom_filter restricts the
+    Overpass query itself to way-level highway values only - verified
+    empirically on a small test area to return exactly
+    [osmid, highway, maxspeed, oneway, reversed, length, geometry], no
+    tag explosion.
     """
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -98,9 +112,16 @@ def download_road_network(
         return gpd.read_parquet(cache_path)
 
     log.info("Fetching OSM road network for %s (this can take a few minutes)...", state)
-    raw = ox.features.features_from_place(f"{state}, Germany", tags={"highway": True})
-    raw = raw[raw.geom_type.isin(["LineString", "MultiLineString"])]
-    cleaned = _clean_road_gdf(raw[["highway", "maxspeed", "geometry"]])
+    ox.settings.useful_tags_way = ["highway", "maxspeed"]
+    highway_filter = "|".join(sorted(_VEHICLE_HIGHWAY_VALUES))
+    custom_filter = f'["highway"~"^({highway_filter})$"]'
+    graph = ox.graph_from_place(
+        f"{state}, Germany", custom_filter=custom_filter, simplify=False, retain_all=True
+    )
+    edges = ox.graph_to_gdfs(graph, nodes=False, edges=True).reset_index(drop=True)
+    if "maxspeed" not in edges.columns:
+        edges["maxspeed"] = None
+    cleaned = _clean_road_gdf(edges[["highway", "maxspeed", "geometry"]])
 
     cleaned.to_parquet(cache_path)
     log.info("Cached %s road network → %s (%d ways)", state, cache_path, len(cleaned))
