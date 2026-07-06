@@ -1610,6 +1610,7 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
 
 # %%
 import logging  # noqa: E402
+import sys  # noqa: E402
 
 from unfallatlas.data.osm import GERMAN_STATES, build_spatial_features  # noqa: E402
 from unfallatlas.features.spatial import ROAD_CLASS_RANK  # noqa: E402
@@ -1617,9 +1618,20 @@ from unfallatlas.features.spatial import ROAD_CLASS_RANK  # noqa: E402
 # Enables the log.info(...) progress calls already inside download_road_network/
 # build_weather_features to actually print somewhere - without a configured
 # handler, Python's logging module stays silent by default even at INFO level.
+# stream=sys.stdout (not the logging default of sys.stderr) keeps this in the
+# same output stream as the notebook's own print() progress lines, and both
+# are captured by Jupyter's cell output the normal way - unlike
+# osmnx's own ox.settings.log_console, which deliberately bypasses Jupyter's
+# stdout capture (writes to sys.__stdout__ directly, "in case Jupyter has
+# captured stdout" - by design, that never reaches a Jupyter cell's rendered
+# output). ox.settings.log_file=True (set in download_road_network) routes
+# osmnx's internal progress messages through the standard logging module
+# instead, which propagates to this handler normally.
 # force=True re-applies this even if something else already called
 # basicConfig earlier in the kernel session.
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s", force=True)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s", stream=sys.stdout, force=True
+)
 
 RAW_DIR = BASE_DIR / "data" / "raw"
 INTERIM_DIR = BASE_DIR / "data" / "interim"

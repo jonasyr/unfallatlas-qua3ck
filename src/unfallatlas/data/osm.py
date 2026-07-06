@@ -102,13 +102,21 @@ def download_road_network(
     [osmid, highway, maxspeed, oneway, reversed, length, geometry], no
     tag explosion.
 
-    ox.settings.log_console = True surfaces osmnx's own internal progress
-    messages (request/pause/download timing, sub-query counts, node/edge
-    counts) directly to the console - large states get subdivided into
-    many Overpass sub-queries internally (osmnx handles this transparently,
-    not exposed as a parameter we control), and without this setting there
-    is no visible signal at all between "[i/16] state: fetching..." and
-    "-> done" for however long that takes.
+    ox.settings.log_file = True (NOT log_console) surfaces osmnx's own
+    internal progress messages (request/pause/download timing, sub-query
+    counts, node/edge counts) - large states get subdivided into many
+    Overpass sub-queries internally by osmnx, invisible otherwise for
+    however long that takes. log_console was tried first and confirmed
+    NOT to work here: reading osmnx's own source (utils.py's log()
+    function), log_console deliberately writes to sys.__stdout__ ("print
+    explicitly to terminal in case Jupyter has captured stdout") -
+    designed to bypass Jupyter's stdout capture for real terminal use,
+    which means it never reaches a Jupyter cell's rendered output at all.
+    log_file routes through a standard logging.Logger("OSMnx") instead,
+    which propagates to the root logger's handler (configured via
+    logging.basicConfig in the notebook) the normal way - verified
+    empirically that this actually shows up in a live query, unlike
+    log_console.
     """
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -121,7 +129,7 @@ def download_road_network(
 
     log.info("Fetching OSM road network for %s (this can take a few minutes)...", state)
     ox.settings.useful_tags_way = ["highway", "maxspeed"]
-    ox.settings.log_console = True
+    ox.settings.log_file = True
     highway_filter = "|".join(sorted(_VEHICLE_HIGHWAY_VALUES))
     custom_filter = f'["highway"~"^({highway_filter})$"]'
     graph = ox.graph_from_place(
