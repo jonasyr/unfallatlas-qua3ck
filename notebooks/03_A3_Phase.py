@@ -61,7 +61,8 @@ import plotly.express as px
 import plotly.io as pio
 from sklearn.base import clone
 from sklearn.impute import SimpleImputer
-from sklearn.model_selection import GroupKFold, cross_val_score
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import GroupKFold, cross_validate
 
 from unfallatlas.features.preprocessing import (
     build_preprocessor,
@@ -84,6 +85,7 @@ from unfallatlas.models.boosting import (
 from unfallatlas.models.evaluate import (
     evaluate_predictions,
     meets_acceptance_criteria,
+    recall_for_class,
     select_best_candidate,
 )
 from unfallatlas.models.imbalance import (
@@ -743,123 +745,150 @@ def _build_pipeline_for(family: str, strategy_model_name: str):
 
 
 # %% [markdown]
-# ## 7 — Hyperparameter tuning (Optuna, winning combination only)
+# ## 7 — Hyperparameter tuning (Optuna, per candidate family)
 #
-# Bounded to 40 trials on the same subsample, optimising mean validation
-# macro-F1 across the year-grouped folds from §2. Only the single winning
-# (model, strategy) combination from §6 is tuned — not every configuration
-# trained so far (Q-phase §9 compute-budget constraint).
+# Each candidate family's winning (model, strategy) combination from §6 is
+# tuned **separately**: 9 trials for `catboost` and 9 trials for `lightgbm`
+# (18 total — the same overall budget as tuning a single family at 40/18
+# trials would have used, just split evenly across both surviving
+# candidates instead of collapsing them into one champion before tuning).
 #
-# **GPU reminder.** `objective()` below calls `build_champion(tree_preprocessor)`
-# once per trial per fold (`n_trials x n_groups_sub` fits total) — by far the
-# most fit-heavy loop in this notebook. `champion_builder` (§6) already
-# threads `_use_gpu_resolved` into every XGBoost/LightGBM/CatBoost call, so
-# this loop runs on GPU automatically whenever `USE_GPU` resolves to `True`.
+# Each trial's mean CV macro-F1 remains the TPE sampler's single
+# optimisation objective (unchanged direction), but every trial's mean CV
+# recall(class 1) is also recorded via `trial.set_user_attr` — so, once a
+# family's study finishes, `select_best_candidate` (not Optuna's own
+# `study.best_trial`, which only ever tracked macro-F1) picks that family's
+# best trial the same recall-gate-aware way §5/§6 already pick between
+# configurations. This avoids the two studies drifting to hyperparameters
+# that trade away recall(1) for a marginally higher macro-F1.
 #
-# **Parameter-routing note.** XGBoost's classify step is wrapped by
-# `_ZeroIndexedXGBClassifier` (label-safety fix, see `src/unfallatlas/models/boosting.py`),
-# which only exposes `estimator` as its own constructor parameter — so tuning
-# its nested `XGBClassifier` requires `classify__estimator__<param>`, not
-# `classify__<param>` (verified empirically; the latter raises
-# `ValueError: Invalid parameter`). Random Forest/LightGBM/CatBoost have no
-# such wrapper, so `classify__<param>` is correct for those three.
+# **GPU reminder.** `objective()` below calls `_build_pipeline_for(family, ...)`
+# once per trial per fold (`n_trials_per_family x n_groups_sub` fits total,
+# per family) — by far the most fit-heavy loop in this notebook.
+# `_build_pipeline_for` (§6) already threads `_use_gpu_resolved` into every
+# LightGBM/CatBoost call, so this loop runs on GPU automatically whenever
+# `USE_GPU` resolves to `True`.
 #
-# The study is persisted to a SQLite file under the same commit-scoped
-# `CHECKPOINT_DIR` used throughout this notebook, so a crash mid-tuning
-# resumes from the last completed trial instead of restarting all 40.
+# Each family's study is persisted to its own `study_name` inside the same
+# commit-scoped SQLite file (`CHECKPOINT_DIR / "optuna_study.db"`), so a
+# crash mid-tuning resumes each family from its own last completed trial
+# instead of restarting either family's 9 trials — and so the two families'
+# differing search spaces never collide inside one shared, resumed study.
 
 # %%
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-N_TRIALS = 18
+N_TRIALS_PER_FAMILY = 9  # 2 families x 9 = 18 total, same budget as the single-family run
 
+# Both spaces include at least one regularisation-relevant parameter
+# (l2_leaf_reg / reg_lambda, min_child_samples) in addition to capacity
+# parameters (depth, leaves, estimators) - tuning capacity alone without
+# any regularisation knob risks the search drifting toward overfit
+# configurations in pursuit of subsample CV macro-F1.
 PARAM_SPACES = {
-    "random_forest": lambda trial: {
-        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
-        "classify__max_depth": trial.suggest_int("max_depth", 4, 20),
-        "classify__min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
-        "classify__max_features": trial.suggest_categorical(
-            "max_features", ["sqrt", "log2", None, 0.3, 0.5]
-        ),
-    },
-    "xgboost": lambda trial: {
-        "classify__estimator__n_estimators": trial.suggest_int("n_estimators", 100, 500),
-        "classify__estimator__max_depth": trial.suggest_int("max_depth", 3, 10),
-        "classify__estimator__learning_rate": trial.suggest_float(
-            "learning_rate", 0.01, 0.3, log=True
-        ),
-    },
-    "lightgbm": lambda trial: {
-        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
-        "classify__num_leaves": trial.suggest_int("num_leaves", 15, 255),
-        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
-    },
     "catboost": lambda trial: {
         "classify__iterations": trial.suggest_int("iterations", 100, 500),
         "classify__depth": trial.suggest_int("depth", 3, 10),
         "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "classify__l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1.0, 10.0, log=True),
+    },
+    "lightgbm": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__num_leaves": trial.suggest_int("num_leaves", 15, 255),
+        "classify__max_depth": trial.suggest_int("max_depth", 3, 12),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "classify__min_child_samples": trial.suggest_int("min_child_samples", 5, 100),
+        "classify__reg_lambda": trial.suggest_float("reg_lambda", 0.5, 5.0, log=True),
     },
 }
-
 
 n_groups_sub = min(5, years_sub.nunique())
 print(
     f"Optuna CV folds (n_groups_sub): {n_groups_sub}; distinct years in subsample: {years_sub.nunique()}"
 )
 
+_recall1_scorer = make_scorer(
+    lambda y_true, y_pred: recall_for_class(y_true, y_pred, target_class=1)
+)
 
-# TODO(Task 4): this §7 tuning loop still references the pre-pivot
-# champion_family/_build_winning_pipeline single-champion variables
-# removed in §6's rewrite (Task 3) - it is superseded by per-family Optuna
-# studies over candidate_families and will be replaced wholesale by
-# Task 4. The lint suppressions below are a deliberate, temporary bridge
-# between Task 3's commit and Task 4's, not a fix.
-def objective(trial: optuna.Trial) -> float:
-    params = PARAM_SPACES[champion_family](trial)  # noqa: F821
-    pipeline = _build_winning_pipeline(tree_preprocessor).set_params(**params)  # noqa: F821
-    scores = cross_val_score(
-        pipeline,
-        X_train_sub,
-        y_train_sub,
-        cv=GroupKFold(n_splits=n_groups_sub),
-        groups=years_sub,
-        scoring="f1_macro",
-        n_jobs=1,
+tuned_candidates: dict[str, dict] = {}
+
+for family in candidate_families:
+    winning_strategy_name = winning_strategy_per_family[family]["model"]
+    base_pipeline = _build_pipeline_for(family, winning_strategy_name)
+
+    def objective(trial: optuna.Trial, family=family, base_pipeline=base_pipeline) -> float:
+        params = PARAM_SPACES[family](trial)
+        pipeline = clone(base_pipeline).set_params(**params)
+        cv_results = cross_validate(
+            pipeline,
+            X_train_sub,
+            y_train_sub,
+            cv=GroupKFold(n_splits=n_groups_sub),
+            groups=years_sub,
+            scoring={"macro_f1": "f1_macro", "recall_1": _recall1_scorer},
+            n_jobs=1,
+        )
+        trial.set_user_attr("recall_class_1", float(cv_results["test_recall_1"].mean()))
+        return float(cv_results["test_macro_f1"].mean())
+
+    _trial_durations: list[float] = []
+
+    def _progress_callback(
+        study: "optuna.Study", trial: "optuna.trial.FrozenTrial", family=family
+    ) -> None:
+        elapsed = trial.duration.total_seconds() if trial.duration else 0.0
+        _trial_durations.append(elapsed)
+        avg = sum(_trial_durations) / len(_trial_durations)
+        remaining = N_TRIALS_PER_FAMILY - (trial.number + 1)
+        eta_min = (avg * remaining) / 60
+        _log_progress(
+            f"[Optuna {family} {trial.number + 1}/{N_TRIALS_PER_FAMILY}] "
+            f"trial macro-F1={trial.value:.3f} recall(1)={trial.user_attrs['recall_class_1']:.3f} "
+            f"in {elapsed:.1f}s ... ETA remaining: {eta_min:.1f} min"
+        )
+
+    optuna_db_path = CHECKPOINT_DIR / "optuna_study.db"
+    study = optuna.create_study(
+        study_name=f"a3_tuning_{family}",
+        storage=f"sqlite:///{optuna_db_path}",
+        load_if_exists=True,
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(seed=42),
     )
-    return float(scores.mean())
-
-
-_optuna_trial_durations: list[float] = []
-
-
-def _optuna_progress_callback(study: "optuna.Study", trial: "optuna.trial.FrozenTrial") -> None:
-    elapsed = trial.duration.total_seconds() if trial.duration else 0.0
-    _optuna_trial_durations.append(elapsed)
-    avg = sum(_optuna_trial_durations) / len(_optuna_trial_durations)
-    remaining = N_TRIALS - (trial.number + 1)
-    eta_min = (avg * remaining) / 60
+    remaining_trials = max(0, N_TRIALS_PER_FAMILY - len(study.trials))
     _log_progress(
-        f"[Optuna {trial.number + 1}/{N_TRIALS}] trial macro-F1={trial.value:.3f} "
-        f"(best so far={study.best_value:.3f}) in {elapsed:.1f}s ... ETA remaining: {eta_min:.1f} min"
+        f"[{family}] Optuna study: {len(study.trials)}/{N_TRIALS_PER_FAMILY} trials already "
+        f"completed (persisted at {optuna_db_path.name}, study_name=a3_tuning_{family}); "
+        f"{remaining_trials} remaining."
     )
+    if remaining_trials > 0:
+        study.optimize(objective, n_trials=remaining_trials, callbacks=[_progress_callback])
 
-
-optuna_db_path = CHECKPOINT_DIR / "optuna_study.db"
-study = optuna.create_study(
-    study_name="a3_champion_tuning",
-    storage=f"sqlite:///{optuna_db_path}",
-    load_if_exists=True,
-    direction="maximize",
-    sampler=optuna.samplers.TPESampler(seed=42),
-)
-remaining_trials = max(0, N_TRIALS - len(study.trials))
-_log_progress(
-    f"Optuna study: {len(study.trials)}/{N_TRIALS} trials already completed (persisted at {optuna_db_path.name}); {remaining_trials} remaining."
-)
-if remaining_trials > 0:
-    study.optimize(objective, n_trials=remaining_trials, callbacks=[_optuna_progress_callback])
-print(f"Best trial macro-F1 (CV, subsample): {study.best_value:.3f}")
-print(f"Best params: {study.best_params}")
+    trials_df = pd.DataFrame(
+        [
+            {
+                "params": t.params,
+                "macro_f1": t.value,
+                "recall_class_1": t.user_attrs["recall_class_1"],
+            }
+            for t in study.trials
+            if t.state == optuna.trial.TrialState.COMPLETE
+        ]
+    )
+    best_trial_row = select_best_candidate(trials_df)
+    tuned_candidates[family] = {
+        "best_params": best_trial_row["params"],
+        "cv_macro_f1": float(best_trial_row["macro_f1"]),
+        "cv_recall_class_1": float(best_trial_row["recall_class_1"]),
+    }
+    _log_progress(
+        f"[{family}] best tuned trial (gate-aware selection): "
+        f"macro-F1={tuned_candidates[family]['cv_macro_f1']:.3f} "
+        f"recall(1)={tuned_candidates[family]['cv_recall_class_1']:.3f} "
+        f"params={tuned_candidates[family]['best_params']}"
+    )
+    print(f"[{family}] best tuned params: {tuned_candidates[family]['best_params']}")
 
 # %% [markdown]
 # ## 8 — Refit on full training data and evaluate on test-2024 exactly once
