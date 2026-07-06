@@ -1935,6 +1935,22 @@ else:
 # > (historical observations). The (year, month, hour-of-day) averaging introduces day-level
 # > noise but no future leakage — see §9.4. Actual `fit_transform` calls happen in A³, not here.
 #
+# ### OSM road-context features
+#
+# | Feature | Missing strategy | Recommended transform | Recommended scaling | EDA finding that drives the decision |
+# |:---|:---|:---|:---|:---|
+# | `osm_dominant_road_class` | mode (or a dedicated "unknown" category) | one-hot | n/a | 15 nominal road classes ranked by literature-established severity/speed association; §9.5 entropy-reduction check must clear the 50% trigger before inclusion |
+# | `osm_maxspeed_mean` | median imputation | none (already a natural km/h scale) | `StandardScaler` | speed limit is one of the strongest literature-documented predictors of crash severity specifically (not just occurrence) |
+# | `osm_maxspeed_max` | median imputation | none | `StandardScaler` | captures the fastest road touching a mixed-road-class cell, complementing the mean |
+# | `osm_road_density` | zero-fill (absence of OSM data in a cell most often reflects genuinely low road density, e.g. remote areas, not a data gap) | `log1p` (right-skewed - most cells have few road-vertex points) | `StandardScaler` | proxy for local traffic exposure |
+# | `osm_way_count` | zero-fill (same rationale as `osm_road_density`) | `log1p` | `StandardScaler` | junction/complexity proxy — cells with multiple distinct roads are more likely to be intersections |
+#
+# > **Note.** OSM road-context reflects the *present-day* network; some roads'
+# > classification or posted speed limit will have changed since the earliest
+# > accidents in this dataset (2016). This is an accepted approximation — see
+# > §8.8 — not a defect to fix here; A³ should note it as a limitation when
+# > interpreting SHAP importances for these features in Phase C.
+#
 # ### Imbalance handling
 #
 # A class imbalance of ≈ 1 : 18 : 81 is observed. The Q phase chose macro-F1
@@ -1979,7 +1995,7 @@ else:
 #   features retained. DWD features carry no temporal leakage by join-key
 #   construction (§9.4).
 #
-# ### Top-4 risks for A³
+# ### Top-5 risks for A³
 #
 # 1. **Imbalance collapse on macro-F1.** Without class weights or sampling,
 #    tree models default to majority-class prediction on minority instances;
@@ -1996,6 +2012,13 @@ else:
 #    produced a structural year (2020). If A³ trains naively, the model
 #    learns the COVID-year distribution as if it were normal; consider a
 #    year-weight or drop 2020 from training and document the choice.
+# 5. **OSM road-context is a present-day snapshot, not historical.** Road
+#    classifications and speed limits reflect today's OpenStreetMap data,
+#    applied uniformly across all accident years (2016–2024). A road that was
+#    reclassified or had its speed limit changed during that window is
+#    silently treated as if its current state always applied. This mainly
+#    affects `osm_maxspeed_mean`/`osm_maxspeed_max`, less so `osm_dominant_road_class`
+#    (road hierarchy changes far less often than posted speed limits).
 #
 # ### U-phase acceptance checklist
 #
@@ -2030,7 +2053,7 @@ else:
 # [ ] Class stability across splits verified
 # [ ] No OBJECTID overlap between splits
 # [ ] §10 preprocessing decision table filled per column (Unfallatlas + DWD)
-# [ ] Top-4 risks for A³ written
+# [ ] Top-5 risks for A³ written
 # [ ] All plots exported to reports/figures/u_phase/
 # [ ] Notebook runs end-to-end without manual intervention
 # ```
