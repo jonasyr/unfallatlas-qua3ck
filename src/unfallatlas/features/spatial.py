@@ -11,6 +11,7 @@ import re
 import geopandas as gpd
 import h3
 import pandas as pd
+import shapely
 
 # Ranked by road importance/typical speed - higher rank wins when multiple
 # road classes pass through the same H3 cell (see dominant_road_class).
@@ -128,6 +129,19 @@ def aggregate_roads_to_h3(roads_gdf: gpd.GeoDataFrame, resolution: int = 8) -> p
 
     Cells with no roads at all are simply absent from the output - callers
     must treat a missing h3_cell as "no OSM road data available", not zero.
+
+    Vectorized (shapely.get_coordinates + numpy indexing) rather than a
+    per-row/per-vertex Python loop - for a large state's combined road
+    network (tens of millions of vertices - e.g. Baden-Württemberg, whose
+    OOM-fetch crash meant this code path had never actually been exercised
+    at real scale before it was root-caused during design review), a plain
+    `for row in df.iterrows(): for lon, lat in row.geometry.coords: ...`
+    loop building a Python dict per vertex risks being a second OOM/
+    multi-hour-hang source in its own right, entirely separate from the
+    fetch-side OOM fixed in download_road_network. h3-py has no
+    vectorized/batch latlng_to_cell in this version, so that one step
+    remains a per-point Python-level call - everything else (vertex
+    explosion, way_id/highway/maxspeed assignment) is vectorized.
     """
     columns = [
         "h3_cell",
@@ -140,20 +154,24 @@ def aggregate_roads_to_h3(roads_gdf: gpd.GeoDataFrame, resolution: int = 8) -> p
     if len(roads_gdf) == 0:
         return pd.DataFrame(columns=columns)
 
-    records = []
-    for way_id, row in roads_gdf.reset_index(drop=True).iterrows():
-        speed = parse_maxspeed(row["maxspeed"])
-        coords = list(row["geometry"].coords)
-        for lon, lat in coords:
-            records.append(
-                {
-                    "way_id": way_id,
-                    "h3_cell": assign_h3_cell(lat, lon, resolution),
-                    "highway": row["highway"],
-                    "maxspeed": speed,
-                }
-            )
-    points = pd.DataFrame.from_records(records)
+    roads_gdf = roads_gdf.reset_index(drop=True)
+    coords, way_idx = shapely.get_coordinates(roads_gdf.geometry.to_numpy(), return_index=True)
+    lon = coords[:, 0]
+    lat = coords[:, 1]
+
+    parsed_maxspeed = roads_gdf["maxspeed"].map(parse_maxspeed).to_numpy()
+    highway_values = roads_gdf["highway"].to_numpy()
+
+    h3_cells = [assign_h3_cell(pt_lat, pt_lon, resolution) for pt_lat, pt_lon in zip(lat, lon)]
+
+    points = pd.DataFrame(
+        {
+            "way_id": way_idx,
+            "h3_cell": h3_cells,
+            "highway": highway_values[way_idx],
+            "maxspeed": parsed_maxspeed[way_idx],
+        }
+    )
 
     grouped = points.groupby("h3_cell")
     result = grouped.agg(
