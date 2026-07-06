@@ -101,6 +101,14 @@ def download_road_network(
     empirically on a small test area to return exactly
     [osmid, highway, maxspeed, oneway, reversed, length, geometry], no
     tag explosion.
+
+    ox.settings.log_console = True surfaces osmnx's own internal progress
+    messages (request/pause/download timing, sub-query counts, node/edge
+    counts) directly to the console - large states get subdivided into
+    many Overpass sub-queries internally (osmnx handles this transparently,
+    not exposed as a parameter we control), and without this setting there
+    is no visible signal at all between "[i/16] state: fetching..." and
+    "-> done" for however long that takes.
     """
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -113,6 +121,7 @@ def download_road_network(
 
     log.info("Fetching OSM road network for %s (this can take a few minutes)...", state)
     ox.settings.useful_tags_way = ["highway", "maxspeed"]
+    ox.settings.log_console = True
     highway_filter = "|".join(sorted(_VEHICLE_HIGHWAY_VALUES))
     custom_filter = f'["highway"~"^({highway_filter})$"]'
     graph = ox.graph_from_place(
