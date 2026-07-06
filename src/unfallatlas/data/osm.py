@@ -14,6 +14,9 @@ from pathlib import Path
 
 import geopandas as gpd
 import osmnx as ox
+import pandas as pd
+
+from unfallatlas.features.spatial import aggregate_roads_to_h3, assign_h3_cell
 
 log = logging.getLogger(__name__)
 
@@ -101,3 +104,70 @@ def download_road_network(
     cleaned.to_parquet(cache_path)
     log.info("Cached %s road network → %s (%d ways)", state, cache_path, len(cleaned))
     return cleaned
+
+
+def build_spatial_features(
+    accidents_df: pd.DataFrame,
+    raw_cache_dir: Path,
+    interim_cache_dir: Path,
+    resolution: int = 8,
+    force_refresh: bool = False,
+) -> pd.DataFrame:
+    """Join OSM road-context features to the accident DataFrame.
+
+    Adds columns to accidents_df:
+        h3_cell                  the accident's H3 cell (str)
+        osm_dominant_road_class  highest-ranked road class in the cell (str, NaN if no OSM road data)
+        osm_maxspeed_mean        mean parsed speed limit in the cell, km/h (float, NaN if none parseable)
+        osm_maxspeed_max         max parsed speed limit in the cell, km/h (float, NaN if none parseable)
+        osm_road_density         road-vertex-point count in the cell (float, NaN if no roads)
+        osm_way_count            distinct OSM ways touching the cell (float, NaN if no roads)
+
+    Known limitation: OSM reflects the present-day road network; accidents
+    span 2016-2024 and road classifications/speed limits can change over
+    that window. Documented, not solved - same category of accepted
+    approximation as the DWD weather join's day-of-month averaging.
+
+    The enriched DataFrame is cached to
+    interim_cache_dir/accidents_with_weather_spatial.parquet.
+    """
+    required = {"LAT", "LON"}
+    missing_cols = required - set(accidents_df.columns)
+    if missing_cols:
+        raise RuntimeError(
+            f"accidents_df is missing required columns: {missing_cols}\n"
+            "Ensure you are passing a DataFrame loaded from data/accidents.parquet "
+            "(optionally already weather-enriched)."
+        )
+
+    raw_cache_dir = Path(raw_cache_dir)
+    interim_cache_dir = Path(interim_cache_dir)
+    interim_cache_dir.mkdir(parents=True, exist_ok=True)
+
+    out_path = interim_cache_dir / "accidents_with_weather_spatial.parquet"
+    if out_path.exists() and not force_refresh:
+        log.info("Using cached spatially-enriched DataFrame at %s", out_path)
+        return pd.read_parquet(out_path)
+
+    # --- Fetch + aggregate every state's road network ---
+    all_cell_aggregates = []
+    for state in GERMAN_STATES:
+        roads = download_road_network(state, raw_cache_dir / "osm", force_refresh=force_refresh)
+        all_cell_aggregates.append(aggregate_roads_to_h3(roads, resolution=resolution))
+    cell_features = pd.concat(all_cell_aggregates, ignore_index=True)
+    # A cell straddling a state boundary query could appear in two states'
+    # extracts - keep the higher-way-count (more complete) version.
+    cell_features = (
+        cell_features.sort_values("osm_way_count", ascending=False)
+        .drop_duplicates(subset="h3_cell", keep="first")
+        .reset_index(drop=True)
+    )
+
+    # --- Join by H3 cell ---
+    df = accidents_df.copy()
+    df["h3_cell"] = [assign_h3_cell(lat, lon, resolution) for lat, lon in zip(df["LAT"], df["LON"])]
+    df = df.merge(cell_features, on="h3_cell", how="left")
+
+    df.to_parquet(out_path, index=False)
+    log.info("Saved spatially-enriched DataFrame → %s (%d rows)", out_path, len(df))
+    return df

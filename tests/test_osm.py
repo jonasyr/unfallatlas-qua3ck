@@ -1,7 +1,8 @@
 import geopandas as gpd
+import pandas as pd
 from shapely.geometry import LineString
 
-from unfallatlas.data.osm import GERMAN_STATES, _clean_road_gdf
+from unfallatlas.data.osm import GERMAN_STATES, _clean_road_gdf, build_spatial_features
 
 
 def _toy_raw_gdf():
@@ -50,3 +51,29 @@ def test_clean_road_gdf_preserves_geometry_column():
     cleaned = _clean_road_gdf(_toy_raw_gdf())
     assert isinstance(cleaned, gpd.GeoDataFrame)
     assert "geometry" in cleaned.columns
+
+
+def test_build_spatial_features_requires_lat_lon_columns(tmp_path):
+    bad_df = pd.DataFrame({"UJAHR": [2020]})
+    try:
+        build_spatial_features(bad_df, tmp_path / "raw", tmp_path / "interim")
+        raise AssertionError("expected RuntimeError for missing LAT/LON")
+    except RuntimeError as exc:
+        assert "LAT" in str(exc) or "LON" in str(exc)
+
+
+def test_build_spatial_features_uses_cache_when_present(tmp_path, monkeypatch):
+    interim_dir = tmp_path / "interim"
+    interim_dir.mkdir()
+    cached = pd.DataFrame({"LAT": [52.5], "LON": [13.4], "osm_way_count": [1]})
+    cached.to_parquet(interim_dir / "accidents_with_weather_spatial.parquet")
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("should not fetch OSM data when a cache exists")
+
+    monkeypatch.setattr("unfallatlas.data.osm.download_road_network", _boom)
+
+    accidents = pd.DataFrame({"LAT": [52.5], "LON": [13.4]})
+    result = build_spatial_features(accidents, tmp_path / "raw", interim_dir)
+    assert "osm_way_count" in result.columns
+    assert result.iloc[0]["osm_way_count"] == 1

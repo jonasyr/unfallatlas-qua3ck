@@ -166,17 +166,17 @@ def build_preprocessor(scale_for_linear: bool = False) -> ColumnTransformer:
 
 
 def load_training_frame(base_dir: Path) -> pd.DataFrame:
-    """Load the DWD-enriched accidents frame built by the U-phase.
+    """Load the DWD-and-OSM-enriched accidents frame built by the U-phase.
 
-    Reuses the cache from ``unfallatlas.data.dwd.build_weather_features``
-    (``data/interim/accidents_with_weather.parquet``). A³ does not rebuild
-    this cache — raises if it is missing.
+    Reuses the cache from unfallatlas.data.dwd.build_weather_features and
+    unfallatlas.data.osm.build_spatial_features (A³ does not rebuild this
+    cache — raises if it is missing).
     """
-    cache = base_dir / "data" / "interim" / "accidents_with_weather.parquet"
+    cache = base_dir / "data" / "interim" / "accidents_with_weather_spatial.parquet"
     if not cache.exists():
         raise FileNotFoundError(
-            f"{cache} not found. Run notebooks/02_U_Phase.ipynb §8.5 first to "
-            "build the weather-enriched cache."
+            f"{cache} not found. Run notebooks/02_U_Phase.ipynb §8.5 (weather) "
+            "and §8.x (OSM spatial features) first."
         )
     df = pd.read_parquet(cache)
     return df.drop(columns=[c for c in NON_FEATURE_COLUMNS if c in df.columns])
