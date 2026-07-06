@@ -446,9 +446,33 @@ _log_progress(f"Stufe 1 complete: {len(stufe1_specs)}/{len(stufe1_specs)} (100%)
 # %%
 comparison_df = pd.DataFrame(comparison_rows)
 tree_only = comparison_df[comparison_df["model"].isin(fitted_models.keys())]
-champion_name = tree_only.sort_values("macro_f1", ascending=False).iloc[0]["model"]
-champion_pipeline = fitted_models[champion_name]
-print(f"Champion (highest validation macro-F1 among tree configurations): {champion_name}")
+
+# NOTE: candidate selection is recall-gate-aware, not "highest macro-F1
+# wins alone". random_forest_balanced has the highest raw macro-F1 among
+# the 8 Stufe 0/1 configurations (0.410) but recall(class 1)=0.229 - far
+# below the Q-phase gate (>=0.50) - because RF's macro-F1 edge comes from
+# being conservative on the majority classes, exactly the wrong shape for
+# this problem. catboost_balanced (0.363 macro-F1, 0.537 recall) and
+# lightgbm_balanced (0.364 macro-F1, 0.588 recall) already clear the
+# recall gate untuned. docs/project/PROJEKTPLAN_SETUP.md's literature
+# roadmap independently predicts Random Forest caps around 0.50-0.55
+# macro-F1 while CatBoost/LightGBM have a 0.60-0.72 ceiling - so both
+# families advance to §6/§7 as candidates; Random Forest/XGBoost/
+# logistic/baselines stay in the table below for reporting only.
+candidate_families = ["catboost", "lightgbm"]
+candidate_names = {
+    family: tree_only[tree_only["model"].str.startswith(family)]
+    .sort_values("macro_f1", ascending=False)
+    .iloc[0]["model"]
+    for family in candidate_families
+}
+candidate_pipelines = {family: fitted_models[name] for family, name in candidate_names.items()}
+for family, name in candidate_names.items():
+    row = comparison_df[comparison_df["model"] == name].iloc[0]
+    print(
+        f"Candidate ({family}): {name}  macro-F1={row['macro_f1']:.3f}  "
+        f"recall(1)={row['recall_class_1']:.3f}"
+    )
 comparison_df.sort_values("macro_f1", ascending=False)
 
 # %%
@@ -553,7 +577,14 @@ champion_builder = {
     ),
     "catboost": lambda pre, **kw: build_catboost_pipeline(pre, use_gpu=_use_gpu_resolved, **kw),
 }
-champion_family = _extract_family(champion_name)
+# TODO(Task 3): this whole §6 section still references the pre-pivot
+# champion_name/champion_pipeline single-champion variables removed in
+# §5's rewrite (Task 2) - it is superseded by a per-family loop over
+# candidate_families/candidate_names/candidate_pipelines and will be
+# replaced wholesale. The lint suppression on the next line is a
+# deliberate, temporary bridge between Task 2's commit and Task 3's, not
+# a fix.
+champion_family = _extract_family(champion_name)  # noqa: F821
 build_champion = champion_builder[champion_family]
 print(f"Champion family: {champion_family}")
 
@@ -695,10 +726,16 @@ def _build_winning_pipeline(pre):
     which strategy actually won - e.g. if plain class_weight="balanced"
     (`champion_pipeline`) beat every resampling/ordinal treatment, §7/§8
     must tune and refit *that*, not the unweighted variant.
+
+    TODO(Task 3): still references the pre-pivot champion_name/
+    champion_pipeline removed in §5's rewrite (Task 2) - superseded by
+    a per-family lookup into candidate_names/candidate_pipelines and will
+    be replaced wholesale. The lint suppressions below are a deliberate,
+    temporary bridge between Task 2's commit and Task 3's, not a fix.
     """
     winner = winning_strategy_row["model"]
-    if winner == champion_name:
-        return clone(champion_pipeline)
+    if winner == champion_name:  # noqa: F821
+        return clone(champion_pipeline)  # noqa: F821
     if winner == f"{champion_family}_unweighted":
         return build_champion(pre)
     raise NotImplementedError(
