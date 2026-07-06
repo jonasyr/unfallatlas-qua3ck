@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from unfallatlas.models.evaluate import (
     MACRO_F1_THRESHOLD,
@@ -7,6 +8,7 @@ from unfallatlas.models.evaluate import (
     macro_f1,
     meets_acceptance_criteria,
     recall_for_class,
+    select_best_candidate,
 )
 
 
@@ -56,3 +58,37 @@ def test_meets_acceptance_criteria_majority_class_baseline_fails():
     y_pred = np.array([3] * len(y_true))
     metrics = evaluate_predictions(y_true, y_pred)
     assert meets_acceptance_criteria(metrics) is False
+
+
+def test_select_best_candidate_picks_highest_macro_f1_among_recall_passers():
+    rows = pd.DataFrame(
+        [
+            {"model": "a", "macro_f1": 0.50, "recall_class_1": 0.60},
+            {"model": "b", "macro_f1": 0.60, "recall_class_1": 0.30},  # fails recall gate
+            {"model": "c", "macro_f1": 0.45, "recall_class_1": 0.55},
+        ]
+    )
+    winner = select_best_candidate(rows)
+    assert winner["model"] == "a"  # highest macro_f1 among recall>=0.5 rows (a, c) is a
+
+
+def test_select_best_candidate_falls_back_to_combined_score_if_none_pass():
+    rows = pd.DataFrame(
+        [
+            {"model": "a", "macro_f1": 0.50, "recall_class_1": 0.10},  # combined 0.30
+            {"model": "b", "macro_f1": 0.40, "recall_class_1": 0.45},  # combined 0.425
+        ]
+    )
+    winner = select_best_candidate(rows)
+    assert winner["model"] == "b"
+
+
+def test_select_best_candidate_custom_threshold():
+    rows = pd.DataFrame(
+        [
+            {"model": "a", "macro_f1": 0.50, "recall_class_1": 0.42},
+            {"model": "b", "macro_f1": 0.45, "recall_class_1": 0.20},
+        ]
+    )
+    winner = select_best_candidate(rows, recall_threshold=0.40)
+    assert winner["model"] == "a"

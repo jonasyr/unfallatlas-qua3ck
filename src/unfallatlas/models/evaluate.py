@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pandas as pd
 from sklearn.metrics import confusion_matrix, f1_score, recall_score
 
 MACRO_F1_THRESHOLD = 0.55
@@ -33,3 +34,26 @@ def meets_acceptance_criteria(metrics: dict) -> bool:
         metrics["macro_f1"] >= MACRO_F1_THRESHOLD
         and metrics["recall_class_1"] >= RECALL_CLASS_1_THRESHOLD
     )
+
+
+def select_best_candidate(
+    rows: pd.DataFrame, recall_threshold: float = RECALL_CLASS_1_THRESHOLD
+) -> pd.Series:
+    """Pick the best row from a (family, strategy) comparison table.
+
+    Rule: highest ``macro_f1`` among rows clearing ``recall_class_1 >=
+    recall_threshold`` (the harder Q-phase gate). If no row clears it,
+    fall back to the highest ``(macro_f1 + recall_class_1) / 2`` combined
+    score across all rows, so there is always a well-defined winner even
+    when nothing meets the gate yet.
+
+    This directly encodes "both acceptance criteria must pass" instead of
+    optimising macro-F1 alone and hoping recall follows — the mistake that
+    picked an unweighted-recall Random Forest as champion in the original
+    A³ selection rule.
+    """
+    passing = rows[rows["recall_class_1"] >= recall_threshold]
+    if len(passing) > 0:
+        return passing.sort_values("macro_f1", ascending=False).iloc[0]
+    combined = rows.assign(_combined_score=(rows["macro_f1"] + rows["recall_class_1"]) / 2)
+    return combined.sort_values("_combined_score", ascending=False).iloc[0]
