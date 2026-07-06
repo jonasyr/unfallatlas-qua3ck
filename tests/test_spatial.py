@@ -1,7 +1,11 @@
 import math
 
+import geopandas as gpd
+from shapely.geometry import LineString
+
 from unfallatlas.features.spatial import (
     ROAD_CLASS_RANK,
+    aggregate_roads_to_h3,
     assign_h3_cell,
     dominant_road_class,
     parse_maxspeed,
@@ -74,3 +78,67 @@ def test_dominant_road_class_ignores_unknown_values():
     # A highway value not in ROAD_CLASS_RANK (e.g. "footway", already filtered
     # out upstream, but defensive here) must not crash - just be ignored.
     assert dominant_road_class(["not_a_real_highway_value", "secondary"]) == "secondary"
+
+
+def _toy_roads_gdf():
+    # Two ways ~20-30m apart (verified empirically to land in the same
+    # H3-8 cell, which is ~0.7 km² wide) - deliberately close together so
+    # both ways aggregate into one cell, not split across a boundary.
+    return gpd.GeoDataFrame(
+        {
+            "highway": ["primary", "residential"],
+            "maxspeed": ["100", "30"],
+            "geometry": [
+                LineString([(13.4050, 52.5200), (13.4051, 52.5201)]),
+                LineString([(13.4050, 52.5200), (13.4052, 52.5202)]),
+            ],
+        },
+        crs="EPSG:4326",
+    )
+
+
+def test_aggregate_roads_to_h3_returns_expected_columns():
+    result = aggregate_roads_to_h3(_toy_roads_gdf(), resolution=8)
+    assert set(result.columns) == {
+        "h3_cell",
+        "osm_dominant_road_class",
+        "osm_maxspeed_mean",
+        "osm_maxspeed_max",
+        "osm_road_density",
+        "osm_way_count",
+    }
+
+
+def test_aggregate_roads_to_h3_dominant_class_is_highest_ranked_in_cell():
+    result = aggregate_roads_to_h3(_toy_roads_gdf(), resolution=8)
+    # Both ways are in the same tiny area -> same cell; primary outranks residential.
+    row = result[result["osm_way_count"] >= 1].iloc[0]
+    assert row["osm_dominant_road_class"] == "primary"
+
+
+def test_aggregate_roads_to_h3_maxspeed_stats_correct():
+    result = aggregate_roads_to_h3(_toy_roads_gdf(), resolution=8)
+    row = result.iloc[0]
+    assert row["osm_maxspeed_max"] == 100.0
+    assert row["osm_maxspeed_mean"] == 65.0  # (100 + 30) / 2
+
+
+def test_aggregate_roads_to_h3_way_count_counts_distinct_ways_not_vertices():
+    result = aggregate_roads_to_h3(_toy_roads_gdf(), resolution=8)
+    # 2 ways, each a 2-point LineString (4 vertices total) - way_count must be 2, not 4.
+    total_way_count = result["osm_way_count"].sum()
+    assert total_way_count == 2
+
+
+def test_aggregate_roads_to_h3_empty_input_returns_empty_frame_with_correct_columns():
+    empty = gpd.GeoDataFrame({"highway": [], "maxspeed": [], "geometry": []}, crs="EPSG:4326")
+    result = aggregate_roads_to_h3(empty, resolution=8)
+    assert len(result) == 0
+    assert set(result.columns) == {
+        "h3_cell",
+        "osm_dominant_road_class",
+        "osm_maxspeed_mean",
+        "osm_maxspeed_max",
+        "osm_road_density",
+        "osm_way_count",
+    }

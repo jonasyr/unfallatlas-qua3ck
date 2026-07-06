@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import re
 
+import geopandas as gpd
 import h3
+import pandas as pd
 
 # Ranked by road importance/typical speed - higher rank wins when multiple
 # road classes pass through the same H3 cell (see dominant_road_class).
@@ -96,3 +98,69 @@ def dominant_road_class(classes: list[str]) -> str | None:
     if not known:
         return None
     return max(known, key=lambda c: ROAD_CLASS_RANK[c])
+
+
+def aggregate_roads_to_h3(roads_gdf: gpd.GeoDataFrame, resolution: int = 8) -> pd.DataFrame:
+    """Roll up a road GeoDataFrame (columns: highway, maxspeed, geometry) to
+    one row per H3 cell at the given resolution.
+
+    Method: every vertex of every way's LineString is assigned to its H3
+    cell (not just endpoints or midpoints - long ways span multiple cells).
+    Per cell:
+        osm_dominant_road_class  highest-ranked highway value present (str)
+        osm_maxspeed_mean/_max   parsed maxspeed stats in km/h, NaN if none
+                                  parseable in the cell (see parse_maxspeed)
+        osm_road_density         count of road-vertex points in the cell -
+                                  a proxy for road presence/length, not a
+                                  precise km/km² figure
+        osm_way_count            count of DISTINCT ways touching the cell -
+                                  a junction/complexity proxy (cells with
+                                  more distinct roads passing through are
+                                  more likely to be intersections), chosen
+                                  over true topological intersection
+                                  detection to avoid the compute cost of
+                                  building a full routable graph
+
+    Note the aggregation is vertex-weighted, not way-length-weighted - a way
+    with more vertices contributes more to osm_maxspeed_mean/osm_road_density
+    proportionally. This is an accepted characteristic of the point-based
+    aggregation method, not a bug.
+
+    Cells with no roads at all are simply absent from the output - callers
+    must treat a missing h3_cell as "no OSM road data available", not zero.
+    """
+    columns = [
+        "h3_cell",
+        "osm_dominant_road_class",
+        "osm_maxspeed_mean",
+        "osm_maxspeed_max",
+        "osm_road_density",
+        "osm_way_count",
+    ]
+    if len(roads_gdf) == 0:
+        return pd.DataFrame(columns=columns)
+
+    records = []
+    for way_id, row in roads_gdf.reset_index(drop=True).iterrows():
+        speed = parse_maxspeed(row["maxspeed"])
+        coords = list(row["geometry"].coords)
+        for lon, lat in coords:
+            records.append(
+                {
+                    "way_id": way_id,
+                    "h3_cell": assign_h3_cell(lat, lon, resolution),
+                    "highway": row["highway"],
+                    "maxspeed": speed,
+                }
+            )
+    points = pd.DataFrame.from_records(records)
+
+    grouped = points.groupby("h3_cell")
+    result = grouped.agg(
+        osm_dominant_road_class=("highway", lambda s: dominant_road_class(list(s))),
+        osm_maxspeed_mean=("maxspeed", "mean"),
+        osm_maxspeed_max=("maxspeed", "max"),
+        osm_road_density=("way_id", "count"),
+        osm_way_count=("way_id", "nunique"),
+    ).reset_index()
+    return result[columns]
