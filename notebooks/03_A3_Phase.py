@@ -374,7 +374,6 @@ logreg = fitted_baselines["logistic_regression"]
 
 # %%
 train_class_counts = y_train.value_counts()
-catboost_weights = [len(y_train) / (3 * train_class_counts[c]) for c in [1, 2, 3]]
 xgb_weights = balanced_sample_weight(y_train)
 
 stufe1_specs = [
@@ -418,11 +417,16 @@ stufe1_specs = [
         None,
     ),
     (
+        # CatBoostClassifier has no clone()-compatible class_weights - see
+        # build_catboost_pipeline's docstring. Weighting is applied via
+        # sample_weight at fit time instead, exactly like xgboost_balanced
+        # above (xgb_weights is CatBoost-compatible too: both use the same
+        # "balanced" per-sample formula, so this is the same weighting
+        # scheme as before, just applied via fit() instead of the
+        # constructor).
         "catboost_balanced",
-        lambda: build_catboost_pipeline(
-            tree_preprocessor, class_weights=catboost_weights, use_gpu=_use_gpu_resolved
-        ),
-        None,
+        lambda: build_catboost_pipeline(tree_preprocessor, use_gpu=_use_gpu_resolved),
+        {"classify__sample_weight": xgb_weights},
     ),
 ]
 stufe1_names = [name for name, _, _ in stufe1_specs]
@@ -721,31 +725,15 @@ comparison_df = pd.DataFrame(comparison_rows)
 comparison_df.sort_values("macro_f1", ascending=False)
 
 
-# NOTE (hotfix, discovered during live execution, diagnosis corrected
-# after a second failure - see §7's objective() for the full root cause):
-# the balanced branch below must rebuild a FRESH pipeline from its builder
-# function - it must NOT clone(candidate_pipelines[family]).
-#
-# CORRECTED diagnosis: this is NOT about fitted-vs-unfitted state (an
-# earlier version of this comment wrongly assumed that, and the "rebuild
-# fresh" fix alone did not resolve the crash on retry). Verified
-# empirically: sklearn's clone() can NEVER succeed on a CatBoostClassifier
-# configured with a non-None `class_weights` (list or dict, numpy or plain
-# floats) - CatBoost's own __init__/get_params() never preserves the exact
-# object identity of that parameter, which unconditionally fails sklearn's
-# clone() safety check ("Cannot clone object ..., as the constructor
-# either does not set or modifies parameter class_weights"), regardless of
-# fit state - reproduces identically on a brand-new, never-fitted
-# CatBoostClassifier(class_weights=[...]).
-#
-# Building fresh here (instead of clone()-ing a fitted Stufe-1 model)
-# is still correct and necessary, but the REAL fix for the crash is in
-# §7's objective(), which must never clone() this pipeline either -
-# see the hotfix #2 comment there.
+# CatBoostClassifier has no clone()-compatible class_weights (see
+# build_catboost_pipeline's docstring for the full root cause) - both
+# balanced_builder entries below build an UNWEIGHTED pipeline for
+# CatBoost; its "balanced"-ness is applied via sample_weight at fit
+# time instead (_fit_kwargs_for, below), exactly like xgboost_balanced
+# in Stufe 1. LightGBM has no such issue - class_weight="balanced" is a
+# plain string, which clones fine - so it stays a constructor kwarg.
 balanced_builder = {
-    "catboost": lambda pre, **kw: build_catboost_pipeline(
-        pre, class_weights=catboost_weights, use_gpu=_use_gpu_resolved, **kw
-    ),
+    "catboost": lambda pre, **kw: build_catboost_pipeline(pre, use_gpu=_use_gpu_resolved, **kw),
     "lightgbm": lambda pre, **kw: build_lightgbm_pipeline(
         pre, class_weight="balanced", use_gpu=_use_gpu_resolved, **kw
     ),
@@ -773,6 +761,24 @@ def _build_pipeline_for(family: str, strategy_model_name: str):
         "inside Optuna's per-fold CV other than plain "
         "Pipeline.set_params().fit(), which is out of scope here."
     )
+
+
+def _fit_kwargs_for(family: str, strategy_model_name: str, y) -> dict:
+    """Extra .fit()-time kwargs needed for the given (family, strategy)
+    combination, for the given target array `y` (must match whatever X
+    the returned kwargs will be used to fit - e.g. y_train_sub for the §7
+    CV objective, y_train for the §8 full-data refit).
+
+    Currently only CatBoost's balanced variant needs this: its
+    class-weighting is applied via sample_weight at fit time rather than
+    a constructor kwarg (see build_catboost_pipeline's docstring for why).
+    LightGBM's balanced variant already bakes class_weight="balanced" into
+    the pipeline in balanced_builder above, so it needs no extra fit
+    kwargs here.
+    """
+    if family == "catboost" and strategy_model_name == candidate_names[family]:
+        return {"classify__sample_weight": balanced_sample_weight(y)}
+    return {}
 
 
 # %% [markdown]
@@ -847,20 +853,24 @@ tuned_candidates: dict[str, dict] = {}
 for family in candidate_families:
     winning_strategy_name = winning_strategy_per_family[family]["model"]
 
-    # NOTE (hotfix #2, discovered during live execution): do NOT clone() a
-    # pre-built pipeline here. Verified empirically: sklearn's clone() can
-    # NEVER succeed on a CatBoostClassifier configured with a non-None
-    # class_weights (list or dict, numpy or plain floats) - CatBoost's own
-    # __init__/get_params() never preserves the exact object identity of
-    # that parameter, which unconditionally fails sklearn's clone() safety
-    # check ("Cannot clone object ..., as the constructor either does not
-    # set or modifies parameter class_weights"), regardless of fit state.
-    # This is NOT about fitted-vs-unfitted (a prior hotfix wrongly assumed
-    # that) - it reproduces identically on a brand-new, never-fitted
-    # CatBoostClassifier(class_weights=[...]). The only reliable fix is to
-    # never call clone() on this pipeline at all: rebuild it fresh from
-    # _build_pipeline_for() inside objective() on every trial call instead
-    # of cloning a single pre-built base_pipeline.
+    # NOTE (root-caused via systematic debugging after two failed patches):
+    # sklearn's OWN cross_validate()/cross_val_score() clone the estimator
+    # internally once per fold - unconditionally, regardless of how this
+    # pipeline is built or passed in. Two earlier attempts to route around
+    # that (rebuilding fresh instead of cloning a fitted model; removing
+    # our own clone() call from this function) both failed identically,
+    # because neither addressed the real incompatibility: CatBoostClassifier
+    # configured with a non-None class_weights (list or dict) can NEVER
+    # survive ANY clone() call, caller-side or internal to sklearn, since
+    # CatBoost's own __init__/get_params() does not preserve that
+    # parameter's object identity. The actual fix was upstream, in
+    # build_catboost_pipeline() itself: class_weights was removed from the
+    # constructor entirely, so every pipeline this function can return now
+    # clones cleanly no matter who calls clone() on it. The "balanced"
+    # class-weighting CatBoost needs is supplied separately via
+    # _fit_kwargs_for()'s sample_weight, passed through cross_validate's
+    # own params= argument below (fold-safe: sklearn slices sample_weight
+    # to match each fold's training indices automatically).
     def objective(
         trial: optuna.Trial, family=family, winning_strategy_name=winning_strategy_name
     ) -> float:
@@ -873,6 +883,7 @@ for family in candidate_families:
             cv=GroupKFold(n_splits=n_groups_sub),
             groups=years_sub,
             scoring={"macro_f1": "f1_macro", "recall_1": _recall1_scorer},
+            params=_fit_kwargs_for(family, winning_strategy_name, y_train_sub),
             n_jobs=1,
         )
         trial.set_user_attr("recall_class_1", float(cv_results["test_recall_1"].mean()))
@@ -978,7 +989,11 @@ final_pipeline = _load_or_fit(
     lambda: (
         _build_pipeline_for(final_family, final_winning_strategy_name)
         .set_params(**final_best_params)
-        .fit(X_train, y_train)
+        .fit(
+            X_train,
+            y_train,
+            **_fit_kwargs_for(final_family, final_winning_strategy_name, y_train),
+        )
     ),
 )
 

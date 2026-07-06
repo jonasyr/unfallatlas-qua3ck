@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 
 from unfallatlas.features.preprocessing import build_preprocessor
 from unfallatlas.models.boosting import (
@@ -9,6 +10,7 @@ from unfallatlas.models.boosting import (
     build_xgboost_pipeline,
     gpu_available,
 )
+from unfallatlas.models.imbalance import balanced_sample_weight
 
 
 def _toy_X_y(n=120):
@@ -71,6 +73,42 @@ def test_catboost_pipeline_predicts_known_labels():
     X, y = _toy_X_y()
     pipe = build_catboost_pipeline(build_preprocessor())
     pipe.fit(X, y)
+    preds = pipe.predict(X)
+    assert set(np.asarray(preds).ravel()).issubset({1, 2, 3})
+
+
+def test_catboost_pipeline_has_no_class_weights_param():
+    """Regression test: build_catboost_pipeline must never expose a
+    class_weights constructor kwarg again. Confirmed empirically that
+    sklearn.base.clone() unconditionally fails on any CatBoostClassifier
+    configured with a non-None class_weights (list or dict, fitted or
+    not) - every sklearn CV utility (cross_val_score, cross_validate,
+    GridSearchCV, ...) clones the estimator internally per fold, so this
+    silently breaks Optuna/cross-validation the moment class_weights is
+    reintroduced anywhere in this builder.
+    """
+    pipe = build_catboost_pipeline(build_preprocessor())
+    assert "class_weights" not in pipe.named_steps["classify"].get_params()
+
+
+def test_catboost_pipeline_clones_successfully():
+    """Regression test for the clone()/class_weights incompatibility:
+    a CatBoost pipeline built by this function must always survive
+    sklearn.base.clone(), since Optuna's per-trial objective and every
+    sklearn CV utility clone the estimator internally per fold."""
+    pipe = build_catboost_pipeline(build_preprocessor())
+    clone(pipe)  # must not raise RuntimeError
+
+
+def test_catboost_pipeline_supports_sample_weight_at_fit_time():
+    """The class-weighted configuration is applied via sample_weight= at
+    fit time (mirroring build_xgboost_pipeline's pattern), not via a
+    constructor kwarg - confirm the Pipeline actually routes
+    classify__sample_weight through to CatBoostClassifier.fit()."""
+    X, y = _toy_X_y()
+    weights = balanced_sample_weight(y)
+    pipe = build_catboost_pipeline(build_preprocessor())
+    pipe.fit(X, y, classify__sample_weight=weights)
     preds = pipe.predict(X)
     assert set(np.asarray(preds).ravel()).issubset({1, 2, 3})
 

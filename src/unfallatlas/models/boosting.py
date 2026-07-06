@@ -186,10 +186,23 @@ def build_lightgbm_pipeline(
     )
 
 
-def build_catboost_pipeline(
-    preprocessor, class_weights: list[float] | None = None, use_gpu: bool | None = None
-) -> Pipeline:
-    """``use_gpu`` sets ``task_type="GPU"`` — supported by the standard pip
+def build_catboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipeline:
+    """CatBoost has no clone()-compatible ``class_weight`` concept in this
+    codebase - confirmed empirically that ``sklearn.base.clone()``
+    unconditionally fails on any ``CatBoostClassifier`` configured with a
+    non-``None`` ``class_weights`` (list or dict, numpy or plain floats),
+    fitted or not, because CatBoost's own ``__init__``/``get_params()``
+    does not preserve that parameter's object identity - which every
+    sklearn CV utility (``cross_val_score``, ``cross_validate``,
+    ``GridSearchCV``, ...) requires internally since they all clone the
+    estimator per fold. The class-weighted configuration is therefore
+    applied via ``sample_weight=`` at ``.fit()`` time in the notebook
+    (computed by ``unfallatlas.models.imbalance.balanced_sample_weight``),
+    exactly the same pattern already used for XGBoost in this codebase
+    (``build_xgboost_pipeline``), which has no ``class_weight`` parameter
+    either.
+
+    ``use_gpu`` sets ``task_type="GPU"`` — supported by the standard pip
     wheel without a custom build. ``None`` (default) auto-detects via
     ``gpu_available()`` (see ``build_xgboost_pipeline``); pass
     ``True``/``False`` to force a device.
@@ -203,7 +216,6 @@ def build_catboost_pipeline(
                 CatBoostClassifier(
                     iterations=300,
                     depth=6,
-                    class_weights=class_weights,
                     random_state=42,
                     verbose=False,
                     task_type="GPU" if resolved_use_gpu else "CPU",
