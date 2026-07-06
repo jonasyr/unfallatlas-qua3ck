@@ -18,6 +18,12 @@ reports/a3_progress.log
 # A3 per-model checkpoints (resume cache, not a deliverable)
 data/processed/a3_checkpoints/
 
+# osmnx's own HTTP/Overpass response cache (ox.settings.cache_folder="./cache"
+# by default, relative to whatever the process's CWD is - Jupyter always runs
+# a notebook's kernel with CWD set to the notebook's own folder, so this
+# appears as notebooks/cache/ in normal use)
+cache/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
