@@ -81,7 +81,11 @@ from unfallatlas.models.boosting import (
     build_xgboost_pipeline,
     gpu_available,
 )
-from unfallatlas.models.evaluate import evaluate_predictions, meets_acceptance_criteria
+from unfallatlas.models.evaluate import (
+    evaluate_predictions,
+    meets_acceptance_criteria,
+    select_best_candidate,
+)
 from unfallatlas.models.imbalance import (
     balanced_sample_weight,
     find_best_threshold_for_class,
@@ -439,9 +443,16 @@ _log_progress(f"Stufe 1 complete: {len(stufe1_specs)}/{len(stufe1_specs)} (100%)
 # %% [markdown]
 # ## 5 — Champion selection
 #
-# The champion is the single highest validation macro-F1 among the 8 tree
-# configurations above (baselines are never candidates for champion — they
-# exist to bound the floor, not to compete for it).
+# Selection is recall-gate-aware, not "highest macro-F1 wins alone."
+# `random_forest_balanced` has the highest raw validation macro-F1 among the
+# 8 Stufe 0/1 configurations (0.410), but its recall(class 1) is only 0.229 —
+# far below the Q-phase acceptance gate (>= 0.50) — because that macro-F1
+# edge comes from being conservative on the majority classes, exactly the
+# wrong shape for this problem. `catboost_balanced` and `lightgbm_balanced`
+# already clear the recall gate untuned, so **both** families advance as
+# candidates to §6/§7 rather than a single macro-F1-only champion
+# (baselines are never candidates — they exist to bound the floor, not to
+# compete for it).
 
 # %%
 comparison_df = pd.DataFrame(comparison_rows)
@@ -495,15 +506,16 @@ fig.show()
 # > evaluation.
 
 # %% [markdown]
-# ## 6 — Imbalance-strategy comparison (champion only)
+# ## 6 — Imbalance-strategy comparison (both candidate families)
 #
-# U-phase §10 menu, compared only on the champion's base estimator, on a
+# U-phase §10 menu, compared on each candidate family's base estimator, on a
 # stratified subsample capped at 500,000 training rows (compute-budget soft
 # constraint, Q-phase §9). Class weights are already reflected by whichever
-# configuration won in §5 — this section adds SMOTE, ADASYN, threshold
-# moving, and ordinal classification on top of the *unweighted* variant of
-# the same model family, so all five configurations are comparable on equal
-# footing.
+# configuration won in §5 for each family — this section adds SMOTE, ADASYN,
+# threshold moving, and ordinal classification on top of the *unweighted*
+# variant of the same model family, so all five configurations are
+# comparable on equal footing, for each of `catboost` and `lightgbm`
+# independently.
 #
 # Reuses the same checkpoint-by-git-commit pattern from §0 (`_load_or_fit`
 # below) so a crash partway through this section does not require redoing
@@ -560,49 +572,25 @@ def _log_section6_done(name: str, elapsed: float, timing_state: dict) -> None:
     _log_progress(f"  -> {name} done in {elapsed:.1f}s")
 
 
-# %%
-# NOTE: build_champion(tree_preprocessor) must return the *unweighted*
-# variant for a fair comparison against SMOTE/ADASYN/ordinal (which are
-# themselves the imbalance treatment). Only CatBoost's own default
-# (class_weights=None) and XGBoost's builder (no class_weight concept at
-# all) are unweighted by default - Random Forest and LightGBM both default
-# to class_weight="balanced" in their builders, so that must be overridden
-# explicitly here or this comparison would silently double up on class
-# weighting for those two families.
-champion_builder = {
-    "random_forest": lambda pre, **kw: build_random_forest_pipeline(pre, class_weight=None, **kw),
-    "xgboost": lambda pre, **kw: build_xgboost_pipeline(pre, use_gpu=_use_gpu_resolved, **kw),
+# NOTE: unweighted_builder must return the *unweighted* variant for a fair
+# comparison against SMOTE/ADASYN/ordinal (which are themselves the
+# imbalance treatment) - CatBoost's own default (class_weights=None) and
+# LightGBM need class_weight=None passed explicitly since its builder
+# defaults to "balanced".
+unweighted_builder = {
+    "catboost": lambda pre, **kw: build_catboost_pipeline(pre, use_gpu=_use_gpu_resolved, **kw),
     "lightgbm": lambda pre, **kw: build_lightgbm_pipeline(
         pre, class_weight=None, use_gpu=_use_gpu_resolved, **kw
     ),
-    "catboost": lambda pre, **kw: build_catboost_pipeline(pre, use_gpu=_use_gpu_resolved, **kw),
 }
-# TODO(Task 3): this whole §6 section still references the pre-pivot
-# champion_name/champion_pipeline single-champion variables removed in
-# §5's rewrite (Task 2) - it is superseded by a per-family loop over
-# candidate_families/candidate_names/candidate_pipelines and will be
-# replaced wholesale. The lint suppression on the next line is a
-# deliberate, temporary bridge between Task 2's commit and Task 3's, not
-# a fix.
-champion_family = _extract_family(champion_name)  # noqa: F821
-build_champion = champion_builder[champion_family]
-print(f"Champion family: {champion_family}")
-
-_section6_names = [
-    f"{champion_family}_smote",
-    f"{champion_family}_adasyn",
-    f"{champion_family}_threshold_moving",
-    f"{champion_family}_ordinal",
-]
-_section6_timing: dict = {"family_durations": {}, "last_duration": None}
 
 # SMOTE/ADASYN's k-NN search requires finite numeric input. IstGkfz is
 # genuinely NaN for ~12.6% of rows (only recorded from 2018 onward, per
 # docs/GLOSSARY.md) and tree_preprocessor's passthrough branch
-# (scale_for_linear=False) deliberately leaves it untouched so RF/XGBoost/
-# LightGBM/CatBoost can use it as a native split signal - that's why Stufe
-# 0/1 never crashed on it. SMOTE/ADASYN have no such native NaN handling
-# and raise "ValueError: Input X contains NaN" if fed this output directly.
+# (scale_for_linear=False) deliberately leaves it untouched so tree models
+# can use it as a native split signal - that's why Stufe 0/1 never
+# crashed on it. SMOTE/ADASYN have no such native NaN handling and raise
+# "ValueError: Input X contains NaN" if fed this output directly.
 #
 # A plain SimpleImputer is NOT sufficient here: ColumnTransformer's hstack
 # of the passthrough bool/NaN column with the float columns produces an
@@ -615,6 +603,11 @@ _section6_timing: dict = {"family_durations": {}, "last_duration": None}
 # `pd.to_numeric(errors="coerce")` first canonicalizes every missing
 # representation (None, np.nan, pd.NA, ...) to a proper np.nan, which
 # SimpleImputer then correctly detects and fills.
+#
+# This preprocessing is family-independent (it only depends on
+# tree_preprocessor and the subsample, not on which classifier follows
+# it), so it is fit ONCE and shared by both families' SMOTE/ADASYN steps
+# below - not refit per family.
 fitted_preprocessor_for_resampling = clone(tree_preprocessor).fit(X_train_sub, y_train_sub)
 _resampling_imputer = SimpleImputer(strategy="most_frequent")
 
@@ -633,113 +626,116 @@ X_val_transformed_for_resampling = _numeric_impute(
     fitted_preprocessor_for_resampling.transform(X_val), fit=False
 )
 
-
-def build_champion_classifier_only():
-    """Unfitted classify-step estimator only, for direct use on already-
-    preprocessed numeric arrays (SMOTE/ADASYN output) - a full
-    build_champion(tree_preprocessor) Pipeline would try to re-preprocess
-    the already-transformed array as if it were the raw DataFrame."""
-    return build_champion(tree_preprocessor).named_steps["classify"]
-
-
 # %%
-# 6a: SMOTE
-_log_section6_progress(0, 4, f"{champion_family}_smote", _section6_timing, _section6_names)
-_step_start = time.time()
-X_smote, y_smote = resample_smote(X_train_sub_transformed, y_train_sub)
-model_smote = _load_or_fit(
-    f"{champion_family}_smote", lambda: build_champion_classifier_only().fit(X_smote, y_smote)
-)
-_score_on_validation(
-    f"{champion_family}_smote", model_smote, X_val_override=X_val_transformed_for_resampling
-)
-_log_section6_done(f"{champion_family}_smote", time.time() - _step_start, _section6_timing)
+winning_strategy_per_family: dict[str, pd.Series] = {}
 
-# %%
-# 6b: ADASYN
-_log_section6_progress(1, 4, f"{champion_family}_adasyn", _section6_timing, _section6_names)
-_step_start = time.time()
-X_adasyn, y_adasyn = resample_adasyn(X_train_sub_transformed, y_train_sub)
-model_adasyn = _load_or_fit(
-    f"{champion_family}_adasyn", lambda: build_champion_classifier_only().fit(X_adasyn, y_adasyn)
-)
-_score_on_validation(
-    f"{champion_family}_adasyn", model_adasyn, X_val_override=X_val_transformed_for_resampling
-)
-_log_section6_done(f"{champion_family}_adasyn", time.time() - _step_start, _section6_timing)
+for family in candidate_families:
+    build_unweighted = unweighted_builder[family]
+    _section6_names = [
+        f"{family}_smote",
+        f"{family}_adasyn",
+        f"{family}_threshold_moving",
+        f"{family}_ordinal",
+    ]
+    _section6_timing: dict = {"family_durations": {}, "last_duration": None}
 
-# %%
-# 6c: threshold moving (post-hoc on the unweighted champion-family model)
-_log_section6_progress(
-    2, 4, f"{champion_family}_threshold_moving", _section6_timing, _section6_names
-)
-_step_start = time.time()
-model_unweighted = _load_or_fit(
-    f"{champion_family}_unweighted",
-    lambda: build_champion(tree_preprocessor).fit(X_train_sub, y_train_sub),
-)
-val_proba = model_unweighted.predict_proba(X_val)
-best_threshold = find_best_threshold_for_class(
-    y_val, val_proba, classes=list(model_unweighted.classes_), target_class=1
-)
-target_idx = list(model_unweighted.classes_).index(1)
-other_classes = np.array([c for c in model_unweighted.classes_ if c != 1])
-other_proba = np.delete(val_proba, target_idx, axis=1)
-fallback = other_classes[np.argmax(other_proba, axis=1)]
-threshold_preds = np.where(val_proba[:, target_idx] >= best_threshold, 1, fallback)
-threshold_metrics = evaluate_predictions(y_val, threshold_preds)
-comparison_rows.append({"model": f"{champion_family}_threshold_moving", **threshold_metrics})
-print(f"Best threshold for class 1: {best_threshold:.2f}")
-_log_section6_done(
-    f"{champion_family}_threshold_moving", time.time() - _step_start, _section6_timing
-)
+    def build_classifier_only():
+        """Unfitted classify-step estimator only, for direct use on already-
+        preprocessed numeric arrays (SMOTE/ADASYN output) - a full
+        build_unweighted(tree_preprocessor) Pipeline would try to
+        re-preprocess the already-transformed array as if it were the raw
+        DataFrame."""
+        return build_unweighted(tree_preprocessor).named_steps["classify"]
 
-# %%
-# 6d: ordinal classification (Frank-Hall) using the champion family's own estimator as base
-_log_section6_progress(3, 4, f"{champion_family}_ordinal", _section6_timing, _section6_names)
-_step_start = time.time()
-base_estimator_for_ordinal = clone(build_champion(tree_preprocessor).named_steps["classify"])
-ordinal_pipeline = _load_or_fit(
-    f"{champion_family}_ordinal",
-    lambda: build_ordinal_pipeline(tree_preprocessor, base_estimator_for_ordinal).fit(
-        X_train_sub, y_train_sub
-    ),
-)
-_score_on_validation(f"{champion_family}_ordinal", ordinal_pipeline)
-_log_section6_done(f"{champion_family}_ordinal", time.time() - _step_start, _section6_timing)
+    # 6a: SMOTE
+    _log_section6_progress(0, 4, f"{family}_smote", _section6_timing, _section6_names)
+    _step_start = time.time()
+    X_smote, y_smote = resample_smote(X_train_sub_transformed, y_train_sub)
+    model_smote = _load_or_fit(
+        f"{family}_smote", lambda: build_classifier_only().fit(X_smote, y_smote)
+    )
+    _score_on_validation(
+        f"{family}_smote", model_smote, X_val_override=X_val_transformed_for_resampling
+    )
+    _log_section6_done(f"{family}_smote", time.time() - _step_start, _section6_timing)
+
+    # 6b: ADASYN
+    _log_section6_progress(1, 4, f"{family}_adasyn", _section6_timing, _section6_names)
+    _step_start = time.time()
+    X_adasyn, y_adasyn = resample_adasyn(X_train_sub_transformed, y_train_sub)
+    model_adasyn = _load_or_fit(
+        f"{family}_adasyn", lambda: build_classifier_only().fit(X_adasyn, y_adasyn)
+    )
+    _score_on_validation(
+        f"{family}_adasyn", model_adasyn, X_val_override=X_val_transformed_for_resampling
+    )
+    _log_section6_done(f"{family}_adasyn", time.time() - _step_start, _section6_timing)
+
+    # 6c: threshold moving (post-hoc on the unweighted family model)
+    _log_section6_progress(2, 4, f"{family}_threshold_moving", _section6_timing, _section6_names)
+    _step_start = time.time()
+    model_unweighted = _load_or_fit(
+        f"{family}_unweighted",
+        lambda: build_unweighted(tree_preprocessor).fit(X_train_sub, y_train_sub),
+    )
+    val_proba = model_unweighted.predict_proba(X_val)
+    best_threshold = find_best_threshold_for_class(
+        y_val, val_proba, classes=list(model_unweighted.classes_), target_class=1
+    )
+    target_idx = list(model_unweighted.classes_).index(1)
+    other_classes = np.array([c for c in model_unweighted.classes_ if c != 1])
+    other_proba = np.delete(val_proba, target_idx, axis=1)
+    fallback = other_classes[np.argmax(other_proba, axis=1)]
+    threshold_preds = np.where(val_proba[:, target_idx] >= best_threshold, 1, fallback)
+    threshold_metrics = evaluate_predictions(y_val, threshold_preds)
+    comparison_rows.append({"model": f"{family}_threshold_moving", **threshold_metrics})
+    print(f"[{family}] best threshold for class 1: {best_threshold:.2f}")
+    _log_section6_done(f"{family}_threshold_moving", time.time() - _step_start, _section6_timing)
+
+    # 6d: ordinal classification (Frank-Hall) using the family's own estimator as base
+    _log_section6_progress(3, 4, f"{family}_ordinal", _section6_timing, _section6_names)
+    _step_start = time.time()
+    base_estimator_for_ordinal = clone(build_unweighted(tree_preprocessor).named_steps["classify"])
+    ordinal_pipeline = _load_or_fit(
+        f"{family}_ordinal",
+        lambda: build_ordinal_pipeline(tree_preprocessor, base_estimator_for_ordinal).fit(
+            X_train_sub, y_train_sub
+        ),
+    )
+    _score_on_validation(f"{family}_ordinal", ordinal_pipeline)
+    _log_section6_done(f"{family}_ordinal", time.time() - _step_start, _section6_timing)
+
+    comparison_df = pd.DataFrame(comparison_rows)
+    strategy_rows = comparison_df[comparison_df["model"].str.startswith(family)]
+    winning_row = select_best_candidate(strategy_rows)
+    winning_strategy_per_family[family] = winning_row
+    _log_progress(
+        f"[{family}] winning strategy: {winning_row['model']}  "
+        f"macro-F1={winning_row['macro_f1']:.3f}  recall(1)={winning_row['recall_class_1']:.3f}"
+    )
+    print(f"[{family}] winning strategy: {winning_row['model']}")
 
 comparison_df = pd.DataFrame(comparison_rows)
-strategy_rows = comparison_df[comparison_df["model"].str.startswith(champion_family)]
-winning_strategy_row = strategy_rows.sort_values("macro_f1", ascending=False).iloc[0]
-_log_progress(f"Winning (model, strategy) combination: {winning_strategy_row['model']}")
-print(f"Winning (model, strategy) combination: {winning_strategy_row['model']}")
-strategy_rows.sort_values("macro_f1", ascending=False)
+comparison_df.sort_values("macro_f1", ascending=False)
 
 
-def _build_winning_pipeline(pre):
-    """Unfitted pipeline matching whichever (model, strategy) combination
-    actually WON the §6 comparison above - not `build_champion`'s
-    always-unweighted baseline, which exists only to give SMOTE/ADASYN/
-    threshold-moving/ordinal a fair, equally-unweighted opponent in that
-    comparison. Tuning/refitting `build_champion` directly here would
-    silently retune the wrong (unweighted) configuration regardless of
-    which strategy actually won - e.g. if plain class_weight="balanced"
-    (`champion_pipeline`) beat every resampling/ordinal treatment, §7/§8
-    must tune and refit *that*, not the unweighted variant.
-
-    TODO(Task 3): still references the pre-pivot champion_name/
-    champion_pipeline removed in §5's rewrite (Task 2) - superseded by
-    a per-family lookup into candidate_names/candidate_pipelines and will
-    be replaced wholesale. The lint suppressions below are a deliberate,
-    temporary bridge between Task 2's commit and Task 3's, not a fix.
+def _build_pipeline_for(family: str, strategy_model_name: str):
+    """Unfitted pipeline matching the given (family, strategy) combination -
+    NOT unweighted_builder's always-unweighted baseline, which exists only
+    to give SMOTE/ADASYN/threshold-moving/ordinal a fair, equally-
+    unweighted opponent in the §6 comparison above. Tuning/refitting the
+    unweighted builder directly here would silently retune the wrong
+    configuration regardless of which strategy actually won - e.g. if the
+    plain balanced classifier (`candidate_pipelines[family]`) beat every
+    resampling/ordinal treatment, §7/§8 must tune and refit *that*, not
+    the unweighted variant.
     """
-    winner = winning_strategy_row["model"]
-    if winner == champion_name:  # noqa: F821
-        return clone(champion_pipeline)  # noqa: F821
-    if winner == f"{champion_family}_unweighted":
-        return build_champion(pre)
+    if strategy_model_name == candidate_names[family]:
+        return clone(candidate_pipelines[family])
+    if strategy_model_name == f"{family}_unweighted":
+        return unweighted_builder[family](tree_preprocessor)
     raise NotImplementedError(
-        f"No tuning/refit path implemented for winning strategy '{winner}' - "
+        f"No tuning/refit path implemented for winning strategy '{strategy_model_name}' - "
         "SMOTE/ADASYN/threshold-moving/ordinal each need a fitting procedure "
         "inside Optuna's per-fold CV other than plain "
         "Pipeline.set_params().fit(), which is out of scope here."
@@ -812,9 +808,15 @@ print(
 )
 
 
+# TODO(Task 4): this §7 tuning loop still references the pre-pivot
+# champion_family/_build_winning_pipeline single-champion variables
+# removed in §6's rewrite (Task 3) - it is superseded by per-family Optuna
+# studies over candidate_families and will be replaced wholesale by
+# Task 4. The lint suppressions below are a deliberate, temporary bridge
+# between Task 3's commit and Task 4's, not a fix.
 def objective(trial: optuna.Trial) -> float:
-    params = PARAM_SPACES[champion_family](trial)
-    pipeline = _build_winning_pipeline(tree_preprocessor).set_params(**params)
+    params = PARAM_SPACES[champion_family](trial)  # noqa: F821
+    pipeline = _build_winning_pipeline(tree_preprocessor).set_params(**params)  # noqa: F821
     scores = cross_val_score(
         pipeline,
         X_train_sub,
@@ -867,17 +869,25 @@ print(f"Best params: {study.best_params}")
 # split — the single time this notebook touches the test set.
 
 # %%
+# TODO(Task 5): this §8 refit/eval cell still references the pre-pivot
+# champion_family/_build_winning_pipeline single-champion variables
+# removed in §6's rewrite (Task 3) - it is superseded by a per-family
+# cross-family selection + single refit and will be replaced wholesale by
+# Task 5. The lint suppressions below are a deliberate, temporary bridge
+# between Task 3's commit and Task 5's, not a fix.
 _log_progress("Refitting tuned configuration on the FULL 2016-2022 training set...")
 best_params = {f"classify__{k}": v for k, v in study.best_params.items()}
-if champion_family == "xgboost":
+if champion_family == "xgboost":  # noqa: F821
     best_params = {
         k.replace("classify__", "classify__estimator__", 1): v for k, v in best_params.items()
     }
 
 final_pipeline = _load_or_fit(
-    f"{champion_family}_final_tuned",
+    f"{champion_family}_final_tuned",  # noqa: F821
     lambda: (
-        _build_winning_pipeline(tree_preprocessor).set_params(**best_params).fit(X_train, y_train)
+        _build_winning_pipeline(tree_preprocessor)  # noqa: F821
+        .set_params(**best_params)
+        .fit(X_train, y_train)
     ),
 )
 
@@ -903,9 +913,12 @@ print(np.array(final_metrics["confusion_matrix"]))
 model_path = PROCESSED_DIR / "a3_best_model.joblib"
 joblib.dump(final_pipeline, model_path)
 
+# TODO(Task 5): champion_family/winning_strategy_row are pre-pivot
+# single-champion variables removed in §6's rewrite (Task 3) - superseded
+# by a per-family model card and will be replaced wholesale by Task 5.
 model_card = {
-    "champion_family": champion_family,
-    "winning_strategy": winning_strategy_row["model"],
+    "champion_family": champion_family,  # noqa: F821
+    "winning_strategy": winning_strategy_row["model"],  # noqa: F821
     "tuned_hyperparameters": study.best_params,
     "test_2024_metrics": final_metrics,
     "acceptance_gate_passed": passes,
