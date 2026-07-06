@@ -205,6 +205,12 @@ A cross-validation splitter that guarantees all rows sharing a group value (here
 **Champion candidates**
 The (model, configuration) combinations carried forward from Stufe 0/1 into the imbalance-strategy comparison and hyperparameter tuning. Selected by `select_best_candidate()`: highest validation macro-F1 among candidates that clear the recall(class 1) ≥ 0.50 gate, not by macro-F1 alone — Random Forest had the single highest raw macro-F1 among the 8 Stufe-1 configurations but recall(class 1) far below the gate, so CatBoost and LightGBM (which cleared the gate untuned) were carried forward instead.
 
+**H3 (Hexagonal Hierarchical Spatial Index)**
+Uber's hexagonal geospatial indexing system. Divides the earth's surface into hexagonal cells at multiple resolutions; resolution 8 cells (used in this project) are ~0.7 km² wide. Used to aggregate OSM road-network data to a manageable, uniform spatial grid before joining to each accident by location — an alternative to a per-point nearest-road lookup, chosen for compute-bounded joins across all of Germany.
+
+**OSM Road-Context Features**
+Road class, speed limit, density, and way-count statistics aggregated per H3 cell from OpenStreetMap, joined to each accident by location (U-phase §8.8). Reflects the present-day road network, applied uniformly across all accident years (2016–2024) — a documented, accepted approximation (see §11 risk 5), not a temporal-leakage vector (OSM data does not depend on accident outcomes).
+
 ---
 
 ## Process Model

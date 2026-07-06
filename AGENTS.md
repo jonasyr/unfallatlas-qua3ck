@@ -56,8 +56,8 @@ unfallatlas-qua3ck/
 │   ├── 03_A3_Phase.ipynb   # Modelling & tuning (done)
 │   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO)
 ├── src/unfallatlas/        # Reusable production library
-│   ├── data/               # download.py, dwd.py (weather), osm.py
-│   ├── features/           # enrich.py, spatial.py, temporal.py, preprocessing.py
+│   ├── data/               # download.py, dwd.py (weather), osm.py (road network)
+│   ├── features/           # enrich.py, spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
 │   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py
 │   └── viz/                # geo.py, shap_plots.py, streamlit_app.py
 ├── app/                    # Streamlit demo entry point
