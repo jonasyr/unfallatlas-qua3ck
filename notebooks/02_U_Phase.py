@@ -161,7 +161,6 @@ COL_CODE_LABELS = {
     "UTYP1": UTYP1_LABELS,
 }
 
-
 # %%
 # Paths — robust whether launched from project root or from notebooks/
 BASE_DIR = Path.cwd().parent if Path.cwd().name == "notebooks" else Path.cwd()
@@ -425,7 +424,7 @@ numeric_cols = [
 ]
 minmax = (
     con.execute(f"""
-    SELECT {', '.join(f'MIN({c}) AS min_{c}, MAX({c}) AS max_{c}' for c in numeric_cols)}
+    SELECT {", ".join(f"MIN({c}) AS min_{c}, MAX({c}) AS max_{c}" for c in numeric_cols)}
     FROM '{DATA}'
 """)
     .df()
@@ -441,7 +440,7 @@ suspicious_set = {"unknown", "na", "n/a", "", "null", "none", "?", "-"}
 for col in str_cols:
     df_col = con.execute(f"SELECT DISTINCT \"{col}\" AS v FROM '{DATA}'").df()["v"].astype(str)
     suspicious = df_col[df_col.str.lower().isin(suspicious_set)]
-    print(f"  {col:10s}  distinct = {len(df_col):>6}  " f"suspicious = {len(suspicious)}")
+    print(f"  {col:10s}  distinct = {len(df_col):>6}  suspicious = {len(suspicious)}")
 
 # %% [markdown]
 # ### 3.3  Duplicates
@@ -477,9 +476,9 @@ DE_BBOX = {"lat_min": 47.27, "lat_max": 55.06, "lon_min": 5.87, "lon_max": 15.04
 range_checks = (
     con.execute(f"""
     SELECT
-        SUM(CASE WHEN LAT NOT BETWEEN {DE_BBOX['lat_min']} AND {DE_BBOX['lat_max']}
+        SUM(CASE WHEN LAT NOT BETWEEN {DE_BBOX["lat_min"]} AND {DE_BBOX["lat_max"]}
                  THEN 1 ELSE 0 END) AS lat_outside_de,
-        SUM(CASE WHEN LON NOT BETWEEN {DE_BBOX['lon_min']} AND {DE_BBOX['lon_max']}
+        SUM(CASE WHEN LON NOT BETWEEN {DE_BBOX["lon_min"]} AND {DE_BBOX["lon_max"]}
                  THEN 1 ELSE 0 END) AS lon_outside_de,
         SUM(CASE WHEN USTUNDE    NOT BETWEEN 0 AND 23 THEN 1 ELSE 0 END) AS hour_invalid,
         SUM(CASE WHEN UMONAT     NOT BETWEEN 1 AND 12 THEN 1 ELSE 0 END) AS month_invalid,
@@ -647,7 +646,7 @@ for col, (r, c) in zip(cat_cols, positions):
             y=d["n"],
             marker_color=COLOR_PRIMARY,
             hovertemplate=(
-                f"<b>{FEATURE_LABELS.get(col, col)}</b>: %{{x}}<br>" "n = %{y:,}<extra></extra>"
+                f"<b>{FEATURE_LABELS.get(col, col)}</b>: %{{x}}<br>n = %{{y:,}}<extra></extra>"
             ),
             showlegend=False,
         ),
@@ -1021,7 +1020,7 @@ fig.show()
 # Interactive density map (OpenStreetMap, no token required).
 SAMPLE_GEO = 50_000
 geo_sample = con.execute(
-    f"SELECT LON, LAT, UKATGEORIE FROM '{DATA}' " f"USING SAMPLE {SAMPLE_GEO} ROWS (reservoir, 42)"
+    f"SELECT LON, LAT, UKATGEORIE FROM '{DATA}' USING SAMPLE {SAMPLE_GEO} ROWS (reservoir, 42)"
 ).df()
 geo_sample["severity_label"] = geo_sample["UKATGEORIE"].map(
     {
@@ -1578,7 +1577,6 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
     save_fig(fig, "08_7_dwd_monthly_fatality_precip")
     fig.show()
 
-
 # %% [markdown]
 # > **Observation.** Cramér's V values: Windgeschwindigkeit = 0.018,
 # > Lufttemperatur = 0.015, Sichtweite = 0.008, Niederschlagsmenge = 0.008.
@@ -1593,6 +1591,67 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
 # > §11; A³ must apply median imputation inside the Pipeline.
 #
 # ---
+
+# %% [markdown]
+# ## 8.8 — OSM road-context enrichment
+#
+# `src/unfallatlas/features/spatial.py` and `src/unfallatlas/data/osm.py` add
+# road-context features aggregated per H3-8 cell (~0.7 km² hexagons):
+# dominant road class, mean/max speed limit, road density, and a
+# junction/complexity proxy (distinct-way count). Fetched once from
+# OpenStreetMap per Bundesland (16 states), cached to `data/raw/osm/`, then
+# joined onto every accident by its H3 cell.
+#
+# **Known limitation:** OSM reflects the present-day road network; accidents
+# span 2016–2024 and some roads' classification/speed limits will have
+# changed since. This is an accepted approximation (same category as the DWD
+# weather join's day-of-month averaging, §8.5) — not solvable without a paid
+# historical-OSM-snapshot service, out of scope here.
+
+# %%
+from unfallatlas.data.osm import GERMAN_STATES, build_spatial_features  # noqa: E402
+from unfallatlas.features.spatial import ROAD_CLASS_RANK  # noqa: E402
+
+RAW_DIR = BASE_DIR / "data" / "raw"
+INTERIM_DIR = BASE_DIR / "data" / "interim"
+
+print(
+    f"Fetching OSM road networks for {len(GERMAN_STATES)} states (uses per-state cache if present)..."
+)
+df_spatial = build_spatial_features(df_weather, RAW_DIR, INTERIM_DIR, resolution=8)
+print(f"Spatially-enriched frame: {len(df_spatial):,} rows, {df_spatial.shape[1]} columns")
+
+osm_cols = [
+    "osm_dominant_road_class",
+    "osm_maxspeed_mean",
+    "osm_maxspeed_max",
+    "osm_road_density",
+    "osm_way_count",
+]
+coverage = df_spatial[osm_cols].notna().mean() * 100
+print("\nOSM feature coverage (% of accidents with a matched H3 cell):")
+print(coverage.round(1))
+
+# %%
+fig = px.histogram(
+    df_spatial,
+    x="osm_dominant_road_class",
+    category_orders={"osm_dominant_road_class": list(ROAD_CLASS_RANK.keys())},
+    title="Dominant OSM road class by accident (H3-8 cell)",
+)
+save_fig(fig, "08_8_osm_road_class_distribution")
+fig.show()
+
+# %%
+fig = px.histogram(
+    df_spatial,
+    x="osm_maxspeed_mean",
+    nbins=40,
+    title="Mean OSM speed limit (km/h) in the accident's H3 cell",
+)
+save_fig(fig, "08_8_osm_maxspeed_distribution")
+fig.show()
+
 
 # %% [markdown]
 # ## 9 — Leakage audit
@@ -1809,6 +1868,33 @@ else:
 # > removed as a leakage vector.
 #
 # ---
+
+# %% [markdown]
+# ### §9.5 — OSM feature consistency probe
+#
+# Mirrors §9.4's conditional-entropy method: does knowing the OSM road
+# class trivially determine the target (which would suggest a data
+# artefact, not a genuine relationship)? A large entropy reduction here
+# would be suspicious - OSM data is independent of accident outcomes by
+# construction (it describes the road, not the crash), so a strong result
+# should read as a real severity signal, not a leak.
+
+# %%
+if "osm_dominant_road_class" in df_spatial.columns:
+    baseline_entropy = entropy(df_spatial["UKATGEORIE"])
+    cond_entropy = conditional_entropy(
+        df_spatial["UKATGEORIE"], df_spatial["osm_dominant_road_class"]
+    )
+    reduction_pct = 100 * (baseline_entropy - cond_entropy) / baseline_entropy
+    print(f"Baseline entropy: {baseline_entropy:.4f}")
+    print(f"Conditional entropy given osm_dominant_road_class: {cond_entropy:.4f}")
+    print(f"Reduction: {reduction_pct:.1f}%")
+    if reduction_pct > 50:
+        print("\n  → WARNING: reduction exceeds the 50% trigger - investigate before including.")
+    else:
+        print("\n  → Below the 50% trigger - retain as a feature.")
+else:
+    print("OSM data not loaded — skipping §9.5 probe.")
 
 # %% [markdown]
 # ## 10 — Preprocessing decisions (U → A³ handover)
