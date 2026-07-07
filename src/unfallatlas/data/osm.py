@@ -66,6 +66,16 @@ _VEHICLE_HIGHWAY_VALUES = {
 }
 
 
+class _TransientFetchError(Exception):
+    """Raised when a tile's fetch exhausts all retries on a network error.
+
+    Deliberately distinct from returning None (which means "confirmed no
+    roads in this tile, safe to cache as empty") - a transient failure must
+    NOT be cached, so a later run retries it instead of treating a
+    temporary outage as permanent, real-world absence of roads.
+    """
+
+
 def _grid_tiles(
     west: float, south: float, east: float, north: float, tile_size_deg: float = 0.2
 ) -> list[tuple[float, float, float, float]]:
@@ -103,10 +113,10 @@ def _fetch_tile_edges(
     bbox: tuple[float, float, float, float], custom_filter: str, max_retries: int = 2
 ) -> gpd.GeoDataFrame | None:
     """Fetch one tile's road network as a raw [highway, maxspeed, geometry]
-    GeoDataFrame, or None if the tile has no matching roads (a tile over
-    water/forest, or one that only grazes a state's actual boundary since
-    the state bbox is a rectangle superset of its real, irregular polygon)
-    or if it fails repeatedly due to a transient network problem.
+    GeoDataFrame, or None if the tile is CONFIRMED to have no matching roads
+    (a tile over water/forest, or one that only grazes a state's actual
+    boundary since the state bbox is a rectangle superset of its real,
+    irregular polygon).
 
     truncate_by_edge=True is required, not optional: with the default
     truncate_by_edge=False, graph_from_bbox removes any node outside the
@@ -123,13 +133,23 @@ def _fetch_tile_edges(
     Retries max_retries times on a transient network error
     (requests.exceptions.RequestException - confirmed empirically: osmnx's
     own internal rate-limit status check, not just the main Overpass
-    query, can raise requests.exceptions.ReadTimeout on an overloaded
-    public mirror, which is NOT a ValueError and was NOT caught before,
-    crashing the whole per-state fetch and losing all already-fetched
-    tiles' progress). A tile with no matching roads at all raises
-    ValueError (osmnx's InsufficientResponseError, or a plain ValueError
-    from truncate_graph_polygon) - NOT retried, since retrying can't
-    produce data that doesn't exist.
+    query, can raise requests.exceptions.ReadTimeout/ConnectionError on an
+    overloaded public mirror or a single dead backend in its DNS
+    round-robin pool - overpass-api.de resolves to multiple IPs and one of
+    them being down causes "Connection refused" on whichever retry happens
+    to land on it). If every retry is exhausted, raises
+    _TransientFetchError rather than returning None - a real live run
+    (Bayern/Brandenburg/Hamburg) proved this distinction matters: an
+    earlier version returned None uniformly for both "confirmed empty"
+    and "gave up after retries", which download_road_network then cached
+    identically as a permanent 0-row tile - silently and permanently
+    erasing real road data for 70 tiles (~10% of Bayern and Brandenburg)
+    for an outage that was actually transient (one dead backend in the
+    Overpass round-robin; other tiles retried against a healthy backend
+    and succeeded). A tile with no matching roads at all raises ValueError
+    (osmnx's InsufficientResponseError, or a plain ValueError from
+    truncate_graph_polygon) - NOT retried, since retrying can't produce
+    data that doesn't exist, and legitimately safe to cache as empty.
     """
     for attempt in range(max_retries + 1):
         try:
@@ -155,7 +175,7 @@ def _fetch_tile_edges(
                 )
                 continue
             log.warning("Giving up on tile %s after %d attempts: %s", bbox, max_retries + 1, exc)
-            return None
+            raise _TransientFetchError(str(exc)) from exc
 
     if len(graph.edges) == 0:
         return None
@@ -184,6 +204,17 @@ def _clean_road_gdf(raw_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gdf["highway"] = gdf["highway"].apply(lambda v: v[0] if isinstance(v, list) else v)
     gdf["maxspeed"] = gdf["maxspeed"].apply(lambda v: v[0] if isinstance(v, list) else v)
     return gdf[gdf["highway"].isin(_VEHICLE_HIGHWAY_VALUES)].reset_index(drop=True)
+
+
+def _state_cache_path(cache_dir: Path, state: str) -> Path:
+    """The whole-state cache parquet path download_road_network reads/writes.
+
+    Shared with build_spatial_features so its retry-incomplete-states pass
+    checks the exact same path download_road_network itself uses to decide
+    whether a state is fully resolved.
+    """
+    state_slug = state.lower().replace(" ", "_").replace("ü", "ue").replace("ä", "ae")
+    return Path(cache_dir) / f"{state_slug}.parquet"
 
 
 def download_road_network(
@@ -252,7 +283,7 @@ def download_road_network(
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     state_slug = state.lower().replace(" ", "_").replace("ü", "ue").replace("ä", "ae")
-    cache_path = cache_dir / f"{state_slug}.parquet"
+    cache_path = _state_cache_path(cache_dir, state)
 
     if cache_path.exists() and not force_refresh:
         log.info("Using cached OSM road network for %s at %s", state, cache_path)
@@ -286,6 +317,7 @@ def download_road_network(
     tile_cache_dir.mkdir(parents=True, exist_ok=True)
 
     tile_frames = []
+    incomplete_tiles = []
     for i, tile in enumerate(tiles, start=1):
         tile_cache_path = tile_cache_dir / f"tile_{i:04d}.parquet"
         if tile_cache_path.exists() and not force_refresh:
@@ -295,7 +327,19 @@ def download_road_network(
                 tile_frames.append(tile_edges)
             continue
         log.info("  [tile %d/%d] %s", i, len(tiles), tile)
-        tile_edges = _fetch_tile_edges(tile, custom_filter)
+        try:
+            tile_edges = _fetch_tile_edges(tile, custom_filter)
+        except _TransientFetchError as exc:
+            # Do NOT write a tile cache file here - caching this as empty
+            # would permanently record a transient outage as "no roads in
+            # this tile", indistinguishable from a genuinely empty tile on
+            # every future run. Leaving no cache file means a later call
+            # retries exactly this tile instead of skipping it forever.
+            log.warning(
+                "  [tile %d/%d] leaving uncached after repeated failures: %s", i, len(tiles), exc
+            )
+            incomplete_tiles.append(i)
+            continue
         if tile_edges is not None:
             # Clean before caching (not just at the end, on the combined frame):
             # raw tile_edges can have list-valued "highway" tags (OSM's own
@@ -337,6 +381,26 @@ def download_road_network(
         .reset_index(drop=True)
     )
     log.info("%s: %d tile rows -> %d after tile-boundary dedup", state, before_dedup, len(cleaned))
+
+    if incomplete_tiles:
+        # Do NOT write the whole-state cache_path: doing so would mark this
+        # state as permanently "done" (download_road_network's cache_path
+        # check short-circuits all tile logic on the next call), baking the
+        # missing tiles' absence into the final cached network forever -
+        # exactly what happened to Bayern and Brandenburg before this fix
+        # (70 tiles silently zeroed out across two already-finalized state
+        # caches). Returning the partial result lets the caller proceed for
+        # now, but a later call with the same cache_dir will retry exactly
+        # these tiles and only then write cache_path.
+        log.warning(
+            "%s: %d/%d tiles left uncached after retries - NOT writing %s yet, "
+            "re-run to retry them",
+            state,
+            len(incomplete_tiles),
+            len(tiles),
+            cache_path,
+        )
+        return cleaned
 
     cleaned.to_parquet(cache_path)
     log.info("Cached %s road network → %s (%d ways)", state, cache_path, len(cleaned))
@@ -407,11 +471,7 @@ def build_spatial_features(
     all_cell_aggregates = []
     total = len(GERMAN_STATES)
     for i, state in enumerate(GERMAN_STATES, start=1):
-        state_cache_path = (
-            raw_cache_dir
-            / "osm"
-            / f"{state.lower().replace(' ', '_').replace('ü', 'ue').replace('ä', 'ae')}.parquet"
-        )
+        state_cache_path = _state_cache_path(raw_cache_dir / "osm", state)
         already_cached = state_cache_path.exists() and not force_refresh
         status = (
             "cached" if already_cached else "fetching from OSM (can take a while for large states)"
@@ -422,6 +482,37 @@ def build_spatial_features(
         elapsed = time.time() - start
         log.info("  -> %s done in %.1fs (%d ways)", state, elapsed, len(roads))
         all_cell_aggregates.append(aggregate_roads_to_h3(roads, resolution=resolution))
+
+    # A state whose fetch left tiles uncached (transient network errors
+    # exhausting retries - see _TransientFetchError) returns its best-effort
+    # partial GeoDataFrame above without writing its whole-state cache_path,
+    # so cell_features already reflects whatever was fetched. But leaving it
+    # there means the state's cache never finalizes and a future run repeats
+    # the same partial fetch. Retry those states here, within this same call,
+    # bounded to avoid looping forever against a genuinely-down mirror.
+    max_retry_passes = 3
+    for attempt in range(1, max_retry_passes + 1):
+        incomplete = [
+            (i, state)
+            for i, state in enumerate(GERMAN_STATES)
+            if not _state_cache_path(raw_cache_dir / "osm", state).exists()
+        ]
+        if not incomplete:
+            break
+        log.info(
+            "Retry pass %d/%d: %d state(s) still have unresolved tiles: %s",
+            attempt,
+            max_retry_passes,
+            len(incomplete),
+            [state for _, state in incomplete],
+        )
+        for i, state in incomplete:
+            start = time.time()
+            roads = download_road_network(state, raw_cache_dir / "osm", force_refresh=False)
+            elapsed = time.time() - start
+            log.info("  -> %s retry done in %.1fs (%d ways)", state, elapsed, len(roads))
+            all_cell_aggregates[i] = aggregate_roads_to_h3(roads, resolution=resolution)
+
     cell_features = pd.concat(all_cell_aggregates, ignore_index=True)
     # A cell straddling a state boundary query could appear in two states'
     # extracts - keep the higher-way-count (more complete) version.

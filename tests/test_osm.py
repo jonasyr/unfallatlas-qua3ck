@@ -213,3 +213,36 @@ def test_download_road_network_resumes_from_per_tile_cache_after_interruption(
 
     assert len(fetch_calls) == n_tiles_first_run  # no additional network fetches
     assert cache_path.exists()  # the whole-state cache is now written
+
+
+def test_download_road_network_does_not_cache_tiles_that_exhaust_retries(tmp_path, monkeypatch):
+    """A tile that gives up after repeated network errors must NOT be cached
+    as empty - that would permanently record a transient outage as "no
+    roads here", indistinguishable from a genuinely empty tile on every
+    future run. A real live run (Bayern/Brandenburg) proved this: 70 tiles
+    were silently zeroed out this way, ~10% of two already-finalized state
+    caches, because of one dead backend in overpass-api.de's DNS
+    round-robin pool - not because those areas have no roads."""
+    import unfallatlas.data.osm as osm_module
+    from unfallatlas.data.osm import _TransientFetchError
+
+    class DummyBounds:
+        total_bounds = (10.0, 50.0, 10.4, 50.2)
+
+    def _flaky_fetch(tile, custom_filter):
+        # First tile fails every retry; the rest succeed normally.
+        if tile[0] == 10.0:
+            raise _TransientFetchError("simulated repeated network failure")
+        return _toy_raw_gdf()
+
+    monkeypatch.setattr(osm_module.ox, "geocode_to_gdf", lambda _: DummyBounds())
+    monkeypatch.setattr(osm_module, "_fetch_tile_edges", _flaky_fetch)
+
+    result = download_road_network("Hessen", tmp_path, force_refresh=True)
+
+    # The whole-state cache must NOT be written while a tile remains unresolved.
+    assert not (tmp_path / "hessen.parquet").exists()
+    # No cache file exists for the failed tile either - it must be retried later.
+    assert not (tmp_path / "hessen_tiles" / "tile_0001.parquet").exists()
+    # Other tiles' data is still returned to the caller.
+    assert len(result) > 0
