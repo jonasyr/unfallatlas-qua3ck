@@ -307,11 +307,23 @@ _log_progress(
 # K-fold; not a random StratifiedKFold." The training window spans 7
 # distinct years (2016–2022) — `GroupKFold` grouped by year gives 7 folds
 # that never let a model see a "future" year during model selection.
+#
+# **This cell is a standalone sanity check, not consumed downstream.** It
+# confirms the CV strategy resolves to the expected 7 year-groups on the
+# full training set. §7's Optuna tuning (below) builds its own
+# `GroupKFold` from `years_sub` — the *500k-row subsample's* distinct
+# years, which can differ in count from the full set's — so it
+# intentionally does not reuse `cv`/`cv_groups` from this cell.
 
 # %%
-cv_groups = train_df["UJAHR"].to_numpy()
-cv = GroupKFold(n_splits=train_df["UJAHR"].nunique())
-print(f"GroupKFold with {cv.get_n_splits(groups=cv_groups)} year-groups (2016-2022).")
+# Illustrative only - see the markdown note above for why §7 builds its
+# own GroupKFold from the subsample's years instead of reusing this one.
+_cv_groups_full_train = train_df["UJAHR"].to_numpy()
+_cv_full_train = GroupKFold(n_splits=train_df["UJAHR"].nunique())
+print(
+    f"GroupKFold with {_cv_full_train.get_n_splits(groups=_cv_groups_full_train)} "
+    "year-groups (2016-2022)."
+)
 
 # %% [markdown]
 # ## 3 — Stufe 0: baselines
@@ -712,7 +724,21 @@ for family in candidate_families:
     _log_section6_done(f"{family}_ordinal", time.time() - _step_start, _section6_timing)
 
     comparison_df = pd.DataFrame(comparison_rows)
-    strategy_rows = comparison_df[comparison_df["model"].str.startswith(family)]
+    # Explicit allow-list, not a startswith(family) prefix match: the
+    # latter also matches f"{family}_default" (a Stufe-1 baseline row with
+    # no refit path in _build_pipeline_for below - NotImplementedError if
+    # it were ever picked). Only the 4 strategies actually compared in
+    # this loop, plus the family's own already-known balanced candidate
+    # (candidate_names[family], e.g. "catboost_balanced" - already scored
+    # in Stufe 1 above, not re-scored here), are eligible to win.
+    _family_strategy_names = [
+        f"{family}_smote",
+        f"{family}_adasyn",
+        f"{family}_threshold_moving",
+        f"{family}_ordinal",
+        candidate_names[family],
+    ]
+    strategy_rows = comparison_df[comparison_df["model"].isin(_family_strategy_names)]
     winning_row = select_best_candidate(strategy_rows)
     winning_strategy_per_family[family] = winning_row
     _log_progress(
@@ -1041,6 +1067,13 @@ model_size_mb = model_path.stat().st_size / 1_048_576
 _log_progress(f"Saved {model_path.name} ({model_size_mb:.1f} MB) and {card_path.name}.")
 print(f"Saved: {model_path} ({model_size_mb:.1f} MB)")
 print(f"Saved: {card_path}")
+
+comparison_csv_path = PROCESSED_DIR / "a3_model_comparison.csv"
+comparison_df.sort_values("macro_f1", ascending=False).to_csv(comparison_csv_path, index=False)
+_log_progress(
+    f"Saved full model-comparison table -> {comparison_csv_path.name} ({len(comparison_df)} rows)."
+)
+print(f"Saved: {comparison_csv_path}")
 
 # %% [markdown]
 # ## 10 — A³ summary and A³-to-C handoff
