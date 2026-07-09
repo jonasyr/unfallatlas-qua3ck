@@ -6,7 +6,14 @@ from shapely.geometry import LineString
 from unfallatlas.data.osm import (
     GERMAN_STATES,
     _clean_road_gdf,
+    _eta_str,
+    _format_duration,
     _grid_tiles,
+    _init_run_progress,
+    _note_tile_done,
+    _overall_progress_str,
+    _record_tile_seconds,
+    _tile_seconds_history,
     build_spatial_features,
     download_road_network,
 )
@@ -213,6 +220,123 @@ def test_download_road_network_resumes_from_per_tile_cache_after_interruption(
 
     assert len(fetch_calls) == n_tiles_first_run  # no additional network fetches
     assert cache_path.exists()  # the whole-state cache is now written
+
+
+def test_format_duration_picks_the_coarsest_nonzero_unit():
+    assert _format_duration(45) == "45s"
+    assert _format_duration(125) == "2m05s"
+    assert _format_duration(3725) == "1h02m"
+
+
+def test_eta_str_is_zero_before_any_tile_has_been_timed(monkeypatch):
+    monkeypatch.setattr("unfallatlas.data.osm._tile_seconds_history", type(_tile_seconds_history)())
+    assert _eta_str(10) == "ETA warming up..."
+
+
+def test_eta_str_reports_done_for_zero_remaining():
+    assert _eta_str(0) == "done"
+
+
+def test_eta_str_uses_rolling_average_of_recorded_tile_durations(monkeypatch):
+    history = type(_tile_seconds_history)()
+    monkeypatch.setattr("unfallatlas.data.osm._tile_seconds_history", history)
+    _record_tile_seconds(2.0)
+    _record_tile_seconds(4.0)
+    # avg = 3.0s/tile, 10 remaining -> 30s
+    assert _eta_str(10) == "ETA 30s (3.0s/tile avg)"
+
+
+def test_overall_progress_str_is_empty_when_run_progress_was_never_initialised(monkeypatch):
+    monkeypatch.setattr(
+        "unfallatlas.data.osm._run_progress",
+        {"total_tiles": None, "tiles_done": 0, "start": None},
+    )
+    assert _overall_progress_str() == ""
+
+
+def test_overall_progress_str_reflects_tiles_already_done_before_any_fetch(monkeypatch):
+    monkeypatch.setattr(
+        "unfallatlas.data.osm._run_progress",
+        {"total_tiles": None, "tiles_done": 0, "start": None},
+    )
+    # 500 of 1000 tiles already cached from a prior run - _init_run_progress
+    # must reflect that from the very first line, not start from 0.
+    _init_run_progress(total_tiles=1000, tiles_already_done=500)
+    assert "500/1000 tiles" in _overall_progress_str()
+
+
+def test_note_tile_done_advances_overall_progress(monkeypatch):
+    monkeypatch.setattr(
+        "unfallatlas.data.osm._run_progress",
+        {"total_tiles": None, "tiles_done": 0, "start": None},
+    )
+    _init_run_progress(total_tiles=10, tiles_already_done=0)
+    _note_tile_done()
+    _note_tile_done()
+    assert "2/10 tiles" in _overall_progress_str()
+
+
+def test_download_road_network_retries_failed_tiles_within_the_same_call(tmp_path, monkeypatch):
+    """A tile that fails transiently on the first pass but would succeed on
+    a later attempt must resolve within this single download_road_network
+    call (state-level retry, up to 5 attempts) rather than requiring the
+    caller to invoke download_road_network again."""
+    import unfallatlas.data.osm as osm_module
+    from unfallatlas.data.osm import _TransientFetchError
+
+    class DummyBounds:
+        # Smaller than one 0.2deg tile on both axes -> exactly one tile,
+        # so call counting below isn't sensitive to _grid_tiles' tile count.
+        total_bounds = (10.0, 50.0, 10.1, 50.1)
+
+    calls = []
+
+    def _flaky_then_healthy_fetch(tile, custom_filter):
+        calls.append(tile)
+        if len(calls) < 3:
+            raise _TransientFetchError("simulated transient failure, recovers later")
+        return _toy_raw_gdf()
+
+    monkeypatch.setattr(osm_module.ox, "geocode_to_gdf", lambda _: DummyBounds())
+    monkeypatch.setattr(osm_module, "_fetch_tile_edges", _flaky_then_healthy_fetch)
+
+    download_road_network("Hessen", tmp_path, force_refresh=True)
+
+    # Resolved by the 3rd attempt, well within the 5-attempt budget - the
+    # whole-state cache must be written without any extra external call.
+    assert len(calls) == 3
+    assert (tmp_path / "hessen.parquet").exists()
+    assert (tmp_path / "hessen_tiles" / "tile_0001.parquet").exists()
+
+
+def test_download_road_network_gives_up_after_max_state_retries(tmp_path, monkeypatch):
+    """A tile that never recovers must not retry forever within one call -
+    bounded at 5 attempts, then returned to the caller as still-incomplete
+    (leaving the state's cache-level retry, and eventually
+    build_spatial_features's cross-state retry-pass, to pick it up later)."""
+    import unfallatlas.data.osm as osm_module
+    from unfallatlas.data.osm import _TransientFetchError
+
+    class DummyBounds:
+        total_bounds = (10.0, 50.0, 10.1, 50.1)  # exactly one tile
+
+    calls = []
+
+    def _always_flaky_fetch(tile, custom_filter):
+        calls.append(tile)
+        raise _TransientFetchError("simulated permanent failure")
+
+    monkeypatch.setattr(osm_module.ox, "geocode_to_gdf", lambda _: DummyBounds())
+    monkeypatch.setattr(osm_module, "_fetch_tile_edges", _always_flaky_fetch)
+
+    # The only tile never resolves, so tile_frames stays empty and
+    # download_road_network raises (matching its existing "no road data
+    # found" contract) - the retry budget is still what's under test here.
+    with pytest.raises(RuntimeError, match="No road data found"):
+        download_road_network("Hessen", tmp_path, force_refresh=True)
+
+    assert len(calls) == 5  # exactly the 5-attempt budget, not unbounded
+    assert not (tmp_path / "hessen.parquet").exists()
 
 
 def test_download_road_network_does_not_cache_tiles_that_exhaust_retries(tmp_path, monkeypatch):

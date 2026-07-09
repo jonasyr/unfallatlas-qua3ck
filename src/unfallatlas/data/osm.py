@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import logging
 import math
+import statistics
 import time
+from collections import deque
 from pathlib import Path
 
 import geopandas as gpd
@@ -74,6 +76,106 @@ class _TransientFetchError(Exception):
     NOT be cached, so a later run retries it instead of treating a
     temporary outage as permanent, real-world absence of roads.
     """
+
+
+# Adaptive ETA: a 0.2° tile is roughly constant-cost regardless of which
+# state it belongs to, so seconds-per-tile is tracked as ONE rolling window
+# across the whole run (not per-state, not a single static average over
+# the entire history) - a fresh state immediately inherits a realistic
+# estimate instead of starting from "no data yet", and the estimate adapts
+# within minutes if the Overpass mirror gets slower/faster mid-run, rather
+# than reporting one generic number for the whole multi-hour run.
+_tile_seconds_history: deque[float] = deque(maxlen=50)
+
+
+def _record_tile_seconds(seconds: float) -> None:
+    _tile_seconds_history.append(seconds)
+
+
+def _avg_tile_seconds() -> float | None:
+    return statistics.mean(_tile_seconds_history) if _tile_seconds_history else None
+
+
+def _format_duration(seconds: float) -> str:
+    """Human-readable Hh Mm / Mm Ss / Ss, dropping zero leading units."""
+    seconds = max(int(round(seconds)), 0)
+    hours, rem = divmod(seconds, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def _eta_str(remaining_units: int) -> str:
+    """ETA for `remaining_units` tiles at the current adaptive rate.
+
+    Returns an explicit "warming up" placeholder rather than a number until
+    at least one real tile fetch has completed this run - a fabricated ETA
+    from zero data would be actively misleading, not just imprecise.
+    """
+    if remaining_units <= 0:
+        return "done"
+    avg = _avg_tile_seconds()
+    if avg is None:
+        return "ETA warming up..."
+    return f"ETA {_format_duration(avg * remaining_units)} ({avg:.1f}s/tile avg)"
+
+
+# Whole-run progress: set once per build_spatial_features call
+# (_init_run_progress) and updated per-tile (_note_tile_done) so the
+# per-tile log line - which fires constantly, unlike the once-per-state
+# summary line - can show a live overall ETA too. download_road_network
+# has no reason to know about other states' tile budgets, so this lives
+# at module level rather than being threaded through as a parameter.
+_run_progress: dict[str, float | int | None] = {"total_tiles": None, "tiles_done": 0, "start": None}
+
+
+def _init_run_progress(total_tiles: int, tiles_already_done: int) -> None:
+    _run_progress["total_tiles"] = total_tiles
+    _run_progress["tiles_done"] = tiles_already_done
+    _run_progress["start"] = time.time()
+
+
+def _note_tile_done() -> None:
+    if _run_progress["total_tiles"] is not None:
+        _run_progress["tiles_done"] += 1
+
+
+def _overall_progress_str() -> str:
+    """Whole-run progress/ETA, or "" if _init_run_progress was never called
+    (e.g. download_road_network exercised directly, outside
+    build_spatial_features - has no run-wide tile budget to report)."""
+    total = _run_progress["total_tiles"]
+    if total is None:
+        return ""
+    done = _run_progress["tiles_done"]
+    remaining = max(total - done, 0)
+    elapsed = time.time() - _run_progress["start"]
+    return (
+        f"overall {done}/{total} tiles, elapsed {_format_duration(elapsed)}, {_eta_str(remaining)}"
+    )
+
+
+def _state_total_tiles(state: str) -> int:
+    """Tile count for one state's bbox at the fixed 0.2° grid.
+
+    A geocode-only call (no Overpass fetch) - cheap enough to run for all
+    16 states upfront so build_spatial_features can size an overall-run
+    ETA before a single tile has actually been fetched.
+    """
+    west, south, east, north = ox.geocode_to_gdf(f"{state}, Germany").total_bounds
+    return len(_grid_tiles(west, south, east, north, tile_size_deg=0.2))
+
+
+def _state_cached_tile_count(cache_dir: Path, state: str) -> int:
+    """How many of a state's tiles already have a cache file on disk."""
+    state_slug = state.lower().replace(" ", "_").replace("ü", "ue").replace("ä", "ae")
+    tile_dir = Path(cache_dir) / f"{state_slug}_tiles"
+    if not tile_dir.exists():
+        return 0
+    return sum(1 for _ in tile_dir.glob("tile_*.parquet"))
 
 
 def _grid_tiles(
@@ -279,6 +381,16 @@ def download_road_network(
     successful fetch, and re-fetching skips any tile whose cache file
     already exists (unless force_refresh) - so a retry resumes instead of
     restarting.
+
+    State-level retry: if any tiles remain unresolved (transient network
+    errors) after a full pass over the tile list, the pass is repeated in
+    place - up to 5 attempts total - before returning a partial result to
+    the caller. Each retry attempt only re-fetches tiles still missing;
+    everything already cached (from this call's earlier attempts or a
+    prior call) is skipped. This means a state resolves itself within a
+    single call whenever possible; build_spatial_features's own
+    cross-state retry-pass is only reached if a mirror outage outlasts
+    even these 5 in-place attempts.
     """
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -316,44 +428,104 @@ def download_road_network(
     tile_cache_dir = cache_dir / f"{state_slug}_tiles"
     tile_cache_dir.mkdir(parents=True, exist_ok=True)
 
+    # State-level retry: a handful of tiles exhausting their own internal
+    # retries (_fetch_tile_edges, transient network errors) no longer
+    # requires a whole separate external call to pick them back up - retry
+    # just those tiles, in place, up to max_state_retries times, before
+    # falling through to build_spatial_features's cross-state retry-pass
+    # (kept as the final safety net for a mirror outage that outlasts all
+    # of this too). Each attempt re-walks the full tile list, but only
+    # force_refresh on attempt 1 - already-cached tiles are still applied
+    # (skip-and-load) so later attempts touch only what's actually missing.
+    max_state_retries = 5
     tile_frames = []
     incomplete_tiles = []
-    for i, tile in enumerate(tiles, start=1):
-        tile_cache_path = tile_cache_dir / f"tile_{i:04d}.parquet"
-        if tile_cache_path.exists() and not force_refresh:
-            log.info("  [tile %d/%d] cached at %s, skipping fetch", i, len(tiles), tile_cache_path)
-            tile_edges = gpd.read_parquet(tile_cache_path)
-            if len(tile_edges) > 0:
-                tile_frames.append(tile_edges)
-            continue
-        log.info("  [tile %d/%d] %s", i, len(tiles), tile)
-        try:
-            tile_edges = _fetch_tile_edges(tile, custom_filter)
-        except _TransientFetchError as exc:
-            # Do NOT write a tile cache file here - caching this as empty
-            # would permanently record a transient outage as "no roads in
-            # this tile", indistinguishable from a genuinely empty tile on
-            # every future run. Leaving no cache file means a later call
-            # retries exactly this tile instead of skipping it forever.
+    for state_attempt in range(1, max_state_retries + 1):
+        effective_force_refresh = force_refresh if state_attempt == 1 else False
+        tile_frames = []
+        incomplete_tiles = []
+        for i, tile in enumerate(tiles, start=1):
+            tile_cache_path = tile_cache_dir / f"tile_{i:04d}.parquet"
+            if tile_cache_path.exists() and not effective_force_refresh:
+                log.info(
+                    "  [tile %d/%d] cached at %s, skipping fetch", i, len(tiles), tile_cache_path
+                )
+                tile_edges = gpd.read_parquet(tile_cache_path)
+                if len(tile_edges) > 0:
+                    tile_frames.append(tile_edges)
+                continue
+            remaining_tiles_this_state = len(tiles) - i + 1
+            log.info("  [tile %d/%d] %s", i, len(tiles), tile)
+            overall_progress = _overall_progress_str()
+            if overall_progress:
+                log.info(
+                    "      state %s | %s",
+                    _eta_str(remaining_tiles_this_state),
+                    overall_progress,
+                )
+            else:
+                log.info("      state %s", _eta_str(remaining_tiles_this_state))
+            tile_fetch_start = time.time()
+            try:
+                tile_edges = _fetch_tile_edges(tile, custom_filter)
+            except _TransientFetchError as exc:
+                # Do NOT write a tile cache file here - caching this as empty
+                # would permanently record a transient outage as "no roads in
+                # this tile", indistinguishable from a genuinely empty tile on
+                # every future run. Leaving no cache file means a later
+                # attempt (this state-retry loop, or a later external call)
+                # retries exactly this tile instead of skipping it forever.
+                log.warning(
+                    "  [tile %d/%d] leaving uncached after repeated failures: %s",
+                    i,
+                    len(tiles),
+                    exc,
+                )
+                incomplete_tiles.append(i)
+                continue
+            # Only real, successfully-completed fetches feed the adaptive ETA -
+            # a tile that exhausted retries above already spent minutes retrying
+            # a dead backend, which would skew the average toward "everything is
+            # slow" even though the healthy backend handles most tiles quickly.
+            _record_tile_seconds(time.time() - tile_fetch_start)
+            _note_tile_done()
+            if tile_edges is not None:
+                # Clean before caching (not just at the end, on the combined
+                # frame): raw tile_edges can have list-valued "highway" tags
+                # (OSM's own multi-value tag convention, per
+                # _clean_road_gdf's docstring), which pyarrow's parquet
+                # writer rejects outright. _clean_road_gdf is idempotent, so
+                # running it again on the combined frame below is harmless.
+                tile_edges = _clean_road_gdf(tile_edges)
+                tile_edges.to_parquet(tile_cache_path)
+                if len(tile_edges) > 0:
+                    tile_frames.append(tile_edges)
+            else:
+                gpd.GeoDataFrame(columns=["highway", "maxspeed", "geometry"]).to_parquet(
+                    tile_cache_path
+                )
+
+        if not incomplete_tiles:
+            break
+        if state_attempt < max_state_retries:
             log.warning(
-                "  [tile %d/%d] leaving uncached after repeated failures: %s", i, len(tiles), exc
+                "%s: attempt %d/%d left %d/%d tiles unresolved, retrying state now "
+                "(max %d attempts)...",
+                state,
+                state_attempt,
+                max_state_retries,
+                len(incomplete_tiles),
+                len(tiles),
+                max_state_retries,
             )
-            incomplete_tiles.append(i)
-            continue
-        if tile_edges is not None:
-            # Clean before caching (not just at the end, on the combined frame):
-            # raw tile_edges can have list-valued "highway" tags (OSM's own
-            # multi-value tag convention, per _clean_road_gdf's docstring),
-            # which pyarrow's parquet writer rejects outright. _clean_road_gdf
-            # is idempotent, so running it again on the combined frame below
-            # is harmless.
-            tile_edges = _clean_road_gdf(tile_edges)
-            tile_edges.to_parquet(tile_cache_path)
-            if len(tile_edges) > 0:
-                tile_frames.append(tile_edges)
         else:
-            gpd.GeoDataFrame(columns=["highway", "maxspeed", "geometry"]).to_parquet(
-                tile_cache_path
+            log.warning(
+                "%s: %d/%d tiles still unresolved after %d attempts - giving up for now, "
+                "a later run or the cross-state retry-pass will retry them",
+                state,
+                len(incomplete_tiles),
+                len(tiles),
+                max_state_retries,
             )
 
     if not tile_frames:
@@ -468,19 +640,43 @@ def build_spatial_features(
         return pd.read_parquet(out_path)
 
     # --- Fetch + aggregate every state's road network ---
+    osm_cache_dir = raw_cache_dir / "osm"
+
+    # Size the overall-run ETA upfront: a geocode-only bounds lookup per
+    # state (no Overpass tile fetching) is cheap and gives a real tile
+    # budget across all 16 states before any tile is actually fetched -
+    # without this, an early "overall ETA" would have to guess the size of
+    # states not yet reached, which varies wildly (Bremen: 9 tiles vs
+    # Bayern: 425) and would make the "overall" number worse than useless.
+    log.info("Sizing overall ETA: checking tile counts for all %d states...", len(GERMAN_STATES))
+    state_total_tiles = {state: _state_total_tiles(state) for state in GERMAN_STATES}
+    total_tiles = sum(state_total_tiles.values())
+    # Tiles already on disk (from this or a prior run) count toward "done"
+    # from the very first log line - _init_run_progress is what the per-tile
+    # log line inside download_road_network reads via _overall_progress_str,
+    # so it must be set before the first state's fetch starts, not after.
+    initial_tiles_done = sum(_state_cached_tile_count(osm_cache_dir, s) for s in GERMAN_STATES)
+    _init_run_progress(total_tiles, initial_tiles_done)
+
     all_cell_aggregates = []
     total = len(GERMAN_STATES)
     for i, state in enumerate(GERMAN_STATES, start=1):
-        state_cache_path = _state_cache_path(raw_cache_dir / "osm", state)
+        state_cache_path = _state_cache_path(osm_cache_dir, state)
         already_cached = state_cache_path.exists() and not force_refresh
         status = (
             "cached" if already_cached else "fetching from OSM (can take a while for large states)"
         )
         log.info("[%d/%d] %s: %s...", i, total, state, status)
         start = time.time()
-        roads = download_road_network(state, raw_cache_dir / "osm", force_refresh=force_refresh)
+        roads = download_road_network(state, osm_cache_dir, force_refresh=force_refresh)
         elapsed = time.time() - start
-        log.info("  -> %s done in %.1fs (%d ways)", state, elapsed, len(roads))
+        log.info(
+            "  -> %s done in %.1fs (%d ways) | %s",
+            state,
+            elapsed,
+            len(roads),
+            _overall_progress_str(),
+        )
         all_cell_aggregates.append(aggregate_roads_to_h3(roads, resolution=resolution))
 
     # A state whose fetch left tiles uncached (transient network errors
@@ -495,7 +691,7 @@ def build_spatial_features(
         incomplete = [
             (i, state)
             for i, state in enumerate(GERMAN_STATES)
-            if not _state_cache_path(raw_cache_dir / "osm", state).exists()
+            if not _state_cache_path(osm_cache_dir, state).exists()
         ]
         if not incomplete:
             break
@@ -508,9 +704,15 @@ def build_spatial_features(
         )
         for i, state in incomplete:
             start = time.time()
-            roads = download_road_network(state, raw_cache_dir / "osm", force_refresh=False)
+            roads = download_road_network(state, osm_cache_dir, force_refresh=False)
             elapsed = time.time() - start
-            log.info("  -> %s retry done in %.1fs (%d ways)", state, elapsed, len(roads))
+            log.info(
+                "  -> %s retry done in %.1fs (%d ways) | %s",
+                state,
+                elapsed,
+                len(roads),
+                _overall_progress_str(),
+            )
             all_cell_aggregates[i] = aggregate_roads_to_h3(roads, resolution=resolution)
 
     cell_features = pd.concat(all_cell_aggregates, ignore_index=True)
