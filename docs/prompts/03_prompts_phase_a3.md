@@ -3166,3 +3166,204 @@ git commit -m "docs: mark A3 phase complete, document recall-gate-aware champion
 - **Overfitting safeguards, explicit:** CatBoost tuning now includes `l2_leaf_reg` (previously untuned, defaulting to library default 3.0); LightGBM tuning now includes `max_depth` (previously unbounded, `-1` default) and `min_child_samples`/`reg_lambda` (previously fixed at build time, not searched) — capacity parameters (depth, leaves, iterations) are never tuned without at least one accompanying regularisation parameter in the same search space, consistent with the project's existing bounded-depth convention for Random Forest/XGBoost/LightGBM (`src/unfallatlas/models/boosting.py`).
 
 ````
+
+## A³ Champion Pivot — Recall-Aware Candidate Selection
+
+**Claude Code (Sonnet 5), effort: medium (Anthropic, 2026):**
+
+### Initial prompt
+
+Not a single verbatim user message like the entry above — this plan was
+produced in-conversation with the `superpowers:brainstorming` skill,
+followed by `superpowers:writing-plans`, picking up directly after the
+original A³ modelling plan's live execution (Task 10, `notebooks/03_A3_Phase.ipynb`
+§5) had already run and produced a result: the original "champion =
+highest validation macro-F1, alone" rule had selected
+`random_forest_balanced` (macro-F1 0.410), but that model's
+recall(class 1) was only 0.229 — far below the Q-phase's own ≥0.50
+acceptance-gate threshold — while the untuned `catboost_balanced` (0.363
+macro-F1, 0.537 recall) and `lightgbm_balanced` (0.364 macro-F1, 0.588
+recall) already cleared that harder gate. The user and Claude Code
+discussed this discrepancy against `docs/project/PROJEKTPLAN_SETUP.md`'s
+literature-derived roadmap, which independently predicted Random Forest
+would cap around 0.50–0.55 macro-F1 while CatBoost/LightGBM had a much
+higher ceiling — concluding that continuing to tune Random Forest was very
+unlikely to ever satisfy the recall gate, and that the selection rule
+itself needed to change before Task 10/11 (tuning, final evaluation,
+documentation) could sensibly proceed.
+
+The resulting task-by-task plan lives at
+`docs/superpowers/plans/2026-07-06-a3-champion-pivot.md`, implemented with
+the `superpowers:subagent-driven-development` skill. (An early draft of
+this same plan's content, produced before the final task-by-task file was
+written, is also preserved verbatim above under "Follow Up Prompt" earlier
+in this document.) What follows is a summary of the plan's Goal,
+Architecture, and Global Constraints, plus a task-by-task outline — see the
+plan file for full code-level detail.
+
+**Goal:** Finish the unfinished A³-phase work (original plan's Task 10/11)
+by replacing its "champion = highest validation macro-F1" selection rule
+with a recall-aware rule, carrying **CatBoost and LightGBM** forward as the
+two candidates (not Random Forest), tuning and evaluating them, and
+completing the still-pending documentation task — while touching the 2024
+test set exactly once.
+
+**Architecture:** Notebook-orchestration changes only — no new files.
+`notebooks/03_A3_Phase.ipynb`'s §5–§10 are rewritten to run the existing §6
+imbalance-strategy menu (SMOTE/ADASYN/threshold-moving/ordinal, already
+implemented in `src/unfallatlas/models/imbalance.py` and `ordinal.py`) over
+**two** candidate families instead of one, select within each family using
+a new shared helper, tune each family's winner separately with Optuna
+(still CV-only, never touching test), pick one final cross-family winner
+using the same helper, then refit once on full training data and evaluate
+once on test-2024. The new selection rule is added as a small,
+independently-testable pure function in `src/unfallatlas/models/evaluate.py`
+rather than inline notebook code, since it is called three times.
+
+**Global Constraints (summary; full list, including the ⚠️ AMENDED champion-
+selection rule and the checkpointing/Optuna-study-naming rules, is in the
+plan file):**
+- All Q-phase/U-phase global constraints from the original A³ plan remain
+  fully binding (target column, primary/secondary metrics, chronological
+  split, `GroupKFold` by year, U-phase §10 preprocessing unchanged, compute
+  budget, model-size, interpretability, reproducibility).
+- ⚠️ **AMENDED — champion selection.** Only `catboost_balanced` and
+  `lightgbm_balanced` advance past §5. Within and across those two
+  families, the winner is chosen by `select_best_candidate()`: highest
+  macro-F1 among candidates that clear recall(class 1) ≥ 0.50; if none
+  clear it, highest `(macro_f1 + recall_class_1) / 2`.
+- Compute budget: two families now share the existing Optuna trial budget
+  (9 trials per family, 18 total, same as the prior single-family budget of 40).
+- Exactly one test-2024 evaluation, ever — the single most important
+  constraint for this plan specifically, since it now compares two tuned
+  candidates before the one allowed test touch.
+- Each family gets its own Optuna `study_name` to avoid a resumed study
+  silently mixing an old, incompatible search space (a bug class already
+  hit once in an earlier session).
+
+**Tasks (see the plan file for full code/tests):**
+1. `select_best_candidate(rows, recall_threshold=RECALL_CLASS_1_THRESHOLD) -> pd.Series`
+   in `src/unfallatlas/models/evaluate.py` — the shared, gate-aware
+   selection rule, unit-tested for the "recall passers exist," "fallback to
+   combined score," and "custom threshold" cases.
+2. Notebook §5 rewritten to carry forward two candidates
+   (`candidate_families`, `candidate_names`, `candidate_pipelines`) instead
+   of a single champion.
+3. Notebook §6 rewritten to run the imbalance-strategy comparison
+   (SMOTE/ADASYN/threshold-moving/ordinal) over both candidate families in
+   a loop, producing `winning_strategy_per_family`.
+4. Notebook §7 rewritten to tune each family separately with Optuna (9
+   trials each), tracking recall(class 1) per trial via
+   `trial.set_user_attr` and selecting the best trial per family with
+   `select_best_candidate`, producing `tuned_candidates`.
+5. Notebook §8 rewritten: final cross-family selection via
+   `select_best_candidate` over both families' tuned CV scores, single
+   refit on the full 2016–2022 training set, single test-2024 evaluation —
+   the only place `X_test`/`y_test` may be referenced in the whole notebook.
+6. Execute the full notebook end-to-end (as a detached process — the run
+   is long) and verify: per-family Optuna progress streams, exactly one
+   `FINAL TEST-2024` log line, a valid model card with exactly two
+   per-family tuned entries, model artifact under the 500 MB soft limit.
+7. Finish the original plan's still-pending Task 11 — `AGENTS.md` notebook
+   status, `docs/GLOSSARY.md` new terms (Threshold Moving, Ordinal
+   Classification, Optuna, GroupKFold, Champion candidates), full test
+   suite + lint.
+
+---
+
+## A³ OSM Feature Integration + Deferred Review Findings
+
+**Claude Code (Sonnet 5), effort: medium (Anthropic, 2026):**
+
+### Initial prompt
+
+Not a single verbatim user message — this plan was produced with the
+`superpowers:writing-plans` skill, picking up after two prerequisite pieces
+of work had both landed: the U-phase OSM/H3 road-context feature addendum
+(`docs/prompts/02_prompts_phase_u.md`'s "U-Phase Addendum — OSM/H3
+Road-Context Features" entry, plan file
+`docs/superpowers/plans/2026-07-06-u-phase-osm-spatial-features.md`), which
+had deliberately scoped out wiring the new columns into A³ ("consuming the
+new columns into A3's `build_preprocessor` ... is a separate, following
+plan"); and the A³ champion-pivot plan immediately above, whose final
+whole-branch review had deferred 3 Minor findings explicitly to "the next
+plan (updating A3 to consume these new spatial features)." This plan is
+that promised next plan, named in both places it was promised, closing out
+both threads in one pass.
+
+The resulting task-by-task plan lives at
+`docs/superpowers/plans/2026-07-09-a3-osm-feature-integration.md`,
+implemented with the `superpowers:subagent-driven-development` skill. What
+follows is a summary of the plan's Goal, Architecture, and Global
+Constraints, plus a task-by-task outline — see the plan file for full
+code-level detail, and `docs/osm-feature-retrospective.md` for a fuller
+narrative on the measured result.
+
+**Goal:** Wire the 5 OSM road-context columns
+(`osm_dominant_road_class`, `osm_maxspeed_mean`, `osm_maxspeed_max`,
+`osm_road_density`, `osm_way_count`) — already fetched, aggregated, joined,
+and specified in U-phase §10 — into A³'s `build_preprocessor()` so every
+model actually trains on them, fold in the 3 Minor findings deferred from
+the champion-pivot plan's final review, then re-run
+`03_A3_Phase.ipynb` end-to-end with the enlarged feature set and record the
+result.
+
+**Architecture:** One library change
+(`src/unfallatlas/features/preprocessing.py` — extend `build_preprocessor()`'s
+existing `PLAIN_NUMERIC_COLUMNS`/`LOG1P_COLUMNS` lists and add one small new
+pipeline branch for the categorical `osm_dominant_road_class` column) plus
+notebook-only changes to `notebooks/03_A3_Phase.ipynb` (three isolated,
+already-diagnosed bugfixes + a live end-to-end re-run). No new files, no
+new model families, no new hyperparameter search space, no change to the
+acceptance gate or champion-selection rule.
+
+**Global Constraints (summary; full list in the plan file):**
+- All Q-phase/U-phase/champion-pivot global constraints remain binding —
+  this plan changes inputs to the pipeline, not the acceptance rules or
+  the selection rule.
+- U decides, A³ implements: the missing-value strategy, transform, and
+  scaling for every OSM column is already decided in U-phase §10 — this
+  plan implements that table verbatim, it does not re-decide it.
+- Exactly one test-2024 evaluation, ever — unchanged from the champion-pivot plan.
+- Compute budget unchanged (`SUBSAMPLE_CAP = 500_000`, 9 Optuna trials per family).
+- Checkpointing rule is the **opposite** of every prior plan's: do NOT copy
+  any checkpoint forward — every single cached model was fit against the
+  old `build_preprocessor()` output shape and is invalid the moment Task 1 lands.
+
+**Tasks (see the plan file for full code/tests):**
+1. Wire the 5 OSM columns into `build_preprocessor()`: extend
+   `LOG1P_COLUMNS`/`PLAIN_NUMERIC_COLUMNS` (DRY reuse of existing pipeline
+   branches for the 4 numeric columns) and add a new
+   `osm_categorical_pipeline` (mode/"unknown"-impute + one-hot) for
+   `osm_dominant_road_class`. 4 new unit tests covering one-hot encoding,
+   missing-value handling for the categorical and numeric OSM columns, and
+   confirming `h3_cell`/`dwd_station_id` stay silently dropped.
+2. Fold in the 3 deferred champion-pivot review findings: tighten the §6
+   `strategy_rows` filter to an explicit allow-list (was a `startswith`
+   prefix match that incidentally also matched `{family}_default` rows with
+   no refit path); document the §2 CV cell as an intentional, unconsumed
+   sanity check rather than latent dead code; persist the full
+   Stufe-0/1/§6 model-comparison table to a committed
+   `data/processed/a3_model_comparison.csv` (previously only summarized in
+   `a3_model_card.json`, with the full table unrecoverable from git history
+   since `nbstripout` strips notebook outputs and the progress log is
+   git-ignored).
+3. Execute the full A³ notebook end-to-end with OSM features (detached
+   process, no checkpoints copied forward) and record the result against
+   the pre-OSM baseline.
+4. Documentation: a new `docs/AI TOOL DISCLOSURE.md` row.
+
+**Result (executed on this branch; see `docs/osm-feature-retrospective.md`
+for the fuller narrative):** champion family = `lightgbm` (tuned) both
+before and after. Test-2024 macro-F1 moved 0.358 → 0.362 (+0.004);
+recall(class 1) moved 0.615 → 0.649 (+0.034). Q-phase acceptance gate
+(macro-F1 ≥ 0.55 **and** recall(1) ≥ 0.50) remained **FAIL** before and
+after — both metrics improved, but not by enough to flip the gate outcome;
+macro-F1 is still roughly 0.19 short of the 0.55 threshold. The
+retrospective's Optuna-trial analysis suggests this is closer to a
+precision/recall tradeoff-frontier plateau for this feature-set/model-family
+combination than an under-searched hyperparameter space, and lists several
+not-yet-explored, higher-leverage directions (per-fold-safe resampling
+inside Optuna's CV, a deliberately-tuned threshold-moving step, additional
+feature sources, revisiting the ordinal decomposition on the enlarged
+feature set) for future work.
