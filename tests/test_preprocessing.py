@@ -15,6 +15,7 @@ from unfallatlas.features.preprocessing import (
 def _toy_frame(n=60):
     rng = np.random.default_rng(42)
     years = np.repeat([2016, 2017, 2022, 2023, 2024], n // 5)
+    road_classes = np.array(["primary", "secondary", "residential", "motorway", "tertiary", None])
     return pd.DataFrame(
         {
             "UJAHR": years,
@@ -40,6 +41,17 @@ def _toy_frame(n=60):
             "dwd_visibility_m": rng.exponential(5000, n),
             "dwd_wind_speed_ms": rng.normal(3, 1, n),
             "dwd_station_dist_km": rng.uniform(0.1, 40, n),
+            "dwd_station_id": rng.choice(["A123", "B456", "C789"], n),
+            "h3_cell": rng.choice([f"cell_{i}" for i in range(10)], n),
+            "osm_dominant_road_class": rng.choice(road_classes, n),
+            "osm_maxspeed_mean": rng.choice(
+                [30.0, 50.0, 70.0, 100.0, np.nan], n, p=[0.2, 0.3, 0.2, 0.2, 0.1]
+            ),
+            "osm_maxspeed_max": rng.choice(
+                [50.0, 70.0, 100.0, 130.0, np.nan], n, p=[0.2, 0.3, 0.2, 0.2, 0.1]
+            ),
+            "osm_road_density": rng.choice([*rng.exponential(500, n // 2), np.nan], n),
+            "osm_way_count": rng.choice([*rng.integers(2, 400, n // 2), np.nan], n),
             "UKATGEORIE": rng.choice([1, 2, 3], n, p=[0.05, 0.25, 0.70]),
         }
     )
@@ -124,3 +136,56 @@ def test_fitted_preprocessor_is_picklable():
     original_out = preprocessor.transform(X)
 
     np.testing.assert_array_equal(restored_out, original_out)
+
+
+def test_build_preprocessor_encodes_osm_road_class_as_onehot():
+    """osm_dominant_road_class (U-phase §10: one-hot, dedicated 'unknown'
+    category for missing) must appear as one-hot dummy columns in the
+    fitted transformer's output feature names, not be silently dropped."""
+    df = _toy_frame()
+    train, _, _ = chronological_split(df)
+    X, y = split_features_target(train)
+    preprocessor = build_preprocessor(scale_for_linear=False).fit(X, y)
+    feature_names = preprocessor.get_feature_names_out()
+    assert any(name.startswith("osm_dominant_road_class_") for name in feature_names)
+
+
+def test_build_preprocessor_handles_missing_osm_road_class():
+    """_toy_frame() seeds real None values in osm_dominant_road_class
+    (mirrors the 0.0065% missing rate observed in the real cached data) -
+    fit_transform must not raise and must produce no NaN output."""
+    df = _toy_frame()
+    train, _, _ = chronological_split(df)
+    X, y = split_features_target(train)
+    preprocessor = build_preprocessor(scale_for_linear=False)
+    transformed = preprocessor.fit_transform(X, y)
+    assert not np.isnan(transformed).any()
+
+
+def test_build_preprocessor_handles_missing_osm_numeric_columns():
+    """osm_maxspeed_mean/_max (median-impute) and osm_road_density/
+    osm_way_count (zero-fill) must all resolve to finite values even
+    though _toy_frame() seeds NaN in all four."""
+    df = _toy_frame()
+    train, _, _ = chronological_split(df)
+    X, y = split_features_target(train)
+    assert X["osm_maxspeed_mean"].isna().any()
+    assert X["osm_road_density"].isna().any()
+    preprocessor = build_preprocessor(scale_for_linear=False)
+    transformed = preprocessor.fit_transform(X, y)
+    assert not np.isnan(transformed).any()
+
+
+def test_build_preprocessor_drops_h3_cell_and_dwd_station_id():
+    """h3_cell (join key, ~220k distinct values in the real data) and
+    dwd_station_id are not features - both must stay silently dropped via
+    remainder="drop", exactly like before this plan's OSM wiring. This
+    locks in the non-use decision so a future column-list edit can't
+    accidentally sweep a high-cardinality ID column into the model."""
+    df = _toy_frame()
+    train, _, _ = chronological_split(df)
+    X, y = split_features_target(train)
+    preprocessor = build_preprocessor(scale_for_linear=False).fit(X, y)
+    feature_names = list(preprocessor.get_feature_names_out())
+    assert not any("h3_cell" in name for name in feature_names)
+    assert not any("dwd_station_id" in name for name in feature_names)

@@ -43,9 +43,15 @@ PASSTHROUGH_COLUMNS = [
     "LON",
     "LAT",
 ]
-LOG1P_COLUMNS = ["dwd_precip_mm", "dwd_visibility_m"]
+LOG1P_COLUMNS = ["dwd_precip_mm", "dwd_visibility_m", "osm_road_density", "osm_way_count"]
 LOG_COLUMNS = ["dwd_station_dist_km"]
-PLAIN_NUMERIC_COLUMNS = ["dwd_temp_air_2m", "dwd_wind_speed_ms"]
+PLAIN_NUMERIC_COLUMNS = [
+    "dwd_temp_air_2m",
+    "dwd_wind_speed_ms",
+    "osm_maxspeed_mean",
+    "osm_maxspeed_max",
+]
+OSM_ONEHOT_COLUMNS = ["osm_dominant_road_class"]
 
 
 class TargetMeanEncoder(BaseEstimator, TransformerMixin):
@@ -124,6 +130,14 @@ def build_preprocessor(scale_for_linear: bool = False) -> ColumnTransformer:
     transformers.append(
         ("target_enc", TargetMeanEncoder(columns=TARGET_ENCODED_COLUMNS), TARGET_ENCODED_COLUMNS)
     )
+
+    osm_categorical_pipeline = Pipeline(
+        steps=[
+            ("impute", SimpleImputer(strategy="constant", fill_value="unknown")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+        ]
+    )
+    transformers.append(("osm_road_class", osm_categorical_pipeline, OSM_ONEHOT_COLUMNS))
 
     log1p_pipeline = Pipeline(
         steps=[

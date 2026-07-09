@@ -11,6 +11,7 @@ from unfallatlas.models.baseline import (
 
 def _toy_X_y(n=80):
     rng = np.random.default_rng(0)
+    road_classes = np.array(["primary", "secondary", "residential", "motorway", "tertiary", None])
     X = pd.DataFrame(
         {
             "UMONAT": rng.integers(1, 13, n),
@@ -35,6 +36,15 @@ def _toy_X_y(n=80):
             "dwd_visibility_m": rng.exponential(5000, n),
             "dwd_wind_speed_ms": rng.normal(3, 1, n),
             "dwd_station_dist_km": rng.uniform(0.1, 40, n),
+            "osm_dominant_road_class": rng.choice(road_classes, n),
+            "osm_maxspeed_mean": rng.choice(
+                [30.0, 50.0, 70.0, 100.0, np.nan], n, p=[0.2, 0.3, 0.2, 0.2, 0.1]
+            ),
+            "osm_maxspeed_max": rng.choice(
+                [50.0, 70.0, 100.0, 130.0, np.nan], n, p=[0.2, 0.3, 0.2, 0.2, 0.1]
+            ),
+            "osm_road_density": rng.choice([*rng.exponential(500, n // 2), np.nan], n),
+            "osm_way_count": rng.choice([*rng.integers(2, 400, n // 2), np.nan], n),
         }
     )
     y = pd.Series(rng.choice([1, 2, 3], n, p=[0.1, 0.3, 0.6]))
