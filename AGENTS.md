@@ -18,10 +18,13 @@ This file provides guidance to AI coding agents when working with code in this r
 ## Build & Development Commands
 
 ```bash
-# Install all dependencies (including dev extras)
+# Install all dependencies (including dev and geo extras)
 uv sync --all-extras
 
-# Run tests
+# Install only geo extras (geopandas, h3, osmnx) without dev tools
+uv sync --extra geo
+
+# Run tests (coverage report auto-generated via pyproject.toml addopts)
 uv run pytest
 
 # Lint
@@ -72,8 +75,17 @@ unfallatlas-qua3ck/
 │   ├── dataset/            # Unfallatlas dataset description (DSB_Unfallatlas.md/.pdf), used for citing + coded-label lookups
 │   └── project/            # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md)
 ├── reports/figures/        # Generated output figures
-└── pyproject.toml          # Project config (hatchling, ruff, black, jupytext)
+└── pyproject.toml          # Project config (hatchling, ruff, black, jupytext, pytest-cov)
 ```
+
+### Optional dependency groups
+
+- `dev`: pytest, pytest-cov, ruff, black, jupytext, jupyter, ipywidgets
+- `geo`: geopandas, h3, osmnx — required for OSM road network features; install with `uv sync --extra geo`
+
+### Test coverage
+
+Configured via `[tool.pytest.ini_options]` in `pyproject.toml` (`--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing`); runs automatically with `uv run pytest`.
 
 **Notebook → library boundary**: Reusable logic moves from notebook cells into `src/unfallatlas/` and is imported back into the notebook.
 
@@ -140,6 +152,16 @@ test  = df[df.UJAHR == 2024]
 - Hyperparameter tuning: Optuna
 - Explainability: SHAP
 - Spatial enrichment: DWD weather data, OSM road features, optional H3/osmnx
+
+**OSM road network pipeline** (`src/unfallatlas/data/osm.py`, `src/unfallatlas/features/spatial.py`)
+
+- `download_road_network(state, cache_dir, force_refresh)`: tiled fetch at 0.2° tiles with per-tile parquet cache and state-level retry (up to 5 attempts per call); raises `_TransientFetchError` on network failure — failed tiles are never cached to avoid recording transient outages as "no roads"; raises `RuntimeError("No road data found")` when all retries are exhausted
+- `build_spatial_features(accidents_df, raw_dir, interim_dir)`: joins OSM features onto accident frame; requires `LAT`/`LON` columns (raises `RuntimeError` if missing); short-circuits to cached `interim_dir/accidents_with_weather_spatial.parquet` if present
+- `_clean_road_gdf(gdf)`: drops pedestrian-only ways (footway, cycleway); normalizes list-valued `highway`/`maxspeed` OSM tags to their first element
+- `aggregate_roads_to_h3(gdf, resolution=8)`: aggregates road GeoDataFrame to H3 cells; output columns: `{h3_cell, osm_dominant_road_class, osm_maxspeed_mean, osm_maxspeed_max, osm_road_density, osm_way_count}`; `osm_way_count` counts distinct ways, not vertices
+- `parse_maxspeed(value)`: converts OSM maxspeed strings to km/h float; handles numeric strings, `"N mph"` (×1.60934), `DE:urban`→50, `DE:rural`→100; semicolon-separated lists take first value; returns `None` for unparseable values
+- `assign_h3_cell(lat, lon, resolution=8)`: returns stable H3 cell string ID
+- `ROAD_CLASS_RANK`: dict ranking highway types (motorway > primary > residential > …)
 
 **Key column reference**
 
