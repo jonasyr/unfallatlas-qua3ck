@@ -1,8 +1,14 @@
-# AI Prompt for Phase Q
+# AI Prompt Records — Phase Q
 
-## Initial prompt for dataset research
+## Dataset research
 
-**Claude Opus 4.7 Thinking (Effort: Extra) ([AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md)):**
+**Tool:** Claude Opus 4.7 Thinking<br>
+**Model release:** April 16, 2026<br>
+**Used:** May 2026<br>
+**Effort:** Extra<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+
+### Recorded prompt
 
 **Kontext**:
 
@@ -171,7 +177,7 @@ Ich möchte am Ende nicht selbst von null an recherchieren müssen, sondern eine
 
 ```
 
-### Follow Up Prompt
+### Follow-up prompt
 
 ```md
 Ich möchte deine Empfehlung zum Unfallatlas von GovData weiterverfolgen:
@@ -186,9 +192,16 @@ Erarbeite einen möglichst starken Projektansatz mit Fokus auf Datenanalyse, Vis
 Ziel ist ein klarer, gut umsetzbarer und überzeugender Ansatz für ein Big-Data-Projekt mit hohem Analysepotenzial.
 ```
 
-## Prompt for Q Phase Creation
+## Q-phase creation
 
-**Claude Code (Sonnet 4.6) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
+**Tool:** Claude Code (Sonnet 4.6)<br>
+**Model release:** February 17, 2026<br>
+**Used:** May 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+
+### Recorded prompt
+
 ```markdown
 You are an expert Data Science curriculum architect, technical writer, ML workflow reviewer, and educational documentation designer.
 
