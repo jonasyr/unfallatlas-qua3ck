@@ -127,10 +127,16 @@ def _publish_reference(
     output_root: Path,
     store: AssetStore,
     records: dict[Path, AssetRecord],
+    rewrites: dict[str, str],
+    allow_writes: bool,
 ) -> str:
+    if reference in rewrites:
+        return rewrites[reference]
     source = _local_source(reference, analysis.source, repo_root, output_root)
     if source is None:
         return reference
+    if not allow_writes:
+        raise RuntimeError(f"final render introduced an undiscovered local resource: {reference}")
     media_type = mimetypes.guess_type(source.name)[0] or "application/octet-stream"
     record = store.put_bytes(
         namespace=f"notebooks/{analysis.source.stem}/local",
@@ -143,7 +149,9 @@ def _publish_reference(
     )
     records.setdefault(record.relative_path, record)
     parsed = urlsplit(reference)
-    return urlunsplit(("", "", _href(record), parsed.query, parsed.fragment))
+    rewritten = urlunsplit(("", "", _href(record), parsed.query, parsed.fragment))
+    rewrites[reference] = rewritten
+    return rewritten
 
 
 def _publish_local_resources(
@@ -153,9 +161,12 @@ def _publish_local_resources(
     repo_root: Path | None,
     output_root: Path,
     store: AssetStore,
-) -> tuple[str, tuple[AssetRecord, ...]]:
+    known_rewrites: dict[str, str] | None = None,
+    allow_writes: bool = True,
+) -> tuple[str, tuple[AssetRecord, ...], dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
     records: dict[Path, AssetRecord] = {}
+    rewrites = known_rewrites if known_rewrites is not None else {}
 
     for tag_name, attribute in _RESOURCE_ATTRIBUTES:
         for tag in soup.find_all(tag_name):
@@ -167,6 +178,8 @@ def _publish_local_resources(
                     output_root=output_root,
                     store=store,
                     records=records,
+                    rewrites=rewrites,
+                    allow_writes=allow_writes,
                 )
     for tag in soup.find_all("link"):
         relations = {str(item).casefold() for item in tag.get("rel", [])}
@@ -178,6 +191,8 @@ def _publish_local_resources(
                 output_root=output_root,
                 store=store,
                 records=records,
+                rewrites=rewrites,
+                allow_writes=allow_writes,
             )
 
     def rewrite_css(css: str) -> str:
@@ -190,6 +205,8 @@ def _publish_local_resources(
                 output_root=output_root,
                 store=store,
                 records=records,
+                rewrites=rewrites,
+                allow_writes=allow_writes,
             )
             return f"url({quote}{reference}{quote})"
 
@@ -199,7 +216,7 @@ def _publish_local_resources(
         tag.string = rewrite_css(tag.get_text())
     for tag in soup.find_all(style=True):
         tag["style"] = rewrite_css(str(tag["style"]))
-    return str(soup), tuple(records.values())
+    return str(soup), tuple(records.values()), rewrites
 
 
 def _presentation_resources(
@@ -256,7 +273,7 @@ def render_notebook(
         exporter.exclude_input_prompt = True
         exporter.exclude_output_prompt = True
         exporter.embed_images = False
-        presentation = _presentation_resources(
+        draft_presentation = _presentation_resources(
             anchored_analysis,
             metadata,
             prepared.assets,
@@ -268,19 +285,39 @@ def render_notebook(
                 message=r".*application/vnd\.plotly\.v1\+json.*",
                 category=UserWarning,
             )
+            draft_html, _ = exporter.from_notebook_node(
+                prepared.notebook,
+                resources={"presentation": draft_presentation},
+            )
+            _, local_assets, rewrites = _publish_local_resources(
+                draft_html,
+                analysis=analysis,
+                repo_root=repo_root,
+                output_root=output_root,
+                store=store,
+            )
+            assets.extend(local_assets)
+            presentation = _presentation_resources(
+                anchored_analysis,
+                metadata,
+                (*prepared.assets, *local_assets),
+                shared_assets,
+            )
             html, _ = exporter.from_notebook_node(
                 prepared.notebook,
                 resources={"presentation": presentation},
             )
-        html, local_assets = _publish_local_resources(
-            html,
-            analysis=analysis,
-            repo_root=repo_root,
-            output_root=output_root,
-            store=store,
-        )
-        assets.extend(local_assets)
-        presentation["asset_map"] = _asset_map(tuple(assets))
+            html, final_assets, _ = _publish_local_resources(
+                html,
+                analysis=analysis,
+                repo_root=repo_root,
+                output_root=output_root,
+                store=store,
+                known_rewrites=rewrites,
+                allow_writes=False,
+            )
+            if final_assets:
+                raise RuntimeError("final render unexpectedly republished local resources")
         rendered = html.encode("utf-8")
         _write_html_atomic(destination, rendered)
     except Exception as exc:

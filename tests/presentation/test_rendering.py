@@ -704,3 +704,49 @@ def test_render_notebook_error_retains_assets_from_completed_publication_phases(
         "ui-style",
         "ui-script",
     }
+
+
+def test_final_exporter_call_receives_complete_asset_map_without_republishing_local_files(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import unfallatlas.presentation.rendering as rendering
+
+    analysis = _renderer_analysis(tmp_path)
+    analysis.notebook.cells[0].source += "\n![Mapped local](mapped-local.png)"
+    original_notebook = copy.deepcopy(analysis.notebook)
+    local_image = analysis.source.parent / "mapped-local.png"
+    local_image.parent.mkdir(parents=True)
+    local_image.write_bytes(b"mapped local image")
+    captured_asset_maps: list[dict[str, object]] = []
+    local_writes = 0
+    original_export = rendering.PresentationHTMLExporter.from_notebook_node
+    original_put_bytes = rendering.AssetStore.put_bytes
+
+    def capture_export(self, nb, resources=None, **kwargs):
+        captured_asset_maps.append(copy.deepcopy(resources["presentation"]["asset_map"]))
+        return original_export(self, nb, resources=resources, **kwargs)
+
+    def count_local_writes(self, **kwargs):
+        nonlocal local_writes
+        if str(kwargs["namespace"]).endswith("/local"):
+            local_writes += 1
+        return original_put_bytes(self, **kwargs)
+
+    monkeypatch.setattr(rendering.PresentationHTMLExporter, "from_notebook_node", capture_export)
+    monkeypatch.setattr(rendering.AssetStore, "put_bytes", count_local_writes)
+
+    result = rendering.render_notebook(
+        analysis,
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path,
+    )
+
+    assert result.error is None
+    assert len(captured_asset_maps) == 2
+    assert set(captured_asset_maps[-1]) == {
+        asset.relative_path.as_posix() for asset in result.assets
+    }
+    assert any(asset.kind == "local-resource" for asset in result.assets)
+    assert local_writes == 1
+    assert analysis.notebook == original_notebook
