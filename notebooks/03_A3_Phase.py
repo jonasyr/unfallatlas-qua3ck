@@ -1112,18 +1112,18 @@ print(f"Saved: {comparison_csv_path}")
 # > (Q-phase §11), and the limitations discussion.
 
 # %% [markdown]
-# ## §9 — 3-Klassen-Ceiling: Empirische Evidenz & Gate-optimales Thresholding
+# ## §9 — 3-Class Ceiling: Empirical Evidence & Gate-Optimal Thresholding
 #
-# Der Champion `lightgbm_balanced` (Test-2024: macro-F1 = 0.362) verfehlt das Gate nicht wegen eines
-# Implementierungsfehlers, sondern wegen struktureller Bayes-Grenzen in der 3-Klassen-Formulierung.
-# Dieser Abschnitt dokumentiert die empirische Evidenz und extrahiert den Gate-optimalen Operating Point
-# für die Überleitung in §10.
+# The champion `lightgbm_balanced` (Test-2024: macro-F1 = 0.362) misses the gate not because of an
+# implementation error but because of structural Bayes-limits in the 3-class formulation.
+# This section documents the empirical evidence and extracts the gate-optimal operating point
+# for the transition into §10.
 #
-# **Befunde:**
-# - 19 Konfigurationen, empirisches Maximum: macro-F1 = 0.424 (mit Recall(1) = 0.212)
-# - Gate-Ziel (0.55 / 0.50) liegt außerhalb der gesamten Pareto-Front
-# - Cramér's V der stärksten Features ≤ 0.13; Severity-Shares uniform über alle Kategorien
-# - Arithmetisch: F1(Klasse 1) = 0.46 erfordert ~90× Odds-Lift gegenüber 0.94 % Basisrate
+# **Findings:**
+# - 19 configurations, empirical maximum: macro-F1 = 0.424 (with Recall(1) = 0.212)
+# - Gate target (0.55 / 0.50) lies outside the entire Pareto front
+# - Cramér's V of the strongest features ≤ 0.13; severity shares uniform across all categories
+# - Arithmetic: F1(Class 1) = 0.46 requires ~90× Odds-Lift relative to 0.94 % base rate
 #
 
 # %%
@@ -1216,37 +1216,36 @@ else:
     print("Kein feasibler Offset gefunden — Gate für 3-Klassen-Formulierung nicht erreichbar.")
 
 # %% [markdown]
-# ### Arithmetisches Ceiling-Argument
+# ### Arithmetic Ceiling Argument
 #
-# Für macro-F1 ≥ 0.55 bei F1(Klasse 3) ≈ 0.72 müssten Klasse 1 und 2 im Mittel **F1 ≈ 0.46** erreichen.
+# For macro-F1 ≥ 0.55 with F1(Class 3) ≈ 0.72, Classes 1 and 2 must average **F1 ≈ 0.46**.
 #
-# Für Klasse 1 (Basisrate 0.94 %): F1 = 0.46 bei Recall ≥ 0.50 bedeutet Precision ≥ 0.42 —
-# ein **~90-facher Odds-Lift** gegenüber der Basisrate. Features mit Cramér's V ≤ 0.13
-# leisten das strukturell nicht (physikalische Determinanten der Schwere wie Aufprallgeschwindigkeit,
-# Fahrzeugmasse und Insassenalter fehlen im öffentlichen Unfallatlas-Datensatz).
+# For Class 1 (base rate 0.94 %): F1 = 0.46 with Recall ≥ 0.50 means Precision ≥ 0.42 —
+# a **~90× Odds-Lift** over the base rate. Features with Cramér's V ≤ 0.13
+# structurally cannot deliver this (physical determinants of severity such as impact speed,
+# vehicle mass, and occupant age are absent from the public Unfallatlas dataset).
 #
-# Die Pareto-Front-Grafik oben zeigt: Kein einziger der 19 getesteten Punkte liegt im Ziel-Quadranten
-# (macro-F1 ≥ 0.55 UND Recall(1) ≥ 0.50). Das ist ein **Bayes-Ceiling**, kein Tuning-Problem.
+# The Pareto-front chart above shows: not a single one of the 19 tested points lies in the target
+# quadrant (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50). This is a **Bayes-ceiling**, not a tuning problem.
 #
-# **→ Lösung: Binäre KSI-Reformulierung in §10.**
-# Das naive Umlabeln der vorhandenen Champion-Vorhersagen (KSI={1,2} vs. slight={3}) erreicht bereits
-# binär macro-F1 = 0.552. Ein direkt trainiertes binäres Modell wird das deutlich übertreffen.
+# **→ Solution: Binary KSI reformulation in §10.**
+# Naively relabelling the existing champion predictions (KSI={1,2} vs. slight={3}) already yields
+# binary macro-F1 = 0.552. A directly trained binary model will surpass this by a significant margin.
 #
 
 # %% [markdown]
-# ## §10 — Binäre KSI-Klassifikation
+# ## §10 — Binary KSI Classification
 #
-# **Motivation**: Das 3-Klassen-Gate ist mit den verfügbaren Unfallatlas-Features nicht erreichbar
-# (§9). Das *KSI-vs-slight*-Framing (*Killed or Seriously Injured* vs. leichtverletzt) ist der
-# methodische Standard der Verkehrssicherheits-ML-Literatur (Santos 2022, Pakgohar 2021, Schlößler
-# 2024) — genau weil die beschriebene Ceiling-Problematik der 3-Klassen-Variante seit Jahren bekannt
-# ist.
+# **Motivation**: The 3-class gate is not achievable with the available Unfallatlas features
+# (§9). The *KSI-vs-slight* framing (*Killed or Seriously Injured* vs. slightly injured) is the
+# methodological standard in the road-safety ML literature (Santos 2022, Pakgohar 2021, Schlößler
+# 2024) — precisely because the ceiling problem of the 3-class formulation has been known for years.
 #
-# **Revidiertes Gate**:
-# - `y_binary = 1` falls `UKATGEORIE ∈ {1, 2}` (Getötet oder Schwerverletzt = KSI)
-# - `y_binary = 0` falls `UKATGEORIE = 3` (Leichtverletzt = slight)
-# - Klassenverteilung: KSI ≈ 16.4 % / slight ≈ 83.6 %
-# - Gate: **binary macro-F1 ≥ 0.55 UND Recall(KSI) ≥ 0.50**
+# **Revised Gate**:
+# - `y_binary = 1` if `UKATGEORIE ∈ {1, 2}` (Killed or Severely Injured = KSI)
+# - `y_binary = 0` if `UKATGEORIE = 3` (Slightly Injured = slight)
+# - Class distribution: KSI ≈ 16.4 % / slight ≈ 83.6 %
+# - Gate: **binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50**
 
 # %%
 from unfallatlas.features.preprocessing import split_features_target_binary  # noqa: E402
@@ -1430,14 +1429,14 @@ print(f"  {BASE / 'data' / 'processed' / 'a3_binary_best_model.joblib'}")
 print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_card.json'}")
 
 # %% [markdown]
-# ### §10 — Ergebniszusammenfassung Binäre KSI-Klassifikation
+# ### §10 — Results Summary: Binary KSI Classification
 #
-# Die binäre KSI-Reformulierung überwindet die Bayes-Ceiling der 3-Klassen-Variante:
+# The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation:
 #
-# - **LightGBM binary balanced** mit Optuna-Tuning (20 Trials, GroupKFold, Subsample 500k)
-# - Gate-optimaler Threshold aus 1D-Sweep auf Val-2023 (Recall(KSI) ≥ 0.50 als Constraint)
-# - Test-2024-Evaluation einmalig nach Threshold-Wahl
-# - **Gate-Artefakte**: `data/processed/a3_binary_best_model.joblib`, `a3_binary_model_card.json`
+# - **LightGBM binary balanced** with Optuna tuning (20 trials, GroupKFold, subsample 500k)
+# - Gate-optimal threshold from 1D sweep on Val-2023 (Recall(KSI) ≥ 0.50 as constraint)
+# - Test-2024 evaluation performed exactly once after threshold selection
+# - **Gate artefacts**: `data/processed/a3_binary_best_model.joblib`, `a3_binary_model_card.json`
 #
-# Die binäre Formulierung ist der methodische Standard der Verkehrssicherheits-ML-Literatur
-# (Santos 2022, Pakgohar 2021, Schlößler 2024) und stellt das validierbare Gate für dieses Portfolio bereit.
+# The binary formulation is the methodological standard in the road-safety ML literature
+# (Santos 2022, Pakgohar 2021, Schlößler 2024) and provides the verifiable gate for this portfolio.

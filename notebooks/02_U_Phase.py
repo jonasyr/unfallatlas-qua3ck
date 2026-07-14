@@ -520,17 +520,17 @@ print("rows with no transport mode flagged:", int(violation.iloc[0, 0]))
 # Verifies the Q-phase assumption of class distribution ≈ 1 / 18 / 81.
 
 # %% [markdown]
-# > **Methodologischer Hinweis (vorausblickend auf A³-Phase §9)**
+# > **Methodological Note (looking ahead to A³-Phase §9)**
 # >
-# > Die folgende EDA analysiert `UKATGEORIE` als 3-Klassen-Target.
-# > Die Cramér's-V-Analyse (§6) und die Severity-Share-Plots (§7) zeigen, dass die stärksten Features
-# > Cramér's V ≤ 0.13 aufweisen und Severity-Shares über alle Kategorien nahezu uniform sind.
-# > Diese Befunde antizipieren bereits das Bayes-Ceiling der 3-Klassen-Klassifikation, das in der
-# > A³-Phase (§9) empirisch bestätigt wird.
+# > The following EDA analyses `UKATGEORIE` as a 3-class target.
+# > The Cramér's-V analysis (§6) and the severity-share plots (§7) show that the strongest features
+# > have Cramér's V ≤ 0.13 and that severity shares are nearly uniform across all categories.
+# > These findings already anticipate the Bayes-ceiling of the 3-class classification, which is
+# > empirically confirmed in the A³-Phase (§9).
 # >
-# > Das finale Modell (A³-Phase §10) verwendet daher das **binäre KSI-Target**
-# > (`UKATGEORIE ≤ 2 → 1`, sonst `0`). Alle Feature-Transformationen in §10 bleiben identisch —
-# > nur die Label-Codierung ändert sich.
+# > The final model (A³-Phase §10) therefore uses the **binary KSI target**
+# > (`UKATGEORIE ≤ 2 → 1`, else `0`). All feature transformations in §10 remain identical —
+# > only the label encoding changes.
 
 # %%
 target = con.execute(f"""
@@ -2018,9 +2018,9 @@ else:
 # ---
 
 # %% [markdown]
-# > **Hinweis**: Das ursprüngliche 3-Klassen-Gate (macro-F1 ≥ 0.55 AND Recall(Klasse 1) ≥ 0.50)
-# > wurde nach der A³-Phase auf ein binäres KSI-Gate umgestellt — siehe A³-Phase §9 für die
-# > vollständige Begründung.
+# > **Note**: The original 3-class gate (macro-F1 ≥ 0.55 AND Recall(Class 1) ≥ 0.50)
+# > was revised after the A³-Phase to a binary KSI gate — see A³-Phase §9 for the
+# > complete rationale.
 
 # %% [markdown]
 # ## 11 — Summary
