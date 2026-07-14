@@ -10,6 +10,7 @@ def _plot_pareto_front(
     comparison_df: pd.DataFrame,
     recall_col: str,
     recall_axis_label: str,
+    recall_gate_label: str,
     title: str,
     ax: plt.Axes | None,
     gate_f1: float,
@@ -44,7 +45,7 @@ def _plot_pareto_front(
         color="darkorange",
         linestyle="--",
         linewidth=1.2,
-        label=f"Gate: {recall_axis_label} ≥ {gate_recall}",
+        label=f"Gate: {recall_gate_label} ≥ {gate_recall}",
     )
 
     ax.fill_between(
@@ -92,6 +93,7 @@ def plot_f1_recall_front(
         comparison_df,
         recall_col="recall_class_1",
         recall_axis_label="Recall (Class 1 — Killed)",
+        recall_gate_label="Recall(1)",
         title="Pareto Front: Macro-F1 vs. Recall(Killed) — all 19 configurations",
         ax=ax,
         gate_f1=gate_f1,
@@ -131,6 +133,7 @@ def plot_binary_f1_recall_front(
         comparison_df,
         recall_col="recall_ksi",
         recall_axis_label="Recall (KSI)",
+        recall_gate_label="Recall(KSI)",
         title=title,
         ax=ax,
         gate_f1=gate_f1,

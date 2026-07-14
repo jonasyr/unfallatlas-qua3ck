@@ -113,3 +113,14 @@ def test_plot_f1_recall_front_unaffected_by_refactor(comparison_df):
     ax = plot_f1_recall_front(comparison_df)
     assert ax.get_title() == "Pareto Front: Macro-F1 vs. Recall(Killed) — all 19 configurations"
     plt.close("all")
+
+
+def test_plot_f1_recall_front_legend_label_unchanged_by_refactor(comparison_df):
+    """Regression test for a real bug found in review: the shared-helper
+    refactor accidentally changed this function's vertical-gate legend text
+    from 'Gate: Recall(1) >= 0.5' to a longer axis-label-derived string.
+    plot_f1_recall_front must keep its exact original legend text."""
+    ax = plot_f1_recall_front(comparison_df, gate_recall=0.50)
+    legend_labels = [line.get_label() for line in ax.lines]
+    assert "Gate: Recall(1) ≥ 0.5" in legend_labels
+    plt.close("all")
