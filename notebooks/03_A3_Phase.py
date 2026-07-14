@@ -924,9 +924,17 @@ for family in candidate_families:
         avg = sum(_trial_durations) / len(_trial_durations)
         remaining = N_TRIALS_PER_FAMILY - (trial.number + 1)
         eta_min = (avg * remaining) / 60
+        # trial.value is None for PRUNED/FAILED trials - Optuna still invokes
+        # callbacks for those, so the progress logger must not assume a
+        # completed float here (confirmed via live execution: a later
+        # lightgbm trial crashed this callback with
+        # "unsupported format string passed to NoneType.__format__").
+        value_str = f"{trial.value:.3f}" if trial.value is not None else "N/A"
+        recall_val = trial.user_attrs.get("recall_class_1")
+        recall_str = f"{recall_val:.3f}" if recall_val is not None else "N/A"
         _log_progress(
             f"[Optuna {family} {trial.number + 1}/{N_TRIALS_PER_FAMILY}] "
-            f"trial macro-F1={trial.value:.3f} recall(1)={trial.user_attrs['recall_class_1']:.3f} "
+            f"trial macro-F1={value_str} recall(1)={recall_str} "
             f"in {elapsed:.1f}s ... ETA remaining: {eta_min:.1f} min"
         )
 
@@ -1346,7 +1354,10 @@ _log_progress("Binary Stage 0 complete.")
 from sklearn.metrics import f1_score  # noqa: E402
 from sklearn.model_selection import train_test_split  # noqa: E402
 
-from unfallatlas.models.boosting import build_lightgbm_binary_pipeline  # noqa: E402
+from unfallatlas.models.boosting import (  # noqa: E402
+    build_lightgbm_binary_pipeline,
+    build_xgboost_binary_pipeline,
+)
 from unfallatlas.models.svm import (  # noqa: E402
     build_linear_svm_binary_pipeline,
     build_rbf_svm_binary_pipeline,
@@ -1381,7 +1392,9 @@ BINARY_BUILDERS = {
     "random_forest": lambda: build_random_forest_pipeline(
         tree_preprocessor_bin, class_weight="balanced"
     ),
-    "xgboost": lambda: build_xgboost_pipeline(tree_preprocessor_bin, use_gpu=_use_gpu_resolved),
+    "xgboost": lambda: build_xgboost_binary_pipeline(
+        tree_preprocessor_bin, use_gpu=_use_gpu_resolved
+    ),
     "lightgbm": lambda: build_lightgbm_binary_pipeline(tree_preprocessor_bin),
     "catboost": lambda: build_catboost_pipeline(tree_preprocessor_bin, use_gpu=_use_gpu_resolved),
     "svm_linear": lambda: build_linear_svm_binary_pipeline(linear_preprocessor_bin),
@@ -1549,7 +1562,6 @@ print(f"\nTuned family: {binary_champion_family}")
 print(f"Best CV macro-F1: {study_binary.best_value:.4f}")
 print(f"Best params: {study_binary.best_params}")
 
-
 # %% [markdown]
 # ## 17 — Binary Refit, Gate-Optimal Threshold & Test-2024 Evaluation
 #
@@ -1605,7 +1617,6 @@ cm = pd.DataFrame(
 )
 print(f"\nConfusion Matrix:\n{cm.to_string()}")
 print(f"\nBinary gate passed: {gate_passed}")
-
 
 # %% [markdown]
 # ## 18 — Binary Artifacts: Save Pipeline & Model Card
@@ -1671,46 +1682,77 @@ print(f"  {BASE / 'data' / 'processed' / 'a3_binary_best_model.joblib'}")
 print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_card.json'}")
 print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_comparison.csv'}")
 
+# %%
+from unfallatlas.viz.metrics_viz import plot_binary_f1_recall_front  # noqa: E402
+
+plot_input_df = binary_comparison_df[
+    binary_comparison_df["family"].isin(list(BINARY_BUILDERS.keys()))
+][["model", "family", "macro_f1", "recall_ksi"]].copy()
+
+fig, ax = plt.subplots(figsize=(10, 6))
+plot_binary_f1_recall_front(
+    plot_input_df,
+    ax=ax,
+    gate_f1=0.55,
+    gate_recall=0.50,
+    title="Pareto Front: Macro-F1 vs. Recall(KSI) — binary champion search (Stage 0/1)",
+)
+fig.tight_layout()
+
+out_path = BASE / "reports" / "figures" / "a3_binary_f1_recall_front.png"
+out_path.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(out_path, dpi=150, bbox_inches="tight")
+plt.show()
+print(f"Binary champion-search front plot saved to {out_path}")
+
 
 # %% [markdown]
-# ### §10 — Results Summary: Binary KSI Classification
+# ## 19 — Results Summary: Binary KSI Classification
 #
-# The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation, and the
-# **revised gate is met on the untouched Test-2024 split**:
+# The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation (§11), and
+# this time the binary champion was chosen via a genuine Stage 0/Stage 1 search across ten
+# candidates (three baselines, four tree-ensemble families, three SVM variants) rather than
+# inherited from the 3-class champion.
+#
+# **Binary champion: `random_forest`** (selected via `select_best_candidate(recall_col="recall_ksi")`
+# over the §14 Stage-1 comparison — see `data/processed/a3_binary_model_comparison.csv` for the
+# full ten-way table and `reports/figures/a3_binary_f1_recall_front.png` for the visual comparison).
 #
 # | Metric | Val-2023 | Test-2024 | Gate |
 # |---|---|---|---|
-# | macro-F1 | 0.6107 | **0.6069** | ≥ 0.55 ✓ |
-# | Recall(KSI) | — | **0.5233** | ≥ 0.50 ✓ |
-# | Recall(slight) | — | 0.7690 | — |
+# | macro-F1 | 0.6072 | **0.6026** | ≥ 0.55 ✅ |
+# | Recall(KSI) | 0.5173 | **0.5255** | ≥ 0.50 ✅ |
+# | Recall(slight) | — | 0.7615 | — |
 #
-# **Gate passed: True.**
+# **Gate passed: True.** Both Test-2024 gate thresholds are cleared (macro-F1 0.6026 ≥ 0.55, Recall(KSI) 0.5255 ≥ 0.50).
 #
-# - **Model**: LightGBM binary, `class_weight="balanced"`, tuned via Optuna (20 trials, 3-fold
-#   GroupKFold-by-year, 500k-row stratified subsample). Best CV macro-F1 during search: 0.598.
-#   Winning hyperparameters: `n_estimators=494, num_leaves=99, max_depth=10,
-#   learning_rate=0.120, min_child_samples=85, reg_lambda=0.101`.
-# - **Threshold**: gate-optimal decision threshold found via 1D sweep on Val-2023
-#   (maximise macro-F1 subject to Recall(KSI) ≥ 0.50) → **0.580**.
+# - **Model**: `random_forest`, class-weighted/balanced, tuned via Optuna (20 trials, 3-fold
+#   GroupKFold-by-year). Best CV macro-F1 during search: 0.6208. Winning hyperparameters:
+#   `{'n_estimators': 180, 'max_depth': 23, 'min_samples_leaf': 8}`.
+# - **Threshold**: gate-optimal decision threshold found via `find_best_binary_threshold` on
+#   Val-2023 (maximise macro-F1 subject to Recall(KSI) ≥ 0.50) → **0.4986**.
+# - **Runner-up candidates** (Stage 1, Val-2023 macro-F1): `xgboost` (0.5699, recall(KSI)=0.6824)
+#   and `lightgbm` (0.5662, recall(KSI)=0.6897) — random_forest leads on macro-F1 by ~0.03 over
+#   the nearest tree-ensemble runner-up, though both runners-up post noticeably higher recall(KSI).
 # - **Test-2024 confusion matrix** (rows = true, cols = predicted):
 #
-#   |  | Pred KSI | Pred slight |
+#   | | Pred KSI | Pred slight |
 #   |---|---|---|
-#   | True KSI | 23,127 | 21,071 |
-#   | True slight | 51,824 | 172,497 |
-#
+#   | True KSI | 23,228 | 20,970 |
+#   | True slight | 53,506 | 170,815 |
 # - **Test-2024 evaluation performed exactly once**, after threshold selection on Val-2023 — no
 #   test-set peeking.
-# - **Comparison to the Technical Review's estimate**: naively relabeling the 3-class champion's
-#   existing predictions (no retraining) gave binary macro-F1 = 0.552 — right at the gate. The
-#   purpose-built binary model reaches **0.607**, confirming the review's prediction that a
-#   directly-trained model would clear 0.55 with margin (projected range was 0.58–0.65).
+# - **Comparison to the naive-relabel estimate**: relabeling the 3-class champion's existing
+#   predictions (no retraining) gave binary macro-F1 = 0.552 (documented in the Technical Review).
+#   This purpose-built, searched-and-tuned champion reaches **0.6026** macro-F1 on Test-2024 —
+#   a real improvement over the naive relabel, earned via a genuine multi-family search and tuning
+#   pass rather than an assumption carried over from the 3-class champion.
 # - **Gate artefacts**: `data/processed/a3_binary_best_model.joblib`,
-#   `data/processed/a3_binary_model_card.json` (both saved and present in the repo).
+#   `data/processed/a3_binary_model_card.json`, `data/processed/a3_binary_model_comparison.csv`
+#   (all saved and present in the repo).
 #
 # The binary formulation is the methodological standard in the road-safety ML literature
-# (Santos 2022, Pakgohar 2021, Schlößler 2024) and provides the verifiable, evidence-based gate
-# for this portfolio — see §9 for the empirical and arithmetic proof that the original 3-class
-# gate (macro-F1 ≥ 0.55 AND Recall(class-1) ≥ 0.50) is structurally unreachable with the available
-# Unfallatlas features.
+# (Santos 2022, Pakgohar 2021, Schlößler 2024) and provides the verifiable, evidence-based gate for
+# this portfolio — see §11 for the empirical and arithmetic proof that the original 3-class gate is
+# structurally unreachable with the available Unfallatlas features.
 #

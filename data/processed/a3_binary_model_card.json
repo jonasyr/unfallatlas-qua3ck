@@ -1,43 +1,124 @@
 {
   "model_type": "binary_ksi_vs_slight",
-  "target_encoding": "1 = KSI (UKATGEORIE \u2208 {1,2}), 0 = slight (UKATGEORIE = 3)",
-  "champion_family": "lightgbm",
-  "winning_strategy": "lightgbm_binary_balanced",
-  "gate_reformulation_reason": "3-class gate (macro-F1 \u2265 0.55 AND Recall(class-1) \u2265 0.50) is unreachable with public Unfallatlas features: empirical ceiling macro-F1 = 0.424 over 19 configurations, Cram\u00e9r's V \u2264 0.13 for strongest features, ~90\u00d7 odds-lift required for class-1 precision. KSI-vs-slight is the domain-standard framing (Santos 2022, Pakgohar 2021, Schl\u00f6\u00dfler 2024).",
+  "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
+  "champion_family": "random_forest",
+  "winning_strategy": "binary_random_forest_balanced",
+  "selection_rule": "Stage 0/1 champion search across random_guess, majority_class, logistic_regression, random_forest, xgboost, lightgbm, catboost, svm_linear, svm_sgd, svm_rbf (all class-weighted/balanced) on Val-2023; gate-aware selection via select_best_candidate(recall_col='recall_ksi') - highest macro-F1 among candidates with recall_ksi >= 0.50, falling back to highest combined score if none clear the gate.",
+  "stage0_1_comparison": [
+    {
+      "model": "binary_random_guess",
+      "family": "binary_random_guess",
+      "macro_f1": 0.43858641784381475,
+      "recall_ksi": 0.4991635707923266,
+      "recall_slight": 0.49908303776808255,
+      "n_train": NaN
+    },
+    {
+      "model": "binary_majority_class",
+      "family": "binary_majority_class",
+      "macro_f1": 0.45322893020665883,
+      "recall_ksi": 0.0,
+      "recall_slight": 1.0,
+      "n_train": NaN
+    },
+    {
+      "model": "binary_logistic_regression",
+      "family": "binary_logistic_regression",
+      "macro_f1": 0.5582003432027051,
+      "recall_ksi": 0.6375328597188729,
+      "recall_slight": 0.6344257664145208,
+      "n_train": NaN
+    },
+    {
+      "model": "binary_random_forest_balanced",
+      "family": "random_forest",
+      "macro_f1": 0.6010925806589957,
+      "recall_ksi": 0.5401377392513416,
+      "recall_slight": 0.7473847519718051,
+      "n_train": 1554834.0
+    },
+    {
+      "model": "binary_xgboost_balanced",
+      "family": "xgboost",
+      "macro_f1": 0.5699373761296304,
+      "recall_ksi": 0.6824176062916857,
+      "recall_slight": 0.633107493083549,
+      "n_train": 1554834.0
+    },
+    {
+      "model": "binary_lightgbm_balanced",
+      "family": "lightgbm",
+      "macro_f1": 0.5661516970864057,
+      "recall_ksi": 0.6897390775380738,
+      "recall_slight": 0.6241082598343639,
+      "n_train": 1554834.0
+    },
+    {
+      "model": "binary_catboost_balanced",
+      "family": "catboost",
+      "macro_f1": 0.5647201528170669,
+      "recall_ksi": 0.6856981468204827,
+      "recall_slight": 0.6236060604701842,
+      "n_train": 1554834.0
+    },
+    {
+      "model": "binary_svm_linear_balanced",
+      "family": "svm_linear",
+      "macro_f1": 0.5589457282436823,
+      "recall_ksi": 0.6364031371526646,
+      "recall_slight": 0.6361072374999439,
+      "n_train": 500000.0
+    },
+    {
+      "model": "binary_svm_sgd_balanced",
+      "family": "svm_sgd",
+      "macro_f1": 0.5526629976016932,
+      "recall_ksi": 0.653848660626996,
+      "recall_slight": 0.6184719687560253,
+      "n_train": 1554834.0
+    },
+    {
+      "model": "binary_svm_rbf_balanced",
+      "family": "svm_rbf",
+      "macro_f1": 0.5599402556556248,
+      "recall_ksi": 0.6062699602424558,
+      "recall_slight": 0.6514108663387425,
+      "n_train": 8000.0
+    }
+  ],
+  "gate_reformulation_reason": "3-class gate (macro-F1 >= 0.55 AND Recall(class-1) >= 0.50) is unreachable with public Unfallatlas features: empirical ceiling macro-F1 = 0.424 over 19 configurations, Cramer's V <= 0.13 for strongest features, ~90x odds-lift required for class-1 precision. KSI-vs-slight is the domain-standard framing (Santos 2022, Pakgohar 2021, Schloessler 2024).",
   "best_hyperparameters": {
-    "n_estimators": 494,
-    "num_leaves": 99,
-    "max_depth": 10,
-    "learning_rate": 0.12007903402950289,
-    "min_child_samples": 85,
-    "reg_lambda": 0.1014594600998581
+    "n_estimators": 180,
+    "max_depth": 23,
+    "min_samples_leaf": 8
   },
-  "optimal_threshold_val_2023": 0.58,
-  "val_2023_macro_f1": 0.6106755970274976,
+  "optimal_threshold_val_2023": 0.49860217036273086,
+  "val_2023_macro_f1": 0.6072144262787248,
   "test_2024_metrics": {
-    "macro_f1": 0.6068833662862416,
-    "recall_ksi": 0.5232589709941626,
-    "recall_slight": 0.7689739257581769,
+    "macro_f1": 0.6025832651356028,
+    "recall_ksi": 0.5255441422688809,
+    "recall_slight": 0.7614757423513625,
     "confusion_matrix": [
       [
-        23127,
-        21071
+        23228,
+        20970
       ],
       [
-        51824,
-        172497
+        53506,
+        170815
       ]
     ]
   },
-  "acceptance_gate": "binary macro-F1 \u2265 0.55 AND Recall(KSI) \u2265 0.50",
+  "acceptance_gate": "binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50",
   "acceptance_gate_passed": true,
   "provenance": {
     "rows_train": 1554834,
     "rows_val": 269048,
     "rows_test": 268519,
     "optuna_trials": 20,
-    "subsample_size": 500000,
-    "run_at_utc": "2026-07-14T14:53:59.462310+00:00Z",
+    "subsample_size_svm_linear_and_boosting_tuning": 500000,
+    "subsample_size_svm_rbf": 8000,
+    "run_at_utc": "2026-07-14T22:16:37.841954+00:00",
     "random_seed": 42
   }
 }
