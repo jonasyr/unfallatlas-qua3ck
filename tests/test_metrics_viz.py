@@ -5,7 +5,7 @@ matplotlib.use("Agg")  # headless backend for CI
 import matplotlib.pyplot as plt  # noqa: E402
 import pytest
 
-from unfallatlas.viz.metrics_viz import plot_f1_recall_front
+from unfallatlas.viz.metrics_viz import plot_binary_f1_recall_front, plot_f1_recall_front
 
 
 @pytest.fixture()
@@ -51,4 +51,65 @@ def test_plot_f1_recall_front_all_models_plotted(comparison_df):
     ax = plot_f1_recall_front(comparison_df)
     # Each model gets a scatter point — check there are at least n scatter collections
     assert ax.collections or ax.lines, "Expected scatter points in plot"
+    plt.close("all")
+
+
+@pytest.fixture()
+def binary_comparison_df():
+    return pd.DataFrame(
+        [
+            {
+                "model": "lightgbm_binary_balanced (champion)",
+                "macro_f1": 0.6069,
+                "recall_ksi": 0.5233,
+            },
+            {"model": "svm_linear_C1.0", "macro_f1": 0.55, "recall_ksi": 0.40},
+            {"model": "svm_rbf_C1.0_gammascale", "macro_f1": 0.50, "recall_ksi": 0.35},
+            {"model": "svm_sgd_hinge_alpha0.0001", "macro_f1": 0.52, "recall_ksi": 0.45},
+        ]
+    )
+
+
+def test_plot_binary_f1_recall_front_returns_axes(binary_comparison_df):
+    ax = plot_binary_f1_recall_front(binary_comparison_df)
+    assert isinstance(ax, plt.Axes)
+    plt.close("all")
+
+
+def test_plot_binary_f1_recall_front_accepts_external_ax(binary_comparison_df):
+    _, ax = plt.subplots()
+    result = plot_binary_f1_recall_front(binary_comparison_df, ax=ax)
+    assert result is ax
+    plt.close("all")
+
+
+def test_plot_binary_f1_recall_front_gate_lines_present(binary_comparison_df):
+    ax = plot_binary_f1_recall_front(binary_comparison_df, gate_f1=0.55, gate_recall=0.50)
+    h_lines = [
+        ln for ln in ax.lines if len(ln.get_ydata()) == 2 and ln.get_ydata()[0] == ln.get_ydata()[1]
+    ]
+    v_lines = [
+        ln for ln in ax.lines if len(ln.get_xdata()) == 2 and ln.get_xdata()[0] == ln.get_xdata()[1]
+    ]
+    assert len(h_lines) > 0
+    assert len(v_lines) > 0
+    plt.close("all")
+
+
+def test_plot_binary_f1_recall_front_uses_recall_ksi_not_recall_class_1(binary_comparison_df):
+    # Regression guard: this plot must read the binary-evaluation column name,
+    # not silently fall back to the 3-class 'recall_class_1' column.
+    ax = plot_binary_f1_recall_front(binary_comparison_df)
+    scatter_collections = [
+        coll for coll in ax.collections if isinstance(coll, matplotlib.collections.PathCollection)
+    ]
+    xdata = [pt[0] for coll in scatter_collections for pt in coll.get_offsets()]
+    assert sorted(xdata) == sorted(binary_comparison_df["recall_ksi"].tolist())
+    plt.close("all")
+
+
+def test_plot_f1_recall_front_unaffected_by_refactor(comparison_df):
+    """Existing 3-class plot must keep its exact title after the shared-helper refactor."""
+    ax = plot_f1_recall_front(comparison_df)
+    assert ax.get_title() == "Pareto Front: Macro-F1 vs. Recall(Killed) — all 19 configurations"
     plt.close("all")
