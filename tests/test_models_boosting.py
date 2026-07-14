@@ -8,6 +8,7 @@ from unfallatlas.models.boosting import (
     build_lightgbm_binary_pipeline,
     build_lightgbm_pipeline,
     build_random_forest_pipeline,
+    build_xgboost_binary_pipeline,
     build_xgboost_pipeline,
     gpu_available,
 )
@@ -155,6 +156,25 @@ def test_build_lightgbm_binary_pipeline_fits_and_predicts_binary():
     y_bin = (np.array(y3) <= 2).astype(int)
     preprocessor = build_preprocessor()
     pipeline = build_lightgbm_binary_pipeline(preprocessor)
+    pipeline.fit(X, y_bin)
+    preds = pipeline.predict(X)
+    assert set(np.unique(preds)) <= {0, 1}
+    proba = pipeline.predict_proba(X)
+    assert proba.shape == (len(X), 2)
+    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-6)
+
+
+def test_build_xgboost_binary_pipeline_fits_and_predicts_binary():
+    """Regression test for a real bug found via live execution: reusing
+    build_xgboost_pipeline (hardcoded objective='multi:softprob', num_class=3)
+    for a binary {0,1} target makes _ZeroIndexedXGBClassifier.predict() raise
+    IndexError, because argmax over 3 phantom classes can return index 2,
+    which is out of range for a 2-element classes_ array. This builder must
+    fit and predict binary labels without that wrapper or that objective."""
+    X, y3 = _toy_X_y(n=120)
+    y_bin = (np.array(y3) <= 2).astype(int)
+    preprocessor = build_preprocessor()
+    pipeline = build_xgboost_binary_pipeline(preprocessor)
     pipeline.fit(X, y_bin)
     preds = pipeline.predict(X)
     assert set(np.unique(preds)) <= {0, 1}

@@ -155,6 +155,47 @@ def build_xgboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipelin
     )
 
 
+def build_xgboost_binary_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipeline:
+    """Binary KSI vs. slight XGBoost classifier.
+
+    build_xgboost_pipeline hardcodes objective="multi:softprob"/num_class=3
+    for the 3-class UKATGEORIE target and wraps the estimator in
+    _ZeroIndexedXGBClassifier to remap {1,2,3} -> {0,1,2}. Neither applies
+    to the binary target: it is already zero-indexed ({0,1}), and forcing
+    a 3-class softprob objective on 2-class data lets XGBoost's argmax
+    return an index outside the fitted classes_ array (confirmed
+    empirically: IndexError inside _ZeroIndexedXGBClassifier.predict()
+    when build_xgboost_pipeline was reused as-is for the binary champion
+    search). This builder uses the plain binary objective and no wrapper.
+
+    XGBoost has no ``class_weight``; apply class weighting via
+    ``sample_weight`` at ``.fit()`` time (see build_xgboost_pipeline).
+    """
+    resolved_use_gpu = _resolve_use_gpu(use_gpu)
+    return Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            (
+                "classify",
+                XGBClassifier(
+                    n_estimators=300,
+                    max_depth=6,
+                    learning_rate=0.1,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    reg_lambda=1.0,
+                    objective="binary:logistic",
+                    random_state=42,
+                    n_jobs=-1,
+                    eval_metric="logloss",
+                    device="cuda" if resolved_use_gpu else "cpu",
+                    tree_method="hist",
+                ),
+            ),
+        ]
+    )
+
+
 def build_lightgbm_pipeline(
     preprocessor, class_weight: str | dict | None = "balanced", use_gpu: bool | None = None
 ) -> Pipeline:
