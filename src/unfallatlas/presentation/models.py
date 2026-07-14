@@ -142,6 +142,39 @@ class ExportResult:
 
 
 @dataclass(frozen=True, slots=True)
+class ManifestEntry:
+    source: str
+    output: str
+    title: str
+    status: str
+    exported_at: str
+    exported_at_local: str
+    git: dict[str, str | bool]
+    snapshot_sha256: str
+    source_sha256: str
+    cell_counts: dict[str, int]
+    findings: tuple[dict[str, str | int | bool | None], ...]
+    assets: tuple[dict[str, str | int | None], ...]
+    size_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class PresentationManifest:
+    schema_version: int = 1
+    exporter_version: str = "1"
+    generated_at: str = ""
+    entries: tuple[ManifestEntry, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class FreshnessResult:
+    source: str
+    output: str
+    status: str
+    state: str
+
+
+@dataclass(frozen=True, slots=True)
 class BatchResult:
     results: tuple[ExportResult, ...]
 
