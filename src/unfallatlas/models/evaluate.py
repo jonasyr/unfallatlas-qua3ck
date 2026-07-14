@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 from sklearn.metrics import confusion_matrix, f1_score, recall_score
 
@@ -54,6 +55,49 @@ def meets_binary_acceptance_criteria(metrics: dict) -> bool:
         metrics["macro_f1"] >= BINARY_MACRO_F1_THRESHOLD
         and metrics["recall_ksi"] >= BINARY_RECALL_KSI_THRESHOLD
     )
+
+
+def find_best_binary_threshold(
+    y_true,
+    scores: np.ndarray,
+    recall_gate: float = BINARY_RECALL_KSI_THRESHOLD,
+    n_steps: int = 81,
+) -> tuple[float, dict]:
+    """Sweep a decision threshold over ``scores`` to maximise macro-F1 subject
+    to Recall(KSI) >= recall_gate.
+
+    ``scores`` may be ``predict_proba(X)[:, 1]`` (range [0, 1]) or
+    ``decision_function(X)`` (unbounded) - both are monotonic in "how KSI-like
+    is this row", so the sweep range is derived from ``scores.min()``/
+    ``scores.max()`` rather than assumed to be [0, 1]. This lets SVM
+    estimators (LinearSVC, SGDClassifier, SVC), which expose
+    decision_function but not predict_proba, reuse the same gate-optimal
+    thresholding logic as the LightGBM champion's predict_proba sweep.
+
+    Returns (best_threshold, best_metrics). If no threshold satisfies the
+    recall gate, returns the unconstrained macro-F1-maximising threshold
+    instead - callers must check meets_binary_acceptance_criteria(best_metrics)
+    to distinguish the two cases.
+    """
+    scores = np.asarray(scores)
+    best_threshold_gated, best_f1_gated, best_metrics_gated = 0.0, -1.0, None
+    best_threshold_free, best_f1_free, best_metrics_free = 0.0, -1.0, None
+
+    for threshold in np.linspace(scores.min(), scores.max(), n_steps):
+        y_pred = (scores >= threshold).astype(int)
+        metrics = evaluate_binary_predictions(y_true, y_pred)
+        if metrics["macro_f1"] > best_f1_free:
+            best_f1_free = metrics["macro_f1"]
+            best_metrics_free = metrics
+            best_threshold_free = float(threshold)
+        if metrics["recall_ksi"] >= recall_gate and metrics["macro_f1"] > best_f1_gated:
+            best_f1_gated = metrics["macro_f1"]
+            best_metrics_gated = metrics
+            best_threshold_gated = float(threshold)
+
+    if best_metrics_gated is not None:
+        return best_threshold_gated, best_metrics_gated
+    return best_threshold_free, best_metrics_free
 
 
 def select_best_candidate(

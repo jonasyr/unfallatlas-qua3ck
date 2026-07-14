@@ -8,6 +8,7 @@ from unfallatlas.models.evaluate import (
     RECALL_CLASS_1_THRESHOLD,
     evaluate_binary_predictions,
     evaluate_predictions,
+    find_best_binary_threshold,
     macro_f1,
     meets_acceptance_criteria,
     meets_binary_acceptance_criteria,
@@ -127,3 +128,46 @@ def test_meets_binary_acceptance_criteria_majority_baseline_fails():
     y_pred = np.array([0] * len(y_true))  # majority-class baseline
     metrics = evaluate_binary_predictions(y_true, y_pred)
     assert meets_binary_acceptance_criteria(metrics) is False
+
+
+def test_find_best_binary_threshold_recovers_perfect_separator():
+    # Scores perfectly separate the two classes at score=0: negatives < 0, positives > 0.
+    y_true = np.array([0, 0, 0, 1, 1, 1])
+    scores = np.array([-2.0, -1.0, -0.5, 0.5, 1.0, 2.0])
+    threshold, metrics = find_best_binary_threshold(y_true, scores)
+    assert metrics["macro_f1"] == 1.0
+    assert metrics["recall_ksi"] == 1.0
+    # Any threshold strictly between -0.5 and 0.5 reproduces the perfect split.
+    assert -0.5 < threshold <= 0.5
+
+
+def test_find_best_binary_threshold_falls_back_when_gate_unreachable():
+    # No positives exist in y_true at all, so recall_ksi is 0.0 at every threshold
+    # in the sweep (sklearn's zero_division default for an absent class) - no
+    # threshold can ever clear a positive recall_gate, forcing the unconstrained
+    # macro-F1 fallback.
+    #
+    # NOTE: this scenario replaces the brief's original single-positive example
+    # (y_true=[0,0,0,0,1], scores=[-1,-0.5,0,0.5,-2], recall_gate=1.0). That
+    # example is unreachable-by-design in the *opposite* sense: with >=1 true
+    # positive, the sweep always includes threshold=scores.min(), which
+    # predicts every row positive and therefore always yields recall_ksi=1.0 -
+    # so recall_gate=1.0 was trivially satisfied there, not infeasible, and the
+    # test failed against the brief's own reference implementation. Verified via
+    # TDD (see task-1-report.md) before substituting this all-negative-y_true
+    # scenario, which is the only way to make the gate genuinely unreachable.
+    y_true = np.array([0, 0, 0, 0, 0])
+    scores = np.array([-1.0, -0.5, 0.0, 0.5, -2.0])
+    threshold, metrics = find_best_binary_threshold(y_true, scores, recall_gate=1.0)
+    assert metrics["recall_ksi"] < 1.0  # gate was infeasible, unconstrained fallback used
+    assert isinstance(threshold, float)
+
+
+def test_find_best_binary_threshold_works_with_decision_function_range():
+    # decision_function output is unbounded (not in [0, 1]) - confirm the sweep
+    # range is derived from the scores themselves, not hardcoded to a [0, 1] tube.
+    y_true = np.array([0, 0, 1, 1])
+    scores = np.array([-10.0, -8.0, 8.0, 10.0])
+    threshold, metrics = find_best_binary_threshold(y_true, scores)
+    assert metrics["macro_f1"] == 1.0
+    assert -8.0 < threshold <= 8.0
