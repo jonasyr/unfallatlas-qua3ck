@@ -163,6 +163,18 @@ test  = df[df.UJAHR == 2024]
 - `assign_h3_cell(lat, lon, resolution=8)`: returns stable H3 cell string ID
 - `ROAD_CLASS_RANK`: dict ranking highway types (motorway > primary > residential > …)
 
+**A³-phase modelling pipeline** (`notebooks/03_A3_Phase.ipynb`, `src/unfallatlas/models/`)
+
+- **Champion selection**: `select_best_candidate()` (`unfallatlas.models.evaluate`) applies a recall gate — recall(class 1) >= 0.50 must be met before comparing macro-F1; `random_forest_balanced` was excluded despite highest raw macro-F1 (0.410) because recall(1)=0.229
+- **Two candidate families**: `catboost_balanced` and `lightgbm_balanced` both advance to §6/§7; Random Forest/XGBoost stay in comparison table only
+- **CatBoost clone() incompatibility**: `CatBoostClassifier` with non-None `class_weights` cannot survive any `clone()` call (sklearn's `cross_validate` clones internally per fold); fix: `class_weights` removed from `build_catboost_pipeline()` constructor; balanced weighting supplied via `sample_weight` through `cross_validate(params=...)` — sklearn slices `sample_weight` to fold indices automatically
+- **Imbalance strategies in §6**: SMOTE/ADASYN/threshold-moving/ordinal are scored for information only; only balanced-weighted configurations (`{family}_balanced`) are selectable for Optuna tuning — `_build_pipeline_for()` raises `NotImplementedError` for resampling/ordinal strategies
+- **SMOTE/ADASYN NaN issue**: `tree_preprocessor`'s passthrough branch leaves `IstGkfz` as Python `None` (not `float NaN`); `SimpleImputer` silently misses `None`; workaround: coerce through `pd.to_numeric(errors="coerce")` first, then `SimpleImputer`
+- **Subsample cap**: §6/§7 use a 500k-row stratified subsample of the training set
+- **Commit-scoped checkpoints**: fitted pipelines saved to `data/processed/a3_checkpoints/<git-sha>/` via `joblib`; committed hyperparameter changes auto-invalidate the cache; Optuna study persisted alongside at `optuna_study.db` (per-family `study_name`)
+- **Optuna tuning**: 9 trials per family (18 total), TPE sampler, `GroupKFold` on subsample years; `recall(1)` stored via `trial.set_user_attr`; gate-aware `select_best_candidate()` picks winner (not Optuna's `study.best_trial`)
+- **Output artefacts**: `data/processed/a3_best_model.joblib`, `a3_model_card.json`, `a3_model_comparison.csv`; progress log at `reports/a3_progress.log`
+
 **Key column reference**
 
 | Column       | Type     | Meaning                                           |
@@ -195,6 +207,8 @@ test  = df[df.UJAHR == 2024]
 - U-Phase plotting conventions documented in `docs/prompts/02_prompts_phase_u.md`: human-readable label dicts (`FEATURE_LABELS`, `UKATGEORIE_LABELS`, `COL_CODE_LABELS`, etc.) + helpers (`feature_label()`, `severity_label()`, `apply_code_labels()`) sourced from `docs/dataset/DSB_Unfallatlas.md`; consistent `sns.set_theme(style="whitegrid", palette="colorblind")` styling
 - `docs/` reorganized into `prompts/`, `course-material/`, `dataset/`, `project/`; `GLOSSARY.md` and `AI TOOL DISCLOSURE.md` stay at `docs/` top level (hard requirements)
 - CI (`.github/workflows/ci.yml`): GitHub Actions on ubuntu-latest; installs `uv sync --extra dev --extra geo`, runs `ruff check .` then `uv run pytest`; uploads `coverage.xml` to Codecov via `codecov-action@v5` authenticated with `secrets.CODECOV_TOKEN`
+- A³-phase CatBoost fix (commits e7cf9ec/4677517): `class_weights` removed from `build_catboost_pipeline()` constructor to fix `clone()` incompatibility; balanced weighting now applied via `sample_weight` at fit time through `cross_validate(params=...)`
+- A³-phase checkpoint pattern: fitted pipelines cached under `data/processed/a3_checkpoints/<git-sha>/` (joblib); Optuna study persisted alongside at `optuna_study.db`; committed hyperparameter changes automatically land in a fresh, empty directory
 
 <!-- END AUTO-MANAGED -->
 
