@@ -62,7 +62,7 @@ unfallatlas-qua3ck/
 │   ├── data/               # download.py, dwd.py (weather), osm.py (road network)
 │   ├── features/           # enrich.py, spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
 │   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py
-│   └── viz/                # geo.py, shap_plots.py, streamlit_app.py
+│   └── viz/                # geo.py, shap_plots.py, streamlit_app.py, metrics_viz.py (planned)
 ├── app/                    # Streamlit demo entry point
 ├── data/
 │   ├── accidents.parquet   # Main dataset (Git LFS)
@@ -73,7 +73,8 @@ unfallatlas-qua3ck/
 │   ├── prompts/            # AI prompts used per QUA³CK phase (01_..., 02_..., referenced by AI TOOL DISCLOSURE.md)
 │   ├── course-material/    # Lecture notes used as AI context (Einheit 1/2, Data Analytics und Big Data, ChatGPT best-practice notes)
 │   ├── dataset/            # Unfallatlas dataset description (DSB_Unfallatlas.md/.pdf), used for citing + coded-label lookups
-│   └── project/            # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md)
+│   ├── project/            # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md)
+│   └── superpowers/plans/  # Implementation plans (local dev artefact, not committed)
 ├── reports/figures/        # Generated output figures
 └── pyproject.toml          # Project config (hatchling, ruff, black, jupytext, pytest-cov)
 ```
@@ -165,6 +166,20 @@ test  = df[df.UJAHR == 2024]
 - `assign_h3_cell(lat, lon, resolution=8)`: returns stable H3 cell string ID
 - `ROAD_CLASS_RANK`: dict ranking highway types (motorway > primary > residential > …)
 
+**Binary KSI reformulation** (planned — `feature/binary_ksi_reframe`)
+
+- 3-class gate (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50) is a **Bayes ceiling**: empirical max macro-F1 = 0.424 over 19 configs; Cramér's V ≤ 0.13 for strongest features; ~90× odds-lift required for class-1 precision at 0.94% base rate
+- Binary target: `y = (UKATGEORIE <= 2).astype(int)` — 1=KSI ({1,2}), 0=slight ({3}); KSI share ≈ 16.4%
+- Revised gate: **binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50**
+- New library functions (pending implementation):
+  - `find_gate_optimal_offsets(y_true, y_proba, classes, recall_gate_class=1, recall_gate=0.50, n_steps_o1=13, n_steps_o2=11) -> tuple[tuple[float, float] | None, float]` in `imbalance.py` — 2D log-prob sweep; returns `(None, best_unconstrained_f1)` when infeasible
+  - `split_features_target_binary(df) -> tuple[pd.DataFrame, pd.Series]` in `preprocessing.py`
+  - `build_lightgbm_binary_pipeline(preprocessor, class_weight="balanced", use_gpu=None) -> Pipeline` in `boosting.py`
+  - `evaluate_binary_predictions(y_true, y_pred) -> dict` + `meets_binary_acceptance_criteria(metrics) -> bool` in `evaluate.py`; constants `BINARY_MACRO_F1_THRESHOLD=0.55`, `BINARY_RECALL_KSI_THRESHOLD=0.50`
+  - `plot_f1_recall_front(comparison_df, ax=None, gate_f1=0.55, gate_recall=0.50, label_col="model") -> Axes` in `viz/metrics_viz.py`
+- Notebook additions: A³-Phase §9 (ceiling evidence + Pareto-front plot) and §10 (binary KSI model, Optuna, gate assertion); Q-Phase §N (gate-revision narrative); U-Phase (forward-pointing methodological notes)
+- Output artefacts: `data/processed/a3_binary_best_model.joblib`, `data/processed/a3_binary_model_card.json`, `reports/figures/a3_f1_recall_front.png`
+
 **A³-phase modelling pipeline** (`notebooks/03_A3_Phase.ipynb`, `src/unfallatlas/models/`)
 
 - **Champion selection**: `select_best_candidate()` (`unfallatlas.models.evaluate`) applies a recall gate — recall(class 1) >= 0.50 must be met before comparing macro-F1; `random_forest_balanced` was excluded despite highest raw macro-F1 (0.410) because recall(1)=0.229
@@ -212,6 +227,7 @@ test  = df[df.UJAHR == 2024]
 - A³-phase CatBoost fix (commits e7cf9ec/4677517): `class_weights` removed from `build_catboost_pipeline()` constructor to fix `clone()` incompatibility; balanced weighting now applied via `sample_weight` at fit time through `cross_validate(params=...)`
 - A³-phase checkpoint pattern: fitted pipelines cached under `data/processed/a3_checkpoints/<git-sha>/` (joblib); Optuna study persisted alongside at `optuna_study.db`; committed hyperparameter changes automatically land in a fresh, empty directory
 - A³-phase §6 filter (commit 22d84a3): §2 GroupKFold cell is a standalone sanity check only — §7 Optuna builds its own `GroupKFold` from subsample years; `_build_pipeline_for()` raises `NotImplementedError` for SMOTE/ADASYN/ordinal/threshold strategies so only `{family}_balanced` configs enter Optuna; full comparison table persisted to `data/processed/a3_model_comparison.csv`
+- Binary KSI reframe (`feature/binary_ksi_reframe`): 7-task plan at `docs/superpowers/plans/2026-07-14-binary-ksi-reframe.md`; adds §9/§10 to A³ notebook, new library functions across `imbalance.py`, `evaluate.py`, `preprocessing.py`, `boosting.py`, `viz/metrics_viz.py`; `docs/superpowers/` is excluded from version control
 
 <!-- END AUTO-MANAGED -->
 
