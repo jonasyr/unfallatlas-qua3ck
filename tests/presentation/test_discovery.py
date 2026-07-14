@@ -27,6 +27,19 @@ def test_discovery_is_recursive_ipynb_only_and_sorted(tmp_path: Path) -> None:
     ]
 
 
+def test_discovery_uses_original_path_to_break_casefold_ties(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    notebooks = tmp_path / "notebooks"
+    upper = notebooks / "A.ipynb"
+    lower = notebooks / "a.ipynb"
+    write_notebook(upper, [new_markdown_cell("# Upper")])
+    write_notebook(lower, [new_markdown_cell("# Lower")])
+    monkeypatch.setattr(Path, "rglob", lambda self, pattern: iter((lower, upper)))
+
+    assert discover_notebooks(notebooks) == (upper, lower)
+
+
 def test_resolve_explicit_notebooks_deduplicates_and_sorts_nested_paths(
     tmp_path: Path,
 ) -> None:
@@ -39,6 +52,20 @@ def test_resolve_explicit_notebooks_deduplicates_and_sorts_nested_paths(
     resolved = resolve_explicit_notebooks([later, nested, later], notebooks)
 
     assert resolved == (later.resolve(), nested.resolve())
+
+
+def test_resolve_explicit_notebooks_uses_original_path_to_break_casefold_ties(
+    tmp_path: Path,
+) -> None:
+    notebooks = tmp_path / "notebooks"
+    upper = notebooks / "A.ipynb"
+    lower = notebooks / "a.ipynb"
+    write_notebook(upper, [new_markdown_cell("# Upper")])
+    write_notebook(lower, [new_markdown_cell("# Lower")])
+
+    resolved = resolve_explicit_notebooks([lower, upper], notebooks)
+
+    assert resolved == (upper.resolve(), lower.resolve())
 
 
 def test_resolve_explicit_notebooks_rejects_non_notebook(tmp_path: Path) -> None:

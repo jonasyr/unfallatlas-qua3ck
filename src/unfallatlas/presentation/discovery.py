@@ -13,7 +13,10 @@ def discover_notebooks(notebooks_dir: Path) -> tuple[Path, ...]:
     return tuple(
         sorted(
             notebooks,
-            key=lambda path: path.relative_to(notebooks_dir).as_posix().casefold(),
+            key=lambda path: (
+                path.relative_to(notebooks_dir).as_posix().casefold(),
+                path.relative_to(notebooks_dir).as_posix(),
+            ),
         )
     )
 
@@ -34,7 +37,10 @@ def resolve_explicit_notebooks(paths: Sequence[Path], notebooks_dir: Path) -> tu
     return tuple(
         sorted(
             resolved,
-            key=lambda path: path.relative_to(root).as_posix().casefold(),
+            key=lambda path: (
+                path.relative_to(root).as_posix().casefold(),
+                path.relative_to(root).as_posix(),
+            ),
         )
     )
 
