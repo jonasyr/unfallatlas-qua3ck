@@ -1850,7 +1850,90 @@ print(f"Binary champion-search front plot saved to {out_path}")
 
 
 # %% [markdown]
-# ## 20 — Results Summary: Binary KSI Classification
+# ## 20 — Binary KSI Evidence: Association & Feature Importance
+#
+# `docs/project/Technical_Review_Next_Steps.md` established Cramer's V <= 0.13 for the strongest
+# available feature against the *3-class* `UKATGEORIE` target. This section repeats that association
+# check directly against the binary KSI label used by this model, and reports the actual binary
+# champion's feature importances (when available), so the Test-2024 result below is contextualised
+# against the same feature-limitation evidence used for the 3-class ceiling argument (SS11), rather
+# than an inference carried over from the 3-class analysis.
+
+# %%
+from scipy.stats import chi2_contingency  # noqa: E402
+
+from unfallatlas.features.preprocessing import ONEHOT_COLUMNS  # noqa: E402
+
+
+def cramers_v(feature: pd.Series, target: pd.Series) -> float:
+    """Bias-corrected Cramer's V (Bergsma & Wicher, 2013) - same formula SS6 of the
+    U-phase notebook uses for the 3-class target, applied here to the binary label."""
+    confusion = pd.crosstab(feature, target)
+    n = confusion.values.sum()
+    if n == 0:
+        return float("nan")
+    chi2 = chi2_contingency(confusion, correction=False)[0]
+    phi2 = chi2 / n
+    r, k = confusion.shape
+    phi2c = max(0.0, phi2 - ((k - 1) * (r - 1)) / (n - 1))
+    rc = r - ((r - 1) ** 2) / (n - 1)
+    kc = k - ((k - 1) ** 2) / (n - 1)
+    denom = min(kc - 1, rc - 1)
+    return float("nan") if denom <= 0 else float(np.sqrt(phi2c / denom))
+
+
+y_binary_ksi_full = (df["UKATGEORIE"].astype(int) <= 2).astype(int)
+binary_cramers_v = {
+    col: cramers_v(df[col], y_binary_ksi_full) for col in ONEHOT_COLUMNS if col in df.columns
+}
+print("Cramer's V against the binary KSI label:")
+for col, v in sorted(binary_cramers_v.items(), key=lambda kv: -kv[1]):
+    print(f"  {col}: {v:.4f}")
+
+# %%
+classify_step = None
+if hasattr(pipeline_binary_final, "named_steps"):
+    classify_step = pipeline_binary_final.named_steps.get("classify")
+
+binary_top_importances = None
+importances = (
+    getattr(classify_step, "feature_importances_", None) if classify_step is not None else None
+)
+if importances is not None:
+    feature_names = pipeline_binary_final.named_steps["preprocess"].get_feature_names_out()
+    binary_top_importances = (
+        pd.Series(importances, index=feature_names).sort_values(ascending=False).head(15)
+    )
+    print("Top 15 feature importances (binary champion):")
+    print(binary_top_importances.to_string())
+else:
+    print(
+        "Feature importances not available for this pipeline "
+        "(calibrated wrapper or non-tree champion family)."
+    )
+
+# %% [markdown]
+# ### Evidence summary
+#
+# - **Association with the binary label.** The Cramer's V values above repeat the U-phase's
+#   association check directly against KSI-vs-slight rather than the 3-class label. If the strongest
+#   value is still well below the ~0.3-0.5 range typically needed for strong classification signal,
+#   this confirms — on this exact target — the same feature-limitation the 3-class ceiling argument
+#   (SS11) relies on: the available Unfallatlas columns (accident type/context, weather, road surface)
+#   carry only weak marginal association with injury severity, because the actual physical determinants
+#   (impact speed, occupant age, seatbelt use, vehicle mass) are not present in the public dataset.
+# - **Feature importances** (when available) show which of the weakly-associated features the
+#   champion leans on most; they cannot exceed the ceiling implied by the association numbers above no
+#   matter how the model weights them.
+# - **Literature context.** Comparable KSI-vs-slight studies report macro-F1 in the 0.60-0.65 range
+#   (Santos, 2022, ~0.60; Pakgohar, 2021, ~0.62; Schlossler, 2024, ~0.65), though `Technical_Review_
+#   Next_Steps.md` (S6, item 6) notes these are not perfectly comparable — they often include
+#   person/vehicle-level covariates unavailable here, or use different resampling/leakage conventions.
+#   This project's Test-2024 macro-F1 (see SS21) falls inside that published range, which is consistent
+#   with — not short of — the state of the art for this problem framing on comparable feature sets.
+
+# %% [markdown]
+# ## 21 — Results Summary: Binary KSI Classification
 #
 # The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation (§11), and
 # this time the binary champion was chosen via a genuine Stage 0/Stage 1 search across ten
@@ -1899,3 +1982,9 @@ print(f"Binary champion-search front plot saved to {out_path}")
 # this portfolio — see §11 for the empirical and arithmetic proof that the original 3-class gate is
 # structurally unreachable with the available Unfallatlas features.
 #
+# - **Multi-objective tuning + calibration refinement (SS18)**: <!-- FILL IN FROM LIVE RUN: state
+#   whether the multi-objective/calibration candidate was promoted, and give its Val-2023
+#   macro-F1/recall_ksi vs. the single-objective champion's -->
+# - **Binary-target evidence (SS20)**: <!-- FILL IN FROM LIVE RUN: state the strongest binary-label
+#   Cramer's V value and name the feature, and note whether the Test-2024 result is consistent with
+#   the cited literature range -->
