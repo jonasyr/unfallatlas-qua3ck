@@ -9,11 +9,29 @@ from pathlib import Path
 
 from nbformat import NotebookNode
 
-_ATX_HEADING = re.compile(r"^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$", re.MULTILINE)
 _ANCHOR_SPAN = re.compile(
     r'^<span id="[^"]+" class="heading-anchor" aria-hidden="true"></span>\n',
     re.MULTILINE,
 )
+_FENCE_OPEN = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+_ATX_HEADING = re.compile(r"^ {0,3}(#{1,6})(?:[ \t]+(.*)|[ \t]*)$")
+_CLOSING_HASHES = re.compile(r"[ \t]+#+[ \t]*$")
+_TABLE_TAG_ATTRIBUTES = {
+    "table": frozenset({"aria-label", "aria-describedby"}),
+    "caption": frozenset(),
+    "colgroup": frozenset({"span"}),
+    "col": frozenset({"span"}),
+    "thead": frozenset(),
+    "tbody": frozenset(),
+    "tfoot": frozenset(),
+    "tr": frozenset(),
+    "th": frozenset({"id", "colspan", "rowspan", "headers", "scope", "abbr"}),
+    "td": frozenset({"id", "colspan", "rowspan", "headers"}),
+}
+_URL_ATTRIBUTES = frozenset(
+    {"href", "src", "data", "action", "formaction", "poster", "background", "xlink:href"}
+)
+_ACTIVE_STYLE = re.compile(r"(?:url\s*\(|expression\s*\(|@import|javascript:)", re.IGNORECASE)
 
 
 class Severity(StrEnum):
@@ -89,6 +107,20 @@ class TocEntry:
 
 
 @dataclass(frozen=True, slots=True)
+class TocNode:
+    level: int
+    title: str
+    anchor: str
+    children: tuple["TocNode", ...]
+
+
+@dataclass(frozen=True, slots=True)
+class HtmlOutput:
+    kind: str
+    content: str
+
+
+@dataclass(frozen=True, slots=True)
 class AssetRecord:
     relative_path: Path
     sha256: str
@@ -139,19 +171,50 @@ def _slug(title: str) -> str:
     )
 
 
+def _heading_lines(source: str) -> tuple[tuple[int, int, str], ...]:
+    headings: list[tuple[int, int, str]] = []
+    fence_character: str | None = None
+    fence_length = 0
+    for line_index, line in enumerate(source.splitlines()):
+        if fence_character is not None:
+            closing = re.fullmatch(
+                rf" {{0,3}}{re.escape(fence_character)}{{{fence_length},}}[ \t]*", line
+            )
+            if closing:
+                fence_character = None
+                fence_length = 0
+            continue
+
+        fence = _FENCE_OPEN.match(line)
+        if fence and not (fence.group(1).startswith("`") and "`" in fence.group(2)):
+            fence_character = fence.group(1)[0]
+            fence_length = len(fence.group(1))
+            continue
+
+        heading = _ATX_HEADING.match(line)
+        if not heading:
+            continue
+        markdown_title = _CLOSING_HASHES.sub("", heading.group(2) or "").strip()
+        headings.append((line_index, len(heading.group(1)), _plain_heading_title(markdown_title)))
+    return tuple(headings)
+
+
 def _toc_entries(notebook: NotebookNode) -> tuple[TocEntry, ...]:
-    seen: dict[str, int] = {}
+    allocated: set[str] = set()
     entries: list[TocEntry] = []
     for cell in notebook.cells:
         if cell.cell_type != "markdown":
             continue
         source = _ANCHOR_SPAN.sub("", str(cell.source))
-        for match in _ATX_HEADING.finditer(source):
-            title = _plain_heading_title(match.group(2))
+        for _, level, title in _heading_lines(source):
             base = _slug(title)
-            seen[base] = seen.get(base, 0) + 1
-            suffix = "" if seen[base] == 1 else f"-{seen[base]}"
-            entries.append(TocEntry(len(match.group(1)), title, f"{base}{suffix}"))
+            anchor = base
+            suffix = 2
+            while anchor in allocated:
+                anchor = f"{base}-{suffix}"
+                suffix += 1
+            allocated.add(anchor)
+            entries.append(TocEntry(level, title, anchor))
     return tuple(entries)
 
 
@@ -163,15 +226,79 @@ def build_toc(nb: NotebookNode) -> tuple[TocEntry, ...]:
 def add_stable_heading_anchors(nb: NotebookNode) -> NotebookNode:
     """Return a deep copy with stable anchors immediately before Markdown headings."""
     notebook = copy.deepcopy(nb)
+    for cell in notebook.cells:
+        if cell.cell_type == "markdown":
+            cell.source = _ANCHOR_SPAN.sub("", str(cell.source))
     entries = iter(_toc_entries(notebook))
     for cell in notebook.cells:
         if cell.cell_type != "markdown":
             continue
-
-        def add_anchor(match: re.Match[str]) -> str:
-            entry = next(entries)
-            span = f'<span id="{entry.anchor}" class="heading-anchor" aria-hidden="true"></span>'
-            return f"{span}\n{match.group(0)}"
-
-        cell.source = _ATX_HEADING.sub(add_anchor, str(cell.source))
+        heading_indexes = {line_index for line_index, _, _ in _heading_lines(str(cell.source))}
+        rendered_lines: list[str] = []
+        for line_index, line in enumerate(str(cell.source).splitlines(keepends=True)):
+            if line_index in heading_indexes:
+                entry = next(entries)
+                rendered_lines.append(
+                    f'<span id="{entry.anchor}" class="heading-anchor" aria-hidden="true"></span>\n'
+                )
+            rendered_lines.append(line)
+        cell.source = "".join(rendered_lines)
     return notebook
+
+
+@dataclass(slots=True)
+class _MutableTocNode:
+    entry: TocEntry
+    children: list["_MutableTocNode"]
+
+
+def nest_toc(entries: tuple[TocEntry, ...]) -> tuple[TocNode, ...]:
+    """Convert flat heading entries into a semantic parent/child tree."""
+    roots: list[_MutableTocNode] = []
+    stack: list[_MutableTocNode] = []
+    for entry in entries:
+        node = _MutableTocNode(entry, [])
+        while stack and stack[-1].entry.level >= entry.level:
+            stack.pop()
+        if stack:
+            stack[-1].children.append(node)
+        else:
+            roots.append(node)
+        stack.append(node)
+
+    def freeze(node: _MutableTocNode) -> TocNode:
+        return TocNode(
+            node.entry.level,
+            node.entry.title,
+            node.entry.anchor,
+            tuple(freeze(child) for child in node.children),
+        )
+
+    return tuple(freeze(root) for root in roots)
+
+
+def classify_html_output(value: str) -> HtmlOutput:
+    """Allow only sanitized passive table HTML; sandbox every other HTML output."""
+    from bs4 import BeautifulSoup, NavigableString, Tag
+
+    soup = BeautifulSoup(value, "html.parser")
+    top_level = [
+        item for item in soup.contents if not isinstance(item, NavigableString) or item.strip()
+    ]
+    if len(top_level) != 1 or not isinstance(top_level[0], Tag) or top_level[0].name != "table":
+        return HtmlOutput("sandbox", value)
+
+    for tag in soup.find_all(True):
+        allowed_attributes = _TABLE_TAG_ATTRIBUTES.get(tag.name)
+        if allowed_attributes is None:
+            return HtmlOutput("sandbox", value)
+        for attribute in tuple(tag.attrs):
+            normalized = attribute.casefold()
+            attribute_value = " ".join(tag.get_attribute_list(attribute))
+            if normalized.startswith("on") or normalized in _URL_ATTRIBUTES:
+                return HtmlOutput("sandbox", value)
+            if normalized == "style" and _ACTIVE_STYLE.search(attribute_value):
+                return HtmlOutput("sandbox", value)
+            if normalized not in allowed_attributes:
+                del tag.attrs[attribute]
+    return HtmlOutput("table", str(soup))

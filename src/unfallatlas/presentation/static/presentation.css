@@ -80,6 +80,7 @@ button:active { transform: translateY(1px); }
   overflow-x: auto;
   padding-bottom: 0.25rem;
 }
+.toc-trigger, .toc-close { display: none; }
 .presentation-shell {
   display: grid;
   grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
@@ -91,11 +92,9 @@ button:active { transform: translateY(1px); }
 .toc { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .toc-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .toc-heading h2 { margin: 0; font-size: 1rem; }
-.toc-heading button { display: none; }
 .toc ol { margin: 0.8rem 0 0; padding: 0; list-style: none; }
+.toc ol ol { margin: 0.35rem 0 0; padding-left: 0.8rem; }
 .toc li + li { margin-top: 0.45rem; }
-.toc-level-2 { padding-left: 0.8rem; }
-.toc-level-3, .toc-level-4, .toc-level-5, .toc-level-6 { padding-left: 1.5rem; }
 .toc-link { display: block; padding: 0.25rem 0.4rem; border-radius: calc(var(--radius) / 2); text-decoration: none; }
 .toc-link[aria-current="location"] { color: var(--surface); background: var(--accent); }
 
@@ -156,7 +155,7 @@ button:active { transform: translateY(1px); }
     padding: 1rem;
   }
   .js .toc[data-open="true"] { display: block; }
-  .toc-heading button { display: inline-block; }
+  .js .toc-trigger, .js .toc-close { display: inline-block; }
   .metadata-grid { grid-template-columns: 1fr; }
   .header-content { width: min(100% - 1rem, var(--content-width)); padding: 1.25rem 0; }
   .presentation-toolbar { width: min(100% - 1rem, var(--content-width)); }

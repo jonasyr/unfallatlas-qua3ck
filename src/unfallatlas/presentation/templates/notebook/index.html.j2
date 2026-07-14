@@ -43,7 +43,7 @@
   </div>
 </header>
 <div class="presentation-toolbar" aria-label="Ansichtssteuerung">
-  <button type="button" data-action="toggle-toc" aria-controls="presentation-toc" aria-expanded="false">Inhalt</button>
+  <button class="toc-trigger" type="button" data-action="toggle-toc" aria-controls="presentation-toc" aria-expanded="false">Inhalt</button>
   <button type="button" data-action="show-all-code">Code öffnen</button>
   <button type="button" data-action="hide-all-code">Code schließen</button>
   <button type="button" data-action="show-all-output">Ausgaben öffnen</button>
@@ -54,13 +54,16 @@
   <nav id="presentation-toc" class="toc" aria-label="Inhaltsverzeichnis">
     <div class="toc-heading">
       <h2>Inhalt</h2>
-      <button type="button" data-action="close-toc">Schließen</button>
+      <button class="toc-close" type="button" data-action="close-toc">Schließen</button>
     </div>
+    {% macro toc_list(nodes) %}
     <ol>
-    {% for entry in resources.presentation.toc %}
-      <li class="toc-level-{{ entry.level }}"><a class="toc-link" href="#{{ entry.anchor | e }}">{{ entry.title | e }}</a></li>
-    {% endfor %}
+      {% for node in nodes %}
+      <li><a class="toc-link" href="#{{ node.anchor | e }}">{{ node.title | e }}</a>{% if node.children %}{{ toc_list(node.children) }}{% endif %}</li>
+      {% endfor %}
     </ol>
+    {% endmacro %}
+    {{ toc_list(resources.presentation.toc | nest_toc) }}
   </nav>
   <main id="notebook-content" class="notebook-main" tabindex="-1">
 {% endblock header %}
@@ -119,14 +122,11 @@
 {% endblock data_priority %}
 
 {% block data_html scoped %}
-{% set html_value = output.data['text/html'] %}
-{% set html_lower = html_value | lower %}
-{% if '<script' in html_lower or '<iframe' in html_lower %}
-<iframe class="sandboxed-output" sandbox="" title="Isolierte Notebook-Ausgabe" srcdoc="{{ html_value | e }}"></iframe>
-{% elif '<table' in html_lower %}
-<div class="table-scroll" tabindex="0" aria-label="Tabelle mit horizontalem Bildlauf">{{ html_value }}</div>
+{% set classified = output.data['text/html'] | classify_html_output %}
+{% if classified.kind == 'table' %}
+<div class="table-scroll" tabindex="0" aria-label="Tabelle mit horizontalem Bildlauf">{{ classified.content }}</div>
 {% else %}
-<div class="html-output rendered_html">{{ html_value }}</div>
+<iframe class="sandboxed-output" sandbox="" title="Isolierte Notebook-Ausgabe" srcdoc="{{ classified.content | e }}"></iframe>
 {% endif %}
 {% endblock data_html %}
 

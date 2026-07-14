@@ -70,6 +70,22 @@ window.UnfallatlasPresentation = (() => {
     return loading;
   }
 
+  function readStorage(key) {
+    try {
+      return window.sessionStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStorage(key, value) {
+    try {
+      window.sessionStorage.setItem(key, value);
+    } catch {
+      return;
+    }
+  }
+
   function initialize() {
     const body = document.body;
     const statusRegion = document.querySelector("[data-status-region]");
@@ -78,6 +94,7 @@ window.UnfallatlasPresentation = (() => {
     const backToTop = document.querySelector(".back-to-top");
     const snapshot = body.getAttribute("data-snapshot-sha256") || "unknown";
     const storagePrefix = `unfallatlas-presentation:${snapshot}`;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let tocReturnFocus = null;
 
     function announce(message) {
@@ -91,12 +108,12 @@ window.UnfallatlasPresentation = (() => {
 
     const detailsElements = [...document.querySelectorAll("details")];
     detailsElements.forEach((details, index) => {
-      const saved = sessionStorage.getItem(storageKey(details, index));
+      const saved = readStorage(storageKey(details, index));
       if (saved !== null) details.open = saved === "open";
       const summary = details.querySelector(":scope > summary");
       const synchronize = () => {
         if (summary) summary.setAttribute("aria-expanded", String(details.open));
-        sessionStorage.setItem(storageKey(details, index), details.open ? "open" : "closed");
+        writeStorage(storageKey(details, index), details.open ? "open" : "closed");
         if (details.open && details.classList.contains("output-cell")) {
           details.querySelectorAll(".plotly-output").forEach(loadPlotly);
         }
@@ -141,7 +158,9 @@ window.UnfallatlasPresentation = (() => {
         else openToc(button);
       }
       if (action === "close-toc") closeToc();
-      if (action === "back-to-top") window.scrollTo({top: 0, behavior: "smooth"});
+      if (action === "back-to-top") {
+        window.scrollTo({top: 0, behavior: reduceMotion.matches ? "auto" : "smooth"});
+      }
       if (action === "toggle-expand") {
         const region = document.getElementById(button.getAttribute("aria-controls"));
         region?.classList.toggle("is-expanded");
