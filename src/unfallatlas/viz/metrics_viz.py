@@ -70,11 +70,9 @@ def plot_f1_recall_front(
         label="Feasible zone",
     )
 
-    ax.set_xlabel("Recall (Klasse 1 — Getötet)", fontsize=11)
+    ax.set_xlabel("Recall (Class 1 — Killed)", fontsize=11)
     ax.set_ylabel("Macro-F1", fontsize=11)
-    ax.set_title(
-        "Pareto-Front: Macro-F1 vs. Recall(Getötet) — alle 19 Konfigurationen", fontsize=12
-    )
+    ax.set_title("Pareto Front: Macro-F1 vs. Recall(Killed) — all 19 configurations", fontsize=12)
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.4)
 

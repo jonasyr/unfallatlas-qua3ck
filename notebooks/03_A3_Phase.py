@@ -1250,9 +1250,6 @@ else:
 # %%
 from unfallatlas.features.preprocessing import split_features_target_binary  # noqa: E402
 
-# Preserve UJAHR for GroupKFold (must be extracted before split_features_target_binary drops it)
-groups_train = train["UJAHR"].values
-
 X_train_bin, y_train_bin = split_features_target_binary(train)
 X_val_bin, y_val_bin = split_features_target_binary(val)
 X_test_bin, y_test_bin = split_features_target_binary(test)

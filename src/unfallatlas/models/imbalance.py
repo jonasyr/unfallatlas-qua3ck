@@ -75,13 +75,14 @@ def find_gate_optimal_offsets(
 
     Apply the returned offsets to new data:
         logit = np.log(np.clip(y_proba, 1e-9, 1)).copy()
-        logit[:, classes.index(1)] += o1
-        logit[:, classes.index(2)] += o2
+        logit[:, classes.index(recall_gate_class)] += o1
+        logit[:, minority2_idx] += o2   # minority2_idx = classes index of the second minority class
         y_pred = np.array(classes)[logit.argmax(1)]
     """
     classes = list(classes)
     gate_idx = classes.index(recall_gate_class)
     minority2_idx = next(i for i, c in enumerate(classes) if i != gate_idx and c != max(classes))
+    # Assumes max(classes) identifies the majority class (holds for UKATGEORIE {1,2,3})
 
     best_constrained: tuple[tuple[float, float] | None, float] = (None, -1.0)
     best_unconstrained: tuple[tuple[float, float], float] = ((0.0, 0.0), -1.0)

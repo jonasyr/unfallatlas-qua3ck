@@ -62,7 +62,7 @@ unfallatlas-qua3ck/
 │   ├── data/               # download.py, dwd.py (weather), osm.py (road network)
 │   ├── features/           # enrich.py, spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
 │   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py
-│   └── viz/                # geo.py, shap_plots.py, streamlit_app.py, metrics_viz.py (planned)
+│   └── viz/                # geo.py, shap_plots.py, streamlit_app.py, metrics_viz.py
 ├── app/                    # Streamlit demo entry point
 ├── data/
 │   ├── accidents.parquet   # Main dataset (Git LFS)
