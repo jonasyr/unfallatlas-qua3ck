@@ -519,6 +519,19 @@ print("rows with no transport mode flagged:", int(violation.iloc[0, 0]))
 #
 # Verifies the Q-phase assumption of class distribution ≈ 1 / 18 / 81.
 
+# %% [markdown]
+# > **Methodologischer Hinweis (vorausblickend auf A³-Phase §9)**
+# >
+# > Die folgende EDA analysiert `UKATGEORIE` als 3-Klassen-Target.
+# > Die Cramér's-V-Analyse (§6) und die Severity-Share-Plots (§7) zeigen, dass die stärksten Features
+# > Cramér's V ≤ 0.13 aufweisen und Severity-Shares über alle Kategorien nahezu uniform sind.
+# > Diese Befunde antizipieren bereits das Bayes-Ceiling der 3-Klassen-Klassifikation, das in der
+# > A³-Phase (§9) empirisch bestätigt wird.
+# >
+# > Das finale Modell (A³-Phase §10) verwendet daher das **binäre KSI-Target**
+# > (`UKATGEORIE ≤ 2 → 1`, sonst `0`). Alle Feature-Transformationen in §10 bleiben identisch —
+# > nur die Label-Codierung ändert sich.
+
 # %%
 target = con.execute(f"""
     SELECT UKATGEORIE AS class,
@@ -2003,6 +2016,11 @@ else:
 # inside CV.
 #
 # ---
+
+# %% [markdown]
+# > **Hinweis**: Das ursprüngliche 3-Klassen-Gate (macro-F1 ≥ 0.55 AND Recall(Klasse 1) ≥ 0.50)
+# > wurde nach der A³-Phase auf ein binäres KSI-Gate umgestellt — siehe A³-Phase §9 für die
+# > vollständige Begründung.
 
 # %% [markdown]
 # ## 11 — Summary

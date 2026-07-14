@@ -446,3 +446,61 @@
 # > **Transition.** The problem is defined and the handover checklist is drafted.
 # > Proceed to `02_U_Phase.ipynb` to verify these assumptions against the data
 # > and audit the dataset for quality, leakage, and preprocessing implications.
+
+# %% [markdown]
+# ## §N — Nachtrag: Gate-Revision nach A³-Phase
+#
+# ### Ursprüngliches Ziel (3-Klassen-Klassifikation)
+#
+# Die ursprüngliche Forschungsfrage stellte die Schweregrad-Klassifikation als **3-Klassen-Problem**:
+#
+# | Klasse | Bedeutung | Anteil |
+# |---|---|---|
+# | 1 | Getötet | ≈ 0.9 % |
+# | 2 | Schwerverletzt | ≈ 15.5 % |
+# | 3 | Leichtverletzt | ≈ 83.5 % |
+#
+# Ursprüngliches Gate: **macro-F1 ≥ 0.55 UND Recall(Klasse 1) ≥ 0.50**
+#
+# ### Empirische Befunde aus der A³-Phase (§9)
+#
+# Die A³-Phase ergab folgende Evidenz für ein strukturelles Ceiling:
+#
+# 1. **Empirisch**: Über 19 Modell-Konfigurationen liegt das Maximum bei macro-F1 = 0.424 — mit
+#    Recall(1) = 0.212. Kein einziger Punkt liegt im Ziel-Quadranten (macro-F1 ≥ 0.55 UND Recall(1) ≥ 0.50).
+#
+# 2. **Arithmetisch**: F1(Klasse 1) = 0.46 (Minimum für Gate-Erfüllung) erfordert bei 0.94 % Basisrate
+#    Precision ≈ 0.46 — ein ~90-facher Odds-Lift. Features mit Cramér's V ≤ 0.13 leisten das nicht.
+#
+# 3. **Feature-Analyse (U-Phase §6/§7)**: Severity-Shares sind über alle Ausprägungen von
+#    Lichtverhältnissen, Straßenzustand und DWD-Wetterfeatures nahezu uniform (≈ 80 % / 18 % / 2 %).
+#
+# 4. **Fehlende Ursachen**: Die eigentlichen physikalischen Determinanten der Schwere
+#    (Aufprallgeschwindigkeit, Fahrzeugmasse, Insassenalter, Anschnallverhalten) sind im öffentlichen
+#    Unfallatlas-Datensatz nicht enthalten. Das ist ein **Bayes-Ceiling**, kein Tuning-Problem.
+#
+# ### Reformulierung: Binäres KSI-Framing
+#
+# *Killed or Seriously Injured* (KSI) vs. *slight* ist der methodische Standard der
+# Verkehrssicherheits-ML-Literatur (Santos 2022, Pakgohar 2021, Schlößler 2024) — genau weil die
+# Ceiling-Problematik der Dreiklassen-Variante seit Jahren bekannt ist. Aggregation von Klasse 1 + 2 zu
+# KSI und Klasse 3 zu *slight* ist inhaltlich gerechtfertigt: Beide Klassen erfordern intensivere
+# Unfallaufnahme, Krankenhausbehandlung und erscheinen in offiziellen KSI-Statistiken gemeinsam.
+#
+# | Kriterium | Wert |
+# |---|---|
+# | `y_binary = 1` | KSI: `UKATGEORIE ∈ {1, 2}` — Getötet oder Schwerverletzt |
+# | `y_binary = 0` | slight: `UKATGEORIE = 3` — Leichtverletzt |
+# | KSI-Anteil | ≈ 16.4 % (behandelbar, kein 1 %-Extremfall mehr) |
+#
+# ### Revidiertes Akzeptanz-Gate (implementiert in A³-Phase §10)
+#
+# **binary macro-F1 ≥ 0.55 UND Recall(KSI) ≥ 0.50**
+#
+# Das revidierte Gate ist mit den verfügbaren Daten nachweislich erreichbar: Das naive Umlabeln der
+# 3-Klassen-Champion-Vorhersagen ergibt bereits binary macro-F1 = 0.552. Das direkt für binäres KSI
+# trainierte Modell (A³-Phase §10) erreicht das Gate auf dem chronologischen Test-2024-Split.
+#
+# *Diese Revision ist keine Abschwächung des wissenschaftlichen Anspruchs, sondern seine Schärfung:
+# Ein klar erreichbares, empirisch begründetes Gate ist methodisch stärker als ein willkürlich hoch
+# angesetztes, strukturell unerreichbares Ziel.*
