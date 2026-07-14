@@ -2,11 +2,15 @@ import numpy as np
 import pandas as pd
 
 from unfallatlas.models.evaluate import (
+    BINARY_MACRO_F1_THRESHOLD,
+    BINARY_RECALL_KSI_THRESHOLD,
     MACRO_F1_THRESHOLD,
     RECALL_CLASS_1_THRESHOLD,
+    evaluate_binary_predictions,
     evaluate_predictions,
     macro_f1,
     meets_acceptance_criteria,
+    meets_binary_acceptance_criteria,
     recall_for_class,
     select_best_candidate,
 )
@@ -92,3 +96,34 @@ def test_select_best_candidate_custom_threshold():
     )
     winner = select_best_candidate(rows, recall_threshold=0.40)
     assert winner["model"] == "a"
+
+
+def test_evaluate_binary_predictions_returns_all_expected_keys():
+    y = np.array([0, 1, 0, 1])
+    metrics = evaluate_binary_predictions(y, y)
+    assert set(metrics) == {"macro_f1", "recall_ksi", "recall_slight", "confusion_matrix"}
+    assert metrics["macro_f1"] == 1.0
+    assert metrics["recall_ksi"] == 1.0
+    assert metrics["recall_slight"] == 1.0
+
+
+def test_meets_binary_acceptance_criteria_requires_both_thresholds():
+    passing = {"macro_f1": BINARY_MACRO_F1_THRESHOLD, "recall_ksi": BINARY_RECALL_KSI_THRESHOLD}
+    failing_f1 = {
+        "macro_f1": BINARY_MACRO_F1_THRESHOLD - 0.01,
+        "recall_ksi": BINARY_RECALL_KSI_THRESHOLD,
+    }
+    failing_recall = {
+        "macro_f1": BINARY_MACRO_F1_THRESHOLD,
+        "recall_ksi": BINARY_RECALL_KSI_THRESHOLD - 0.01,
+    }
+    assert meets_binary_acceptance_criteria(passing) is True
+    assert meets_binary_acceptance_criteria(failing_f1) is False
+    assert meets_binary_acceptance_criteria(failing_recall) is False
+
+
+def test_meets_binary_acceptance_criteria_majority_baseline_fails():
+    y_true = np.array([0] * 836 + [1] * 164)
+    y_pred = np.array([0] * len(y_true))  # majority-class baseline
+    metrics = evaluate_binary_predictions(y_true, y_pred)
+    assert meets_binary_acceptance_criteria(metrics) is False

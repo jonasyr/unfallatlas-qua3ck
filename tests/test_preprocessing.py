@@ -9,6 +9,7 @@ from unfallatlas.features.preprocessing import (
     build_preprocessor,
     chronological_split,
     split_features_target,
+    split_features_target_binary,
 )
 
 
@@ -174,6 +175,19 @@ def test_build_preprocessor_handles_missing_osm_numeric_columns():
     preprocessor = build_preprocessor(scale_for_linear=False)
     transformed = preprocessor.fit_transform(X, y)
     assert not np.isnan(transformed).any()
+
+
+def test_split_features_target_binary_produces_binary_labels():
+    df = _toy_frame(n=60)
+    # Add UKATGEORIE column to toy frame
+    rng = np.random.default_rng(99)
+    df["UKATGEORIE"] = rng.choice([1, 2, 3], len(df), p=[0.01, 0.15, 0.84])
+    X, y = split_features_target_binary(df)
+    assert set(y.unique()) <= {0, 1}
+    assert y[df["UKATGEORIE"].isin([1, 2])].eq(1).all()
+    assert y[df["UKATGEORIE"].eq(3)].eq(0).all()
+    assert "UKATGEORIE" not in X.columns
+    assert "UJAHR" not in X.columns
 
 
 def test_build_preprocessor_drops_h3_cell_and_dwd_station_id():

@@ -211,3 +211,13 @@ def split_features_target(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     y = df[TARGET_COLUMN].astype(int)
     X = df.drop(columns=[TARGET_COLUMN, SPLIT_YEAR_COLUMN])
     return X, y
+
+
+def split_features_target_binary(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+    """Binary KSI target: 1 = KSI (UKATGEORIE ∈ {1, 2}), 0 = slight (UKATGEORIE = 3).
+
+    Identical feature set to split_features_target — only the label encoding changes.
+    """
+    y = (df[TARGET_COLUMN].astype(int) <= 2).astype(int)
+    X = df.drop(columns=[TARGET_COLUMN, SPLIT_YEAR_COLUMN])
+    return X, y

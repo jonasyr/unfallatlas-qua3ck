@@ -7,6 +7,8 @@ from sklearn.metrics import confusion_matrix, f1_score, recall_score
 
 MACRO_F1_THRESHOLD = 0.55
 RECALL_CLASS_1_THRESHOLD = 0.50
+BINARY_MACRO_F1_THRESHOLD = 0.55
+BINARY_RECALL_KSI_THRESHOLD = 0.50
 
 
 def macro_f1(y_true, y_pred) -> float:
@@ -33,6 +35,24 @@ def meets_acceptance_criteria(metrics: dict) -> bool:
     return (
         metrics["macro_f1"] >= MACRO_F1_THRESHOLD
         and metrics["recall_class_1"] >= RECALL_CLASS_1_THRESHOLD
+    )
+
+
+def evaluate_binary_predictions(y_true, y_pred) -> dict:
+    """Metrics for the binary KSI (label=1) vs. slight (label=0) model."""
+    return {
+        "macro_f1": macro_f1(y_true, y_pred),
+        "recall_ksi": recall_for_class(y_true, y_pred, target_class=1),
+        "recall_slight": recall_for_class(y_true, y_pred, target_class=0),
+        "confusion_matrix": confusion_matrix(y_true, y_pred, labels=[1, 0]).tolist(),
+    }
+
+
+def meets_binary_acceptance_criteria(metrics: dict) -> bool:
+    """Revised gate: binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50."""
+    return (
+        metrics["macro_f1"] >= BINARY_MACRO_F1_THRESHOLD
+        and metrics["recall_ksi"] >= BINARY_RECALL_KSI_THRESHOLD
     )
 
 
