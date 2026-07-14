@@ -37,6 +37,7 @@ The QUA3CK model is an iterative process for developing ML solutions. It stands 
 | **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | A³ modelling plan, build-out, recall-aware champion pivot, and OSM-feature integration | [Prompt record](prompts/03_prompts_phase_a3.md); [Modelling plan](superpowers/plans/2026-07-01-a3-phase-modelling.md); [Champion-pivot plan](superpowers/plans/2026-07-06-a3-champion-pivot.md); [OSM-integration plan](superpowers/plans/2026-07-09-a3-osm-feature-integration.md) |
 | **Phase A³ / Q / U** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Binary KSI reformulation and the corresponding cross-phase scientific documentation | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-14-binary-ksi-reframe.md) |
 | **Phase A³** | Codex (GPT-5.6 Terra), effort: medium; used July 2026 | AI-tool disclosure and prompt-record audit: provenance correction, plan indexing, link normalization, and plan-body de-duplication | [Prompt record](prompts/03_prompts_phase_a3.md); [This disclosure](AI%20TOOL%20DISCLOSURE.md) |
+| **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Course-material-driven review of the A³ phase against SVM/kernel-method coverage; added SVM candidates and a genuine, searched (not assumed) binary KSI champion, with a real end-to-end notebook execution | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-14-svm-algorithm-selection.md) |
 
 ---
 
@@ -56,6 +57,7 @@ records link to them by path rather than duplicating their contents.
 | 2026-07-06 | U-phase OSM/H3 road-context features | Sonnet 5, medium | [2026-07-06-u-phase-osm-spatial-features.md](superpowers/plans/2026-07-06-u-phase-osm-spatial-features.md) |
 | 2026-07-09 | A³ OSM feature integration | Sonnet 5, medium | [2026-07-09-a3-osm-feature-integration.md](superpowers/plans/2026-07-09-a3-osm-feature-integration.md) |
 | 2026-07-14 | Binary KSI reframe | Sonnet 5, medium | [2026-07-14-binary-ksi-reframe.md](superpowers/plans/2026-07-14-binary-ksi-reframe.md) |
+| 2026-07-14 | SVM algorithm selection and genuine binary champion search | Sonnet 5, medium | [2026-07-14-svm-algorithm-selection.md](superpowers/plans/2026-07-14-svm-algorithm-selection.md) |
 
 ---
 
