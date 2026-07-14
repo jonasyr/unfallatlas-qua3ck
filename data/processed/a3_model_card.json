@@ -33,25 +33,25 @@
     },
     "lightgbm": {
       "model": "lightgbm_balanced",
-      "macro_f1": 0.3720417212391798,
-      "recall_class_1": 0.6207987346777383,
-      "recall_class_2": 0.4326896551724138,
-      "recall_class_3": 0.6149789928212395,
+      "macro_f1": 0.3718082269545988,
+      "recall_class_1": 0.6156583629893239,
+      "recall_class_2": 0.4338850574712644,
+      "recall_class_3": 0.6143019204641756,
       "confusion_matrix": [
         [
-          1570,
-          676,
-          283
+          1557,
+          675,
+          297
         ],
         [
-          10940,
-          18822,
-          13738
+          10969,
+          18874,
+          13657
         ],
         [
-          26264,
-          59603,
-          137152
+          26259,
+          59759,
+          137001
         ]
       ]
     }
@@ -76,8 +76,8 @@
         "min_child_samples": 33,
         "reg_lambda": 1.162336424475217
       },
-      "cv_macro_f1": 0.38680731936370705,
-      "cv_recall_class_1": 0.5871563062110662
+      "cv_macro_f1": 0.3867467547433107,
+      "cv_recall_class_1": 0.586052857935204
     }
   },
   "tuned_hyperparameters": {
@@ -116,8 +116,8 @@
     "rows_train": 1554834,
     "rows_val": 269048,
     "rows_test": 268519,
-    "git_commit": "22d84a3",
-    "run_at_utc": "2026-07-09T07:10:03Z",
+    "git_commit": "6ac762b",
+    "run_at_utc": "2026-07-14T11:32:04Z",
     "random_seed": 42
   }
 }
