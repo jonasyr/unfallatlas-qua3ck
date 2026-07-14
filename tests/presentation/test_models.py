@@ -9,6 +9,20 @@ from unfallatlas.presentation.models import (
 )
 
 
+def test_enum_values_are_stable_machine_strings() -> None:
+    assert {member.name: member.value for member in Severity} == {
+        "INFO": "info",
+        "WARNING": "warning",
+        "ERROR": "error",
+    }
+    assert {member.name: member.value for member in NotebookStatus} == {
+        "READY": "ready",
+        "WIP": "wip",
+        "PLACEHOLDER": "placeholder",
+        "INVALID": "invalid",
+    }
+
+
 def test_finding_exposes_machine_code_and_strict_blocker() -> None:
     finding = Finding(
         code="UNEXECUTED_CELL",
