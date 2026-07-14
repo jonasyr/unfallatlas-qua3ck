@@ -18,7 +18,7 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: uv sync --extra dev --extra geo
+        run: uv sync --extra dev --extra geo --extra presentation
 
       - name: Lint (ruff)
         run: uv run ruff check .

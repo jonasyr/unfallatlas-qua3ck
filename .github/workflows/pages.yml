@@ -1,0 +1,43 @@
+name: Deploy presentations to Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "reports/presentation/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          lfs: true
+      - name: Validate presentation artifact
+        run: |
+          test -f reports/presentation/index.html
+          test -f reports/presentation/manifest.json
+          test "$(du -sm reports/presentation | cut -f1)" -lt 1024
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: reports/presentation
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
