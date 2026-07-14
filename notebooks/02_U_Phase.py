@@ -161,7 +161,6 @@ COL_CODE_LABELS = {
     "UTYP1": UTYP1_LABELS,
 }
 
-
 # %%
 # Paths — robust whether launched from project root or from notebooks/
 BASE_DIR = Path.cwd().parent if Path.cwd().name == "notebooks" else Path.cwd()
@@ -425,7 +424,7 @@ numeric_cols = [
 ]
 minmax = (
     con.execute(f"""
-    SELECT {', '.join(f'MIN({c}) AS min_{c}, MAX({c}) AS max_{c}' for c in numeric_cols)}
+    SELECT {", ".join(f"MIN({c}) AS min_{c}, MAX({c}) AS max_{c}" for c in numeric_cols)}
     FROM '{DATA}'
 """)
     .df()
@@ -441,7 +440,7 @@ suspicious_set = {"unknown", "na", "n/a", "", "null", "none", "?", "-"}
 for col in str_cols:
     df_col = con.execute(f"SELECT DISTINCT \"{col}\" AS v FROM '{DATA}'").df()["v"].astype(str)
     suspicious = df_col[df_col.str.lower().isin(suspicious_set)]
-    print(f"  {col:10s}  distinct = {len(df_col):>6}  " f"suspicious = {len(suspicious)}")
+    print(f"  {col:10s}  distinct = {len(df_col):>6}  suspicious = {len(suspicious)}")
 
 # %% [markdown]
 # ### 3.3  Duplicates
@@ -477,9 +476,9 @@ DE_BBOX = {"lat_min": 47.27, "lat_max": 55.06, "lon_min": 5.87, "lon_max": 15.04
 range_checks = (
     con.execute(f"""
     SELECT
-        SUM(CASE WHEN LAT NOT BETWEEN {DE_BBOX['lat_min']} AND {DE_BBOX['lat_max']}
+        SUM(CASE WHEN LAT NOT BETWEEN {DE_BBOX["lat_min"]} AND {DE_BBOX["lat_max"]}
                  THEN 1 ELSE 0 END) AS lat_outside_de,
-        SUM(CASE WHEN LON NOT BETWEEN {DE_BBOX['lon_min']} AND {DE_BBOX['lon_max']}
+        SUM(CASE WHEN LON NOT BETWEEN {DE_BBOX["lon_min"]} AND {DE_BBOX["lon_max"]}
                  THEN 1 ELSE 0 END) AS lon_outside_de,
         SUM(CASE WHEN USTUNDE    NOT BETWEEN 0 AND 23 THEN 1 ELSE 0 END) AS hour_invalid,
         SUM(CASE WHEN UMONAT     NOT BETWEEN 1 AND 12 THEN 1 ELSE 0 END) AS month_invalid,
@@ -647,7 +646,7 @@ for col, (r, c) in zip(cat_cols, positions):
             y=d["n"],
             marker_color=COLOR_PRIMARY,
             hovertemplate=(
-                f"<b>{FEATURE_LABELS.get(col, col)}</b>: %{{x}}<br>" "n = %{y:,}<extra></extra>"
+                f"<b>{FEATURE_LABELS.get(col, col)}</b>: %{{x}}<br>n = %{{y:,}}<extra></extra>"
             ),
             showlegend=False,
         ),
@@ -1021,7 +1020,7 @@ fig.show()
 # Interactive density map (OpenStreetMap, no token required).
 SAMPLE_GEO = 50_000
 geo_sample = con.execute(
-    f"SELECT LON, LAT, UKATGEORIE FROM '{DATA}' " f"USING SAMPLE {SAMPLE_GEO} ROWS (reservoir, 42)"
+    f"SELECT LON, LAT, UKATGEORIE FROM '{DATA}' USING SAMPLE {SAMPLE_GEO} ROWS (reservoir, 42)"
 ).df()
 geo_sample["severity_label"] = geo_sample["UKATGEORIE"].map(
     {
@@ -1578,7 +1577,6 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
     save_fig(fig, "08_7_dwd_monthly_fatality_precip")
     fig.show()
 
-
 # %% [markdown]
 # > **Observation.** Cramér's V values: Windgeschwindigkeit = 0.018,
 # > Lufttemperatur = 0.015, Sichtweite = 0.008, Niederschlagsmenge = 0.008.
@@ -1593,6 +1591,103 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
 # > §11; A³ must apply median imputation inside the Pipeline.
 #
 # ---
+
+# %% [markdown]
+# ## 8.8 — OSM road-context enrichment
+#
+# `src/unfallatlas/features/spatial.py` and `src/unfallatlas/data/osm.py` add
+# road-context features aggregated per H3-8 cell (~0.7 km² hexagons):
+# dominant road class, mean/max speed limit, road density, and a
+# junction/complexity proxy (distinct-way count). Fetched once from
+# OpenStreetMap per Bundesland (16 states), cached to `data/raw/osm/`, then
+# joined onto every accident by its H3 cell.
+#
+# **Known limitation:** OSM reflects the present-day road network; accidents
+# span 2016–2024 and some roads' classification/speed limits will have
+# changed since. This is an accepted approximation (same category as the DWD
+# weather join's day-of-month averaging, §8.5) — not solvable without a paid
+# historical-OSM-snapshot service, out of scope here.
+
+# %%
+import logging  # noqa: E402
+import sys  # noqa: E402
+
+from unfallatlas.data.osm import GERMAN_STATES, build_spatial_features  # noqa: E402
+from unfallatlas.features.spatial import ROAD_CLASS_RANK  # noqa: E402
+
+# Enables the log.info(...) progress calls already inside download_road_network/
+# build_weather_features to actually show up somewhere. Two handlers, for two
+# different execution contexts:
+#   - StreamHandler(sys.stdout): visible live in a real Jupyter kernel
+#     (e.g. VSCode's interactive window), which renders cell stdout directly.
+#   - FileHandler(PROGRESS_LOG): confirmed empirically REQUIRED for
+#     `jupyter nbconvert --execute` - nbconvert captures each cell's stdout
+#     into the notebook's own cell-output JSON, not into nbconvert's own
+#     process-level stdout stream, so redirecting nbconvert's stdout to a
+#     file (`nbconvert ... > file.log`) never receives it (reproduced with
+#     a minimal test notebook). A FileHandler does a direct OS-level write,
+#     bypassing stdout/stdout-capture entirely, so it works the same way
+#     regardless of which of the two ways this notebook gets executed.
+# osmnx's own ox.settings.log_console was tried first and confirmed NOT to
+# work in EITHER context: it deliberately writes to sys.__stdout__ ("print
+# explicitly to terminal in case Jupyter has captured stdout"), bypassing
+# Jupyter's stdout capture entirely, by design - so it never reaches a
+# Jupyter cell's rendered output. ox.settings.log_file=True (set in
+# download_road_network) routes osmnx's internal progress messages through
+# the standard logging module instead, which propagates to both handlers
+# below the normal way.
+# force=True re-applies this even if something else already called
+# basicConfig earlier in the kernel session.
+PROGRESS_LOG = BASE_DIR / "reports" / "u_phase_osm_progress.log"
+PROGRESS_LOG.parent.mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler(PROGRESS_LOG)],
+    force=True,
+)
+
+RAW_DIR = BASE_DIR / "data" / "raw"
+INTERIM_DIR = BASE_DIR / "data" / "interim"
+
+print(
+    f"Fetching OSM road networks for {len(GERMAN_STATES)} states (uses per-state cache if present)..."
+)
+print(f"Progress log (works under nbconvert too): {PROGRESS_LOG}")
+df_spatial = build_spatial_features(df_weather, RAW_DIR, INTERIM_DIR, resolution=8)
+print(f"Spatially-enriched frame: {len(df_spatial):,} rows, {df_spatial.shape[1]} columns")
+
+osm_cols = [
+    "osm_dominant_road_class",
+    "osm_maxspeed_mean",
+    "osm_maxspeed_max",
+    "osm_road_density",
+    "osm_way_count",
+]
+coverage = df_spatial[osm_cols].notna().mean() * 100
+print("\nOSM feature coverage (% of accidents with a matched H3 cell):")
+print(coverage.round(1))
+
+# %%
+fig = px.histogram(
+    df_spatial,
+    x="osm_dominant_road_class",
+    category_orders={"osm_dominant_road_class": list(ROAD_CLASS_RANK.keys())},
+    title="Dominant OSM road class by accident (H3-8 cell)",
+)
+save_fig(fig, "08_8_osm_road_class_distribution")
+fig.show()
+
+# %%
+fig = px.histogram(
+    df_spatial,
+    x="osm_maxspeed_mean",
+    nbins=40,
+    title="Mean OSM speed limit (km/h) in the accident's H3 cell",
+)
+save_fig(fig, "08_8_osm_maxspeed_distribution")
+fig.show()
+
 
 # %% [markdown]
 # ## 9 — Leakage audit
@@ -1811,6 +1906,33 @@ else:
 # ---
 
 # %% [markdown]
+# ### §9.5 — OSM feature consistency probe
+#
+# Mirrors §9.4's conditional-entropy method: does knowing the OSM road
+# class trivially determine the target (which would suggest a data
+# artefact, not a genuine relationship)? A large entropy reduction here
+# would be suspicious - OSM data is independent of accident outcomes by
+# construction (it describes the road, not the crash), so a strong result
+# should read as a real severity signal, not a leak.
+
+# %%
+if "osm_dominant_road_class" in df_spatial.columns:
+    baseline_entropy = entropy(df_spatial["UKATGEORIE"])
+    cond_entropy = conditional_entropy(
+        df_spatial["UKATGEORIE"], df_spatial["osm_dominant_road_class"]
+    )
+    reduction_pct = 100 * (baseline_entropy - cond_entropy) / baseline_entropy
+    print(f"Baseline entropy: {baseline_entropy:.4f}")
+    print(f"Conditional entropy given osm_dominant_road_class: {cond_entropy:.4f}")
+    print(f"Reduction: {reduction_pct:.1f}%")
+    if reduction_pct > 50:
+        print("\n  → WARNING: reduction exceeds the 50% trigger - investigate before including.")
+    else:
+        print("\n  → Below the 50% trigger - retain as a feature.")
+else:
+    print("OSM data not loaded — skipping §9.5 probe.")
+
+# %% [markdown]
 # ## 10 — Preprocessing decisions (U → A³ handover)
 #
 # The following table specifies, per column, what A³ must do. The U phase
@@ -1848,6 +1970,22 @@ else:
 # > **Note.** All DWD features represent meteorological conditions at the hour of the accident
 # > (historical observations). The (year, month, hour-of-day) averaging introduces day-level
 # > noise but no future leakage — see §9.4. Actual `fit_transform` calls happen in A³, not here.
+#
+# ### OSM road-context features
+#
+# | Feature | Missing strategy | Recommended transform | Recommended scaling | EDA finding that drives the decision |
+# |:---|:---|:---|:---|:---|
+# | `osm_dominant_road_class` | mode (or a dedicated "unknown" category) | one-hot | n/a | 15 nominal road classes ranked by literature-established severity/speed association; §9.5 entropy-reduction check must clear the 50% trigger before inclusion |
+# | `osm_maxspeed_mean` | median imputation | none (already a natural km/h scale) | `StandardScaler` | speed limit is one of the strongest literature-documented predictors of crash severity specifically (not just occurrence) |
+# | `osm_maxspeed_max` | median imputation | none | `StandardScaler` | captures the fastest road touching a mixed-road-class cell, complementing the mean |
+# | `osm_road_density` | zero-fill (absence of OSM data in a cell most often reflects genuinely low road density, e.g. remote areas, not a data gap) | `log1p` (right-skewed - most cells have few road-vertex points) | `StandardScaler` | proxy for local traffic exposure |
+# | `osm_way_count` | zero-fill (same rationale as `osm_road_density`) | `log1p` | `StandardScaler` | junction/complexity proxy — cells with multiple distinct roads are more likely to be intersections |
+#
+# > **Note.** OSM road-context reflects the *present-day* network; some roads'
+# > classification or posted speed limit will have changed since the earliest
+# > accidents in this dataset (2016). This is an accepted approximation — see
+# > §8.8 — not a defect to fix here; A³ should note it as a limitation when
+# > interpreting SHAP importances for these features in Phase C.
 #
 # ### Imbalance handling
 #
@@ -1893,7 +2031,7 @@ else:
 #   features retained. DWD features carry no temporal leakage by join-key
 #   construction (§9.4).
 #
-# ### Top-4 risks for A³
+# ### Top-5 risks for A³
 #
 # 1. **Imbalance collapse on macro-F1.** Without class weights or sampling,
 #    tree models default to majority-class prediction on minority instances;
@@ -1910,6 +2048,13 @@ else:
 #    produced a structural year (2020). If A³ trains naively, the model
 #    learns the COVID-year distribution as if it were normal; consider a
 #    year-weight or drop 2020 from training and document the choice.
+# 5. **OSM road-context is a present-day snapshot, not historical.** Road
+#    classifications and speed limits reflect today's OpenStreetMap data,
+#    applied uniformly across all accident years (2016–2024). A road that was
+#    reclassified or had its speed limit changed during that window is
+#    silently treated as if its current state always applied. This mainly
+#    affects `osm_maxspeed_mean`/`osm_maxspeed_max`, less so `osm_dominant_road_class`
+#    (road hierarchy changes far less often than posted speed limits).
 #
 # ### U-phase acceptance checklist
 #
@@ -1944,7 +2089,7 @@ else:
 # [ ] Class stability across splits verified
 # [ ] No OBJECTID overlap between splits
 # [ ] §10 preprocessing decision table filled per column (Unfallatlas + DWD)
-# [ ] Top-4 risks for A³ written
+# [ ] Top-5 risks for A³ written
 # [ ] All plots exported to reports/figures/u_phase/
 # [ ] Notebook runs end-to-end without manual intervention
 # ```

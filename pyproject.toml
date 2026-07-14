@@ -54,6 +54,7 @@ optional-dependencies.dev = [
   "ruff>=0.4",
 ]
 optional-dependencies.geo = [
+  "geopandas>=1",
   "h3>=4",
   "osmnx>=1.9",
 ]

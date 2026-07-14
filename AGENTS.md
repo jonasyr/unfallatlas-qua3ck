@@ -18,10 +18,13 @@ This file provides guidance to AI coding agents when working with code in this r
 ## Build & Development Commands
 
 ```bash
-# Install all dependencies (including dev extras)
+# Install all dependencies (including dev and geo extras)
 uv sync --all-extras
 
-# Run tests
+# Install only geo extras (geopandas, h3, osmnx) without dev tools
+uv sync --extra geo
+
+# Run tests (coverage report auto-generated via pyproject.toml addopts)
 uv run pytest
 
 # Lint
@@ -53,12 +56,12 @@ unfallatlas-qua3ck/
 ├── notebooks/              # QUA³CK phase notebooks (source of truth)
 │   ├── 01_Q_Phase.ipynb    # Research question & hypotheses (done)
 │   ├── 02_U_Phase.ipynb    # EDA & feature engineering (in progress)
-│   ├── 03_A3_Phase.ipynb   # Modelling & tuning (TODO)
+│   ├── 03_A3_Phase.ipynb   # Modelling & tuning (done)
 │   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO)
 ├── src/unfallatlas/        # Reusable production library
-│   ├── data/               # download.py, dwd.py (weather), osm.py
-│   ├── features/           # enrich.py, spatial.py, temporal.py
-│   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py
+│   ├── data/               # download.py, dwd.py (weather), osm.py (road network)
+│   ├── features/           # enrich.py, spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
+│   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py
 │   └── viz/                # geo.py, shap_plots.py, streamlit_app.py
 ├── app/                    # Streamlit demo entry point
 ├── data/
@@ -72,8 +75,17 @@ unfallatlas-qua3ck/
 │   ├── dataset/            # Unfallatlas dataset description (DSB_Unfallatlas.md/.pdf), used for citing + coded-label lookups
 │   └── project/            # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md)
 ├── reports/figures/        # Generated output figures
-└── pyproject.toml          # Project config (hatchling, ruff, black, jupytext)
+└── pyproject.toml          # Project config (hatchling, ruff, black, jupytext, pytest-cov)
 ```
+
+### Optional dependency groups
+
+- `dev`: pytest, pytest-cov, ruff, black, jupytext, jupyter, ipywidgets
+- `geo`: geopandas, h3, osmnx — required for OSM road network features; install with `uv sync --extra geo`
+
+### Test coverage
+
+Configured via `[tool.pytest.ini_options]` in `pyproject.toml` (`--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing`); runs automatically with `uv run pytest`.
 
 **Notebook → library boundary**: Reusable logic moves from notebook cells into `src/unfallatlas/` and is imported back into the notebook.
 
@@ -141,6 +153,30 @@ test  = df[df.UJAHR == 2024]
 - Explainability: SHAP
 - Spatial enrichment: DWD weather data, OSM road features, optional H3/osmnx
 
+**OSM road network pipeline** (`src/unfallatlas/data/osm.py`, `src/unfallatlas/features/spatial.py`)
+
+- `download_road_network(state, cache_dir, force_refresh)`: tiled fetch at 0.2° tiles (0.4° tried — caused >180s server timeouts, reverted) with per-tile parquet cache at `cache_dir/{state_slug}_tiles/tile_{i:04d}.parquet`; state-level retry up to `max_state_retries=5` per call; raises `_TransientFetchError` on network failure — failed tiles are never cached to avoid recording transient outages as "no roads"; raises `RuntimeError("No road data found")` when all retries exhausted with zero tile results; does NOT write whole-state cache if any tiles remain incomplete; uses `ox.graph_from_bbox` with `useful_tags_way=["highway","maxspeed"]` (NOT `features_from_place` — confirmed OOM at ~79 GiB); `overpass-api.de/api` endpoint; `ox.settings.log_file=True` (not `log_console`, which bypasses Jupyter via `sys.__stdout__`)
+- `build_spatial_features(accidents_df, raw_cache_dir, interim_cache_dir, resolution=8, force_refresh=False)`: joins OSM features onto accident frame; requires `LAT`/`LON` columns (raises `RuntimeError` if missing); short-circuits to `interim_cache_dir/accidents_with_weather_spatial.parquet` if present; sizes overall-run ETA upfront via geocode-only `_state_total_tiles()` before first Overpass fetch; cross-state retry pass after main loop (up to `max_retry_passes=3`); H3 cell dedup across state boundaries keeps higher-`osm_way_count` version
+- `_clean_road_gdf(gdf)`: filters to `_VEHICLE_HIGHWAY_VALUES` allow-list (motorway, trunk, primary, secondary, tertiary, unclassified, residential, living_street, service, track) — unknown highway values default to dropped, not included; normalizes list-valued `highway`/`maxspeed` OSM tags to first element (pyarrow rejects list-valued columns)
+- `_fetch_tile_edges(bbox, custom_filter, max_retries=2)`: `truncate_by_edge=True` required — default False drops boundary-crossing edges producing grid-aligned data gaps; tile-boundary duplicate edges deduped on `(highway, maxspeed, geometry)` via `_geom_wkb` after combining all tiles
+- `_TransientFetchError`: raised (not `None`) on network exhaustion — prevents caching transient outages as permanent "no roads" (Bayern/Brandenburg incident: 70 tiles silently zeroed before this fix)
+- `aggregate_roads_to_h3(gdf, resolution=8)`: aggregates road GeoDataFrame to H3 cells; output columns: `{h3_cell, osm_dominant_road_class, osm_maxspeed_mean, osm_maxspeed_max, osm_road_density, osm_way_count}`; `osm_way_count` counts distinct ways, not vertices
+- `parse_maxspeed(value)`: converts OSM maxspeed strings to km/h float; handles numeric strings, `"N mph"` (×1.60934), `DE:urban`→50, `DE:rural`→100; semicolon-separated lists take first value; returns `None` for unparseable values
+- `assign_h3_cell(lat, lon, resolution=8)`: returns stable H3 cell string ID
+- `ROAD_CLASS_RANK`: dict ranking highway types (motorway > primary > residential > …)
+
+**A³-phase modelling pipeline** (`notebooks/03_A3_Phase.ipynb`, `src/unfallatlas/models/`)
+
+- **Champion selection**: `select_best_candidate()` (`unfallatlas.models.evaluate`) applies a recall gate — recall(class 1) >= 0.50 must be met before comparing macro-F1; `random_forest_balanced` was excluded despite highest raw macro-F1 (0.410) because recall(1)=0.229
+- **Two candidate families**: `catboost_balanced` and `lightgbm_balanced` both advance to §6/§7; Random Forest/XGBoost stay in comparison table only
+- **CatBoost clone() incompatibility**: `CatBoostClassifier` with non-None `class_weights` cannot survive any `clone()` call (sklearn's `cross_validate` clones internally per fold); fix: `class_weights` removed from `build_catboost_pipeline()` constructor; balanced weighting supplied via `sample_weight` through `cross_validate(params=...)` — sklearn slices `sample_weight` to fold indices automatically
+- **Imbalance strategies in §6**: SMOTE/ADASYN/threshold-moving/ordinal are scored for information only; only balanced-weighted configurations (`{family}_balanced`) are selectable for Optuna tuning — `_build_pipeline_for()` raises `NotImplementedError` for resampling/ordinal strategies
+- **SMOTE/ADASYN NaN issue**: `tree_preprocessor`'s passthrough branch leaves `IstGkfz` as Python `None` (not `float NaN`); `SimpleImputer` silently misses `None`; workaround: coerce through `pd.to_numeric(errors="coerce")` first, then `SimpleImputer`
+- **Subsample cap**: §6/§7 use a 500k-row stratified subsample of the training set
+- **Commit-scoped checkpoints**: fitted pipelines saved to `data/processed/a3_checkpoints/<git-sha>/` via `joblib`; committed hyperparameter changes auto-invalidate the cache; Optuna study persisted alongside at `optuna_study.db` (per-family `study_name`)
+- **Optuna tuning**: 9 trials per family (18 total), TPE sampler, `GroupKFold` on subsample years; `recall(1)` stored via `trial.set_user_attr`; gate-aware `select_best_candidate()` picks winner (not Optuna's `study.best_trial`)
+- **Output artefacts**: `data/processed/a3_best_model.joblib`, `a3_model_card.json`, `a3_model_comparison.csv`; progress log at `reports/a3_progress.log`
+
 **Key column reference**
 
 | Column       | Type     | Meaning                                           |
@@ -172,6 +208,10 @@ test  = df[df.UJAHR == 2024]
 - AI prompts per QUA³CK phase live at `docs/prompts/` (corrected from earlier `docs/docs/prompts/` typo)
 - U-Phase plotting conventions documented in `docs/prompts/02_prompts_phase_u.md`: human-readable label dicts (`FEATURE_LABELS`, `UKATGEORIE_LABELS`, `COL_CODE_LABELS`, etc.) + helpers (`feature_label()`, `severity_label()`, `apply_code_labels()`) sourced from `docs/dataset/DSB_Unfallatlas.md`; consistent `sns.set_theme(style="whitegrid", palette="colorblind")` styling
 - `docs/` reorganized into `prompts/`, `course-material/`, `dataset/`, `project/`; `GLOSSARY.md` and `AI TOOL DISCLOSURE.md` stay at `docs/` top level (hard requirements)
+- CI (`.github/workflows/ci.yml`): GitHub Actions on ubuntu-latest; installs `uv sync --extra dev --extra geo`, runs `ruff check .` then `uv run pytest`; uploads `coverage.xml` to Codecov via `codecov-action@v5` authenticated with `secrets.CODECOV_TOKEN`
+- A³-phase CatBoost fix (commits e7cf9ec/4677517): `class_weights` removed from `build_catboost_pipeline()` constructor to fix `clone()` incompatibility; balanced weighting now applied via `sample_weight` at fit time through `cross_validate(params=...)`
+- A³-phase checkpoint pattern: fitted pipelines cached under `data/processed/a3_checkpoints/<git-sha>/` (joblib); Optuna study persisted alongside at `optuna_study.db`; committed hyperparameter changes automatically land in a fresh, empty directory
+- A³-phase §6 filter (commit 22d84a3): §2 GroupKFold cell is a standalone sanity check only — §7 Optuna builds its own `GroupKFold` from subsample years; `_build_pipeline_for()` raises `NotImplementedError` for SMOTE/ADASYN/ordinal/threshold strategies so only `{family}_balanced` configs enter Optuna; full comparison table persisted to `data/processed/a3_model_comparison.csv`
 
 <!-- END AUTO-MANAGED -->
 
