@@ -1293,10 +1293,14 @@ from unfallatlas.models.evaluate import (  # noqa: E402
 binary_comparison_rows: list[dict] = []
 
 
-def _score_binary_on_validation(name: str, fitted_estimator, family: str | None = None) -> None:
+def _score_binary_on_validation(
+    name: str, fitted_estimator, family: str | None = None, n_train: int | None = None
+) -> None:
     preds = fitted_estimator.predict(X_val_bin)
     metrics = evaluate_binary_predictions(y_val_bin.values, preds)
-    binary_comparison_rows.append({"model": name, "family": family or name, **metrics})
+    binary_comparison_rows.append(
+        {"model": name, "family": family or name, **metrics, "n_train": n_train}
+    )
     print(f"{name:30s} macro-F1={metrics['macro_f1']:.3f}  recall(KSI)={metrics['recall_ksi']:.3f}")
 
 
@@ -1333,7 +1337,12 @@ for _name, _build_fn in binary_stage0_specs:
     _model = _load_or_fit_binary(
         _name, lambda _build_fn=_build_fn: _build_fn().fit(X_train_bin, y_train_bin)
     )
-    _score_binary_on_validation(_name, _model)
+    # random_guess/majority_class don't fit data-dependent parameters, so
+    # n_train stays None for them (matches Stage 1's NaN treatment of
+    # baselines); logistic_regression genuinely fits on the full training
+    # set, so its provenance should say so instead of silently reading NaN.
+    _n_train = len(X_train_bin) if _name == "binary_logistic_regression" else None
+    _score_binary_on_validation(_name, _model, n_train=_n_train)
 _log_progress("Binary Stage 0 complete.")
 
 # %% [markdown]
@@ -1626,9 +1635,13 @@ import json  # noqa: E402
 
 import joblib  # noqa: E402
 
+# compress=3: an uncompressed random_forest champion (180 estimators, depth
+# 23, refit on 1.55M rows) serialises to ~1.2GB - compress=3 cuts that to
+# ~0.4GB with no accuracy impact, keeping the repo/LFS artifact manageable.
 joblib.dump(
     pipeline_binary_final,
     BASE / "data" / "processed" / "a3_binary_best_model.joblib",
+    compress=3,
 )
 
 binary_comparison_df.to_csv(

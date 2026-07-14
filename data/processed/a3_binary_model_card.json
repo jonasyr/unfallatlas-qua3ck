@@ -27,7 +27,7 @@
       "macro_f1": 0.5582003432027051,
       "recall_ksi": 0.6375328597188729,
       "recall_slight": 0.6344257664145208,
-      "n_train": NaN
+      "n_train": 1554834.0
     },
     {
       "model": "binary_random_forest_balanced",
