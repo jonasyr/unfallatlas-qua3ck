@@ -1,11 +1,24 @@
+import copy
+import os
+import subprocess
+from datetime import UTC, datetime
 from pathlib import Path
 
 import nbformat
 import pytest
 from bs4 import BeautifulSoup
+from nbclient import NotebookClient
 from nbconvert import HTMLExporter
+from nbconvert.preprocessors import ExecutePreprocessor
 
 from unfallatlas.presentation import models
+from unfallatlas.presentation.models import (
+    CellCounts,
+    ExportMetadata,
+    GitMetadata,
+    NotebookAnalysis,
+    NotebookStatus,
+)
 
 PACKAGE_ROOT = Path(__file__).parents[2] / "src" / "unfallatlas" / "presentation"
 TEMPLATE_ROOT = PACKAGE_ROOT / "templates"
@@ -393,3 +406,148 @@ def test_toc_controls_are_exposed_only_for_enhanced_mobile_layout() -> None:
     assert trigger["aria-expanded"] == "false"
     assert ".toc-heading button { display: none; }" not in stylesheet
     assert "  .toc-heading button { display: inline-block; }" not in stylesheet
+
+
+def _renderer_analysis(tmp_path: Path) -> NotebookAnalysis:
+    notebook = nbformat.v4.new_notebook(
+        cells=[
+            nbformat.v4.new_markdown_cell("# Renderer Integration\nDer vollständige Export."),
+            nbformat.v4.new_code_cell(
+                "raise RuntimeError('must never execute')",
+                execution_count=7,
+                outputs=[
+                    nbformat.v4.new_output("stream", name="stdout", text="Gespeicherter Text\n"),
+                    nbformat.v4.new_output(
+                        "display_data",
+                        data={"text/html": "<table><tr><td>Gespeicherte Tabelle</td></tr></table>"},
+                    ),
+                    nbformat.v4.new_output(
+                        "display_data",
+                        data={
+                            "image/svg+xml": "<svg xmlns='http://www.w3.org/2000/svg'></svg>",
+                            "text/plain": "SVG fallback",
+                        },
+                    ),
+                    nbformat.v4.new_output(
+                        "display_data",
+                        data={
+                            "application/vnd.plotly.v1+json": {
+                                "data": [{"type": "bar", "x": ["A"], "y": [1]}],
+                                "layout": {"title": "Gespeichertes Plotly"},
+                            },
+                            "text/plain": "Plotly fallback",
+                        },
+                    ),
+                ],
+            ),
+        ]
+    )
+    return NotebookAnalysis(
+        source=tmp_path / "notebooks" / "renderer-integration.ipynb",
+        notebook=notebook,
+        title="Renderer Integration",
+        status=NotebookStatus.READY,
+        counts=CellCounts(1, 1, 0, 0, 0, 1, 0),
+        findings=(),
+        snapshot_sha256="a" * 64,
+        source_sha256="b" * 64,
+        output_bytes=100,
+    )
+
+
+def _renderer_metadata() -> ExportMetadata:
+    return ExportMetadata(
+        exported_at=datetime(2026, 7, 15, 8, 30, tzinfo=UTC),
+        exported_at_local="2026-07-15T10:30:00+02:00",
+        git=GitMetadata(
+            commit="abc123def4567890",
+            short_commit="abc123def456",
+            branch="feature/presentation",
+            dirty=False,
+        ),
+    )
+
+
+def _fail_if_called(*args, **kwargs):
+    del args, kwargs
+    raise AssertionError("renderer must not execute notebooks or subprocesses")
+
+
+def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execution(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    original = copy.deepcopy(analysis.notebook)
+    output_root = tmp_path / "site"
+    monkeypatch.setattr(subprocess, "run", _fail_if_called)
+    monkeypatch.setattr(NotebookClient, "execute", _fail_if_called)
+    monkeypatch.setattr(ExecutePreprocessor, "preprocess", _fail_if_called)
+
+    result = render_notebook(analysis, _renderer_metadata(), output_root)
+
+    assert result.error is None
+    assert result.destination == output_root / "notebooks" / "renderer-integration.html"
+    assert list((output_root / "notebooks").glob("*.html")) == [result.destination]
+    assert result.size_bytes == result.destination.stat().st_size
+    assert analysis.notebook == original
+    assert analysis.notebook.cells[1].execution_count == 7
+    assert {asset.kind for asset in result.assets} >= {
+        "image",
+        "plotly",
+        "plotly-runtime",
+        "mathjax-runtime",
+        "ui-style",
+        "ui-script",
+    }
+    assert all((output_root / asset.relative_path).is_file() for asset in result.assets)
+
+    html = result.destination.read_text(encoding="utf-8")
+    soup = BeautifulSoup(html, "html.parser")
+    assert soup.title.get_text(strip=True) == "Renderer Integration"
+    assert "2026-07-15T10:30:00+02:00" in soup.get_text(" ", strip=True)
+    assert "abc123def456" in soup.get_text(" ", strip=True)
+    assert "Gespeicherter Text" in soup.get_text(" ", strip=True)
+    assert "Gespeicherte Tabelle" in soup.get_text(" ", strip=True)
+    plotly = soup.select_one(".plotly-output[data-payload-key][data-asset]")
+    assert plotly["data-payload-key"].startswith("plotly-")
+
+    local_references = {
+        value
+        for tag in soup.select("[href], [src], [data-asset]")
+        for attribute in ("href", "src", "data-asset")
+        if (value := tag.get(attribute)) and not value.startswith("#")
+    }
+    assert local_references
+    assert all("://" not in reference for reference in local_references)
+    assert all(
+        (result.destination.parent / reference).resolve().is_file()
+        for reference in local_references
+    )
+
+
+def test_render_notebook_preserves_previous_html_when_final_replace_fails(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import unfallatlas.presentation.rendering as rendering
+
+    analysis = _renderer_analysis(tmp_path)
+    output_root = tmp_path / "site"
+    target = output_root / "notebooks" / "renderer-integration.html"
+    target.parent.mkdir(parents=True)
+    target.write_bytes(b"old html")
+    original_replace = os.replace
+
+    def fail_final_replace(source: Path, destination: Path) -> None:
+        if Path(destination) == target:
+            raise OSError("final HTML replace failed")
+        original_replace(source, destination)
+
+    monkeypatch.setattr(rendering.os, "replace", fail_final_replace)
+
+    result = rendering.render_notebook(analysis, _renderer_metadata(), output_root)
+
+    assert result.error == "final HTML replace failed"
+    assert target.read_bytes() == b"old html"
+    assert not [path for path in target.parent.iterdir() if path != target]
