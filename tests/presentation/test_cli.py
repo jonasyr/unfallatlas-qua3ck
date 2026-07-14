@@ -35,6 +35,7 @@ def _notebook(
     else:
         cells = [nbformat.v4.new_markdown_cell(f"# {name}")]
     path = repo / "notebooks" / f"{name}.ipynb"
+    path.parent.mkdir(parents=True, exist_ok=True)
     nbformat.write(nbformat.v4.new_notebook(cells=cells), path)
     return path
 
@@ -43,8 +44,16 @@ def _notebook(
 def lightweight_publication(monkeypatch: pytest.MonkeyPatch) -> list[Path]:
     rendered: list[Path] = []
 
-    def fake_render(analysis, metadata, output_root, *, repo_root=None):
-        destination = Path(output_root) / "notebooks" / f"{analysis.source.stem}.html"
+    def fake_render(
+        analysis,
+        metadata,
+        output_root,
+        *,
+        repo_root=None,
+        output_relative_path=None,
+    ):
+        relative = output_relative_path or Path(f"{analysis.source.stem}.html")
+        destination = Path(output_root) / "notebooks" / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text("<html>fixture</html>", encoding="utf-8")
         rendered.append(analysis.source)
@@ -192,8 +201,21 @@ def test_batch_continues_after_render_failure(
     good = _notebook(repo, "b_good")
     original = cli.render_notebook
 
-    def fail_first(analysis, metadata, output_root, *, repo_root=None):
-        result = original(analysis, metadata, output_root, repo_root=repo_root)
+    def fail_first(
+        analysis,
+        metadata,
+        output_root,
+        *,
+        repo_root=None,
+        output_relative_path=None,
+    ):
+        result = original(
+            analysis,
+            metadata,
+            output_root,
+            repo_root=repo_root,
+            output_relative_path=output_relative_path,
+        )
         if analysis.source == bad:
             return replace(result, size_bytes=0, error="fixture render failed")
         return result
@@ -236,6 +258,59 @@ def test_batch_continues_after_unexpected_notebook_pipeline_failure(
     assert first.name in output
     assert "metadata unavailable" in output
     assert second.name in output
+
+
+def test_all_preserves_source_relative_paths_for_duplicate_nested_stems(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    lightweight_publication: list[Path],
+) -> None:
+    repo = _repo(tmp_path)
+    first = _notebook(repo, "a/report")
+    second = _notebook(repo, "b/report")
+    monkeypatch.chdir(repo)
+
+    assert cli.main(["--all"]) == 0
+
+    output_root = repo / "reports" / "presentation"
+    destinations = {
+        output_root / "notebooks" / "a" / "report.html",
+        output_root / "notebooks" / "b" / "report.html",
+    }
+    assert all(destination.is_file() for destination in destinations)
+    manifest = json.loads((output_root / "manifest.json").read_text(encoding="utf-8"))
+    assert {entry["output"] for entry in manifest["entries"]} == {
+        "notebooks/a/report.html",
+        "notebooks/b/report.html",
+    }
+    assert lightweight_publication == [first, second]
+    assert cli.main(["--check"]) == 0
+
+
+def test_batch_publication_failure_marks_every_success_and_does_not_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    lightweight_publication: list[Path],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = _repo(tmp_path)
+    _notebook(repo, "first")
+    _notebook(repo, "second")
+    opened: list[str] = []
+    monkeypatch.setattr(
+        cli,
+        "write_manifest_and_index",
+        lambda *args, **kwargs: (_ for _ in ()).throw(OSError("disk full")),
+    )
+    monkeypatch.setattr(cli.webbrowser, "open", lambda uri: opened.append(uri) or True)
+    monkeypatch.chdir(repo)
+
+    assert cli.main(["--all", "--open"]) == 1
+
+    summaries = [line for line in capsys.readouterr().out.splitlines() if ".ipynb" in line]
+    assert len(summaries) == 2
+    assert all("failed — publication failed: disk full" in line for line in summaries)
+    assert opened == []
 
 
 def test_custom_output_directory_is_used_for_manifest_and_freshness(

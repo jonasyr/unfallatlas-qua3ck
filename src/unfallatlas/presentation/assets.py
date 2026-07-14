@@ -111,11 +111,17 @@ def _image_payload(mime: str, value: Any) -> tuple[bytes, str]:
     return _as_text(value).encode("utf-8"), ".svg"
 
 
-def _metadata(*, kind: str, record: AssetRecord, **extra: str) -> dict[str, Any]:
+def _metadata(
+    *,
+    kind: str,
+    record: AssetRecord,
+    href_prefix: Path = Path(".."),
+    **extra: str,
+) -> dict[str, Any]:
     return {
         "kind": kind,
         **extra,
-        "asset_href": f"../{record.relative_path.as_posix()}",
+        "asset_href": f"{href_prefix.as_posix()}/{record.relative_path.as_posix()}",
         "size_bytes": record.size_bytes,
     }
 
@@ -123,6 +129,8 @@ def _metadata(*, kind: str, record: AssetRecord, **extra: str) -> dict[str, Any]
 def prepare_notebook_assets(
     analysis: NotebookAnalysis,
     store: AssetStore,
+    *,
+    href_prefix: Path = Path(".."),
 ) -> PreparedNotebook:
     notebook = copy.deepcopy(analysis.notebook)
     notebook_key = analysis.source.stem
@@ -161,6 +169,7 @@ def prepare_notebook_assets(
                 output_metadata["unfallatlas_presentation"] = _metadata(
                     kind="plotly",
                     record=record,
+                    href_prefix=href_prefix,
                     chart_id=chart_id,
                     payload_key=payload_key,
                 )
@@ -181,7 +190,9 @@ def prepare_notebook_assets(
                     cell_index=cell_index,
                 )
                 assets_by_path.setdefault(record.relative_path, record)
-                output_metadata["unfallatlas_presentation"] = _metadata(kind="image", record=record)
+                output_metadata["unfallatlas_presentation"] = _metadata(
+                    kind="image", record=record, href_prefix=href_prefix
+                )
                 del data[mime]
                 break
 

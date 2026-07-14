@@ -527,6 +527,52 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
     )
 
 
+def test_render_notebook_accepts_nested_relative_output_path(tmp_path: Path) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    result = render_notebook(
+        _renderer_analysis(tmp_path),
+        _renderer_metadata(),
+        tmp_path / "site",
+        output_relative_path=Path("phase/a/report.html"),
+    )
+
+    assert result.error is None
+    assert result.destination == tmp_path / "site" / "notebooks" / "phase/a/report.html"
+    assert result.destination.is_file()
+    soup = BeautifulSoup(result.destination.read_text(encoding="utf-8"), "html.parser")
+    local_references = {
+        value
+        for tag in soup.select("[href], [src], [data-asset]")
+        for attribute in ("href", "src", "data-asset")
+        if (value := tag.get(attribute)) and not value.startswith("#")
+    }
+    assert local_references
+    assert all(
+        (result.destination.parent / reference).resolve().is_file()
+        for reference in local_references
+    )
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [Path("../outside.html"), Path("/absolute.html"), Path("C:\\absolute.html")],
+)
+def test_render_notebook_rejects_unsafe_output_relative_path(
+    tmp_path: Path, relative_path: Path
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    result = render_notebook(
+        _renderer_analysis(tmp_path),
+        _renderer_metadata(),
+        tmp_path / "site",
+        output_relative_path=relative_path,
+    )
+
+    assert result.error == f"output_relative_path must be a safe relative path: {relative_path}"
+
+
 def test_render_notebook_preserves_previous_html_when_final_replace_fails(
     tmp_path: Path, monkeypatch
 ) -> None:

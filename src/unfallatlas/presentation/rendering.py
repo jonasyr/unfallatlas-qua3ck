@@ -4,7 +4,7 @@ import mimetypes
 import os
 import warnings
 from dataclasses import asdict, replace
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import Any
 from urllib.parse import unquote, urlsplit, urlunsplit
@@ -43,8 +43,8 @@ class PresentationHTMLExporter(HTMLExporter):
         self.register_filter("nest_toc", nest_toc)
 
 
-def _href(record: AssetRecord) -> str:
-    return f"../{record.relative_path.as_posix()}"
+def _href(record: AssetRecord, href_prefix: Path = Path("..")) -> str:
+    return f"{href_prefix.as_posix()}/{record.relative_path.as_posix()}"
 
 
 def _record_by_kind(records: tuple[AssetRecord, ...], kind: str) -> AssetRecord:
@@ -64,6 +64,25 @@ def _write_html_atomic(target: Path, data: bytes) -> None:
         if temporary_path is not None:
             temporary_path.unlink(missing_ok=True)
         raise
+
+
+def _safe_output_relative_path(path: Path) -> Path:
+    relative = Path(path)
+    windows_path = PureWindowsPath(str(relative))
+    if (
+        relative.is_absolute()
+        or windows_path.is_absolute()
+        or relative == Path(".")
+        or ".." in relative.parts
+        or "\\" in str(relative)
+    ):
+        raise ValueError(f"output_relative_path must be a safe relative path: {path}")
+    return relative
+
+
+def _asset_href_prefix(destination: Path, output_root: Path) -> Path:
+    relative_parent = destination.parent.relative_to(output_root)
+    return Path(*(len(relative_parent.parts) * ("..",)))
 
 
 def _asset_map(records: tuple[AssetRecord, ...]) -> dict[str, dict[str, object]]:
@@ -101,9 +120,12 @@ def _local_source(
     parsed = urlsplit(value)
     if value.startswith("//") or parsed.scheme or not parsed.path:
         return None
-    if parsed.path == "../assets" or parsed.path.startswith("../assets/"):
+    published_parts = Path(unquote(parsed.path)).parts
+    while published_parts and published_parts[0] == "..":
+        published_parts = published_parts[1:]
+    if published_parts and published_parts[0] == "assets":
         published_root = (output_root / "assets").resolve(strict=False)
-        published = (output_root / "notebooks" / unquote(parsed.path)).resolve(strict=False)
+        published = (output_root / Path(*published_parts)).resolve(strict=False)
         if not published.is_relative_to(published_root):
             raise ValueError(f"published resource escapes output assets: {value}")
         if not published.is_file():
@@ -129,6 +151,7 @@ def _publish_reference(
     records: dict[Path, AssetRecord],
     rewrites: dict[str, str],
     allow_writes: bool,
+    href_prefix: Path,
 ) -> str:
     if reference in rewrites:
         return rewrites[reference]
@@ -149,7 +172,7 @@ def _publish_reference(
     )
     records.setdefault(record.relative_path, record)
     parsed = urlsplit(reference)
-    rewritten = urlunsplit(("", "", _href(record), parsed.query, parsed.fragment))
+    rewritten = urlunsplit(("", "", _href(record, href_prefix), parsed.query, parsed.fragment))
     rewrites[reference] = rewritten
     return rewritten
 
@@ -163,6 +186,7 @@ def _publish_local_resources(
     store: AssetStore,
     known_rewrites: dict[str, str] | None = None,
     allow_writes: bool = True,
+    href_prefix: Path = Path(".."),
 ) -> tuple[str, tuple[AssetRecord, ...], dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
     records: dict[Path, AssetRecord] = {}
@@ -180,6 +204,7 @@ def _publish_local_resources(
                     records=records,
                     rewrites=rewrites,
                     allow_writes=allow_writes,
+                    href_prefix=href_prefix,
                 )
     for tag in soup.find_all("link"):
         relations = {str(item).casefold() for item in tag.get("rel", [])}
@@ -193,6 +218,7 @@ def _publish_local_resources(
                 records=records,
                 rewrites=rewrites,
                 allow_writes=allow_writes,
+                href_prefix=href_prefix,
             )
 
     def rewrite_css(css: str) -> str:
@@ -207,6 +233,7 @@ def _publish_local_resources(
                 records=records,
                 rewrites=rewrites,
                 allow_writes=allow_writes,
+                href_prefix=href_prefix,
             )
             return f"url({quote}{reference}{quote})"
 
@@ -224,6 +251,7 @@ def _presentation_resources(
     metadata: ExportMetadata,
     notebook_assets: tuple[AssetRecord, ...],
     shared_assets: tuple[AssetRecord, ...],
+    href_prefix: Path = Path(".."),
 ) -> dict[str, object]:
     all_assets = (*shared_assets, *notebook_assets)
     return {
@@ -235,10 +263,12 @@ def _presentation_resources(
         "metadata": asdict(metadata),
         "snapshot_sha256": analysis.snapshot_sha256,
         "source_path": analysis.source.as_posix(),
-        "style_href": _href(_record_by_kind(shared_assets, "ui-style")),
-        "script_href": _href(_record_by_kind(shared_assets, "ui-script")),
-        "plotly_runtime_href": _href(_record_by_kind(shared_assets, "plotly-runtime")),
-        "mathjax_runtime_href": _href(_record_by_kind(shared_assets, "mathjax-runtime")),
+        "style_href": _href(_record_by_kind(shared_assets, "ui-style"), href_prefix),
+        "script_href": _href(_record_by_kind(shared_assets, "ui-script"), href_prefix),
+        "plotly_runtime_href": _href(_record_by_kind(shared_assets, "plotly-runtime"), href_prefix),
+        "mathjax_runtime_href": _href(
+            _record_by_kind(shared_assets, "mathjax-runtime"), href_prefix
+        ),
         "asset_map": _asset_map(all_assets),
     }
 
@@ -249,6 +279,7 @@ def render_notebook(
     output_root: Path,
     *,
     repo_root: Path | None = None,
+    output_relative_path: Path | None = None,
 ) -> ExportResult:
     """Render saved notebook state to one atomically published offline HTML document."""
     output_root = Path(output_root)
@@ -256,6 +287,11 @@ def render_notebook(
     assets: list[AssetRecord] = []
 
     try:
+        if output_relative_path is not None:
+            destination = (
+                output_root / "notebooks" / _safe_output_relative_path(output_relative_path)
+            )
+        href_prefix = _asset_href_prefix(destination, output_root)
         destination.parent.mkdir(parents=True, exist_ok=True)
         store = AssetStore(output_root)
         shared_assets = copy_shared_assets(store)
@@ -263,7 +299,7 @@ def render_notebook(
 
         anchored_notebook = add_stable_heading_anchors(analysis.notebook)
         anchored_analysis = replace(analysis, notebook=anchored_notebook)
-        prepared = prepare_notebook_assets(anchored_analysis, store)
+        prepared = prepare_notebook_assets(anchored_analysis, store, href_prefix=href_prefix)
         assets.extend(prepared.assets)
 
         exporter = PresentationHTMLExporter(
@@ -278,6 +314,7 @@ def render_notebook(
             metadata,
             prepared.assets,
             shared_assets,
+            href_prefix,
         )
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -295,6 +332,7 @@ def render_notebook(
                 repo_root=repo_root,
                 output_root=output_root,
                 store=store,
+                href_prefix=href_prefix,
             )
             assets.extend(local_assets)
             presentation = _presentation_resources(
@@ -302,6 +340,7 @@ def render_notebook(
                 metadata,
                 (*prepared.assets, *local_assets),
                 shared_assets,
+                href_prefix,
             )
             html, _ = exporter.from_notebook_node(
                 prepared.notebook,
@@ -315,6 +354,7 @@ def render_notebook(
                 store=store,
                 known_rewrites=rewrites,
                 allow_writes=False,
+                href_prefix=href_prefix,
             )
             if final_assets:
                 raise RuntimeError("final render unexpectedly republished local resources")

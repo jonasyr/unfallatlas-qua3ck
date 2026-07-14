@@ -73,10 +73,23 @@ def find_repo_root(start: Path | None = None) -> Path:
     return root
 
 
-def _failed_result(source: Path, output_root: Path, reason: str) -> ExportResult:
+def _output_relative_path(source: Path, notebooks_dir: Path) -> Path:
+    return (
+        source.resolve(strict=False)
+        .relative_to(notebooks_dir.resolve(strict=False))
+        .with_suffix(".html")
+    )
+
+
+def _failed_result(
+    source: Path,
+    output_root: Path,
+    output_relative_path: Path,
+    reason: str,
+) -> ExportResult:
     return ExportResult(
         source=source,
-        destination=output_root / "notebooks" / f"{source.stem}.html",
+        destination=output_root / "notebooks" / output_relative_path,
         status=NotebookStatus.INVALID,
         findings=(),
         size_bytes=0,
@@ -106,14 +119,22 @@ def run_export(args: argparse.Namespace, repo_root: Path) -> BatchResult:
     successful_renders = 0
 
     for source in selected:
+        output_relative_path = _output_relative_path(source, notebooks_dir)
         try:
             analysis = read_and_validate_notebook(source, repo_root)
         except Exception as error:
             LOGGER.exception("Could not validate notebook %s", source)
-            results.append(_failed_result(source, output_root, str(error) or type(error).__name__))
+            results.append(
+                _failed_result(
+                    source,
+                    output_root,
+                    output_relative_path,
+                    str(error) or type(error).__name__,
+                )
+            )
             continue
 
-        destination = output_root / "notebooks" / f"{source.stem}.html"
+        destination = output_root / "notebooks" / output_relative_path
         if analysis.status is NotebookStatus.PLACEHOLDER and not args.include_placeholders:
             results.append(
                 ExportResult(
@@ -141,7 +162,13 @@ def run_export(args: argparse.Namespace, repo_root: Path) -> BatchResult:
 
         try:
             metadata = build_export_metadata(repo_root)
-            result = render_notebook(analysis, metadata, output_root, repo_root=repo_root)
+            result = render_notebook(
+                analysis,
+                metadata,
+                output_root,
+                repo_root=repo_root,
+                output_relative_path=output_relative_path,
+            )
             if result.error is None:
                 manifest = update_manifest(
                     manifest,
@@ -179,7 +206,7 @@ def run_export(args: argparse.Namespace, repo_root: Path) -> BatchResult:
         except Exception as error:
             LOGGER.exception("Could not publish presentation manifest and index")
             reason = str(error) or type(error).__name__
-            for index in range(len(results) - 1, -1, -1):
+            for index in range(len(results)):
                 if results[index].error is None and results[index].size_bytes:
                     previous = results[index]
                     results[index] = ExportResult(
@@ -191,7 +218,6 @@ def run_export(args: argparse.Namespace, repo_root: Path) -> BatchResult:
                         f"publication failed: {reason}",
                         previous.assets,
                     )
-                    break
 
     return BatchResult(tuple(results))
 
