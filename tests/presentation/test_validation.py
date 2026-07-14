@@ -198,6 +198,22 @@ def test_widget_without_state_is_strict(tmp_path: Path) -> None:
     assert analysis.strict_blocked
 
 
+def test_widget_without_state_uses_valid_html_fallback(tmp_path: Path) -> None:
+    output = display_data(
+        {
+            "application/vnd.jupyter.widget-view+json": {"model_id": "missing-widget-id"},
+            "text/html": "<strong>static widget fallback</strong>",
+        }
+    )
+    cell = nbformat.v4.new_code_cell("widget", execution_count=1, outputs=[output])
+    path = write_notebook(tmp_path / "notebooks/widget-fallback.ipynb", [cell])
+
+    analysis = read_and_validate_notebook(path, tmp_path)
+
+    assert "WIDGET_STATE_MISSING" not in codes(analysis)
+    assert not analysis.strict_blocked
+
+
 def test_widget_with_notebook_state_is_supported(tmp_path: Path) -> None:
     output = display_data({"application/vnd.jupyter.widget-view+json": {"model_id": "widget-id"}})
     metadata = {
@@ -310,6 +326,35 @@ def test_plotly_open_street_map_tiles_are_strict(tmp_path: Path) -> None:
     assert analysis.strict_blocked
 
 
+@pytest.mark.parametrize(
+    "layout",
+    [
+        {"mapbox2": {"style": "open-street-map"}},
+        {"map2": {"style": "open-street-map"}},
+        {
+            "mapbox": {
+                "style": {
+                    "version": 8,
+                    "sources": {"osm": {"tiles": ["https://tiles.example.org/{z}/{x}/{y}.png"]}},
+                }
+            }
+        },
+        {"mapbox2": {"layers": {"roads": {"source": "https://tiles.example.org/roads"}}}},
+    ],
+)
+def test_plotly_numbered_and_mapping_maps_require_external_tiles(
+    tmp_path: Path, layout: dict[str, object]
+) -> None:
+    output = display_data({"application/vnd.plotly.v1+json": {"data": [], "layout": layout}})
+    cell = nbformat.v4.new_code_cell("figure", execution_count=1, outputs=[output])
+    path = write_notebook(tmp_path / "notebooks/map-subplot.ipynb", [cell])
+
+    analysis = read_and_validate_notebook(path, tmp_path)
+
+    assert "EXTERNAL_MAP_TILES" in codes(analysis)
+    assert analysis.strict_blocked
+
+
 def test_plotly_external_layout_image_is_runtime_resource(tmp_path: Path) -> None:
     plotly = {
         "data": [],
@@ -354,7 +399,7 @@ def test_total_payload_over_one_hundred_mib_warns_but_does_not_block(
     assert not finding.strict_blocker
 
 
-def test_placeholder_status_emits_strict_finding(tmp_path: Path) -> None:
+def test_placeholder_status_emits_warning_not_strict(tmp_path: Path) -> None:
     path = write_notebook(
         tmp_path / "notebooks/todo.ipynb", [nbformat.v4.new_markdown_cell("# TODO")]
     )
@@ -362,8 +407,10 @@ def test_placeholder_status_emits_strict_finding(tmp_path: Path) -> None:
     analysis = read_and_validate_notebook(path, tmp_path)
 
     assert analysis.status is NotebookStatus.PLACEHOLDER
-    assert "PLACEHOLDER_NOTEBOOK" in codes(analysis)
-    assert analysis.strict_blocked
+    finding = next(item for item in analysis.findings if item.code == "PLACEHOLDER_NOTEBOOK")
+    assert finding.severity is Severity.WARNING
+    assert not finding.strict_blocker
+    assert not analysis.strict_blocked
 
 
 @pytest.mark.parametrize("content", ["not json", '{"nbformat": 4}'])

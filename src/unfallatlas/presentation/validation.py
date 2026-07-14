@@ -188,23 +188,49 @@ def _widget_state(nb: NotebookNode) -> dict[str, Any]:
     return state if isinstance(state, dict) else {}
 
 
-def _selected_mime(data: dict[str, Any]) -> str | None:
+def _selected_mime(data: dict[str, Any], nb: NotebookNode) -> str | None:
     for mime in _SUPPORTED_MIME_PRIORITY:
-        if mime in data:
-            return mime
+        if mime not in data:
+            continue
+        if mime == _WIDGET_VIEW_MIME:
+            view = data[mime]
+            model_id = view.get("model_id") if isinstance(view, dict) else None
+            if (not model_id or model_id not in _widget_state(nb)) and any(
+                fallback in data
+                for fallback in _SUPPORTED_MIME_PRIORITY[
+                    _SUPPORTED_MIME_PRIORITY.index(_WIDGET_VIEW_MIME) + 1 :
+                ]
+            ):
+                continue
+        return mime
     return None
 
 
+def _contains_remote_reference(value: Any) -> bool:
+    if isinstance(value, str):
+        return value.startswith("//") or urlsplit(value).scheme in {"http", "https", "mapbox"}
+    if isinstance(value, dict):
+        return any(_contains_remote_reference(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_contains_remote_reference(item) for item in value)
+    return False
+
+
 def _map_uses_external_tiles(layout: dict[str, Any]) -> bool:
-    for container_name in ("mapbox", "map"):
-        container = layout.get(container_name)
+    for container_name, container in layout.items():
+        if not re.fullmatch(r"(?:mapbox|map)\d*", container_name):
+            continue
         if not isinstance(container, dict):
             continue
         style = container.get("style")
         if isinstance(style, str):
             normalized = style.casefold()
-            if normalized in _EXTERNAL_MAP_STYLES or urlsplit(style).scheme in {"http", "https"}:
+            if normalized in _EXTERNAL_MAP_STYLES or _contains_remote_reference(style):
                 return True
+        elif _contains_remote_reference(style):
+            return True
+        if _contains_remote_reference(container.get("layers")):
+            return True
         if container.get("layers"):
             return True
     return False
@@ -253,7 +279,7 @@ def _output_findings(
     if not isinstance(data, dict):
         return ()
 
-    selected = _selected_mime(data)
+    selected = _selected_mime(data, nb)
     if selected is None:
         return (
             _finding(
@@ -432,7 +458,6 @@ def read_and_validate_notebook(source: Path, repo_root: Path) -> NotebookAnalysi
                 "PLACEHOLDER_NOTEBOOK",
                 Severity.WARNING,
                 "Notebook is classified as a placeholder.",
-                strict=True,
             )
         )
     elif status is NotebookStatus.WIP:
