@@ -127,9 +127,9 @@ def _git_short_sha():
 # ### GPU acceleration (optional, machine-specific — not part of the reproducible contract)
 #
 # `USE_GPU` controls XGBoost/LightGBM/CatBoost's training device:
-# - `None` (default) — auto-detect via `nvidia-smi`; falls back to CPU with
-#   no code change on a machine without a CUDA GPU (e.g. a grader's).
-# - `True` — force GPU (fails loudly if no compatible GPU/driver is present).
+# - `None` (default) — auto-detect CUDA for XGBoost and CatBoost. LightGBM
+#   stays on CPU because its GPU mode requires a separately compatible OpenCL runtime.
+# - `True` — force GPU; LightGBM fails loudly if no compatible OpenCL device is present.
 # - `False` — force CPU everywhere, even if a GPU is available.
 #
 # Random Forest and Logistic Regression always run on CPU (scikit-learn has
@@ -137,7 +137,7 @@ def _git_short_sha():
 # project does not depend on).
 
 # %%
-USE_GPU = None  # None = auto-detect, True = force GPU, False = force CPU
+USE_GPU = None  # Auto CUDA for XGBoost/CatBoost; CPU for LightGBM by default.
 
 _use_gpu_resolved = gpu_available() if USE_GPU is None else USE_GPU
 print(f"GPU acceleration: {'ON' if _use_gpu_resolved else 'OFF'}  (USE_GPU={USE_GPU})")
@@ -724,6 +724,13 @@ for family in candidate_families:
     _log_section6_done(f"{family}_ordinal", time.time() - _step_start, _section6_timing)
 
     comparison_df = pd.DataFrame(comparison_rows)
+    # Explicit allow-list, not a startswith(family) prefix match: the
+    # latter also matches f"{family}_default" (a Stufe-1 baseline row with
+    # no refit path in _build_pipeline_for below). Only the 4 strategies
+    # actually compared in this loop, plus the family's own already-known
+    # balanced candidate, are eligible to win. If a resampling/ordinal
+    # strategy wins, _build_pipeline_for falls back to balanced with a
+    # logged warning rather than crashing.
     _family_strategy_names = [
         f"{family}_smote",
         f"{family}_adasyn",

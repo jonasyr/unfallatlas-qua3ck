@@ -142,9 +142,14 @@ def test_gpu_available_returns_bool_and_is_consistent():
     assert gpu_available() == result  # lru_cache'd, must be stable within a process
 
 
+def test_lightgbm_defaults_to_cpu_without_opencl_auto_detection():
+    """A CUDA GPU alone does not prove LightGBM can use its OpenCL backend."""
+    lgbm = build_lightgbm_pipeline(build_preprocessor()).named_steps["classify"]
+    assert lgbm.get_params()["device"] == "cpu"
+
+
 def test_builders_accept_explicit_use_gpu_false_forcing_cpu():
-    """use_gpu=False must always work, regardless of what's auto-detected on
-    this machine — this is the portability guarantee for non-GPU machines."""
+    """use_gpu=False must always force CPU, regardless of local hardware."""
     X, y = _toy_X_y()
     preprocessor = build_preprocessor()
 

@@ -16,12 +16,10 @@ from xgboost import XGBClassifier
 
 @lru_cache(maxsize=1)
 def gpu_available() -> bool:
-    """Auto-detect a usable CUDA GPU via ``nvidia-smi``.
+    """Return whether ``nvidia-smi`` reports a usable CUDA GPU.
 
-    Cached (per process) since this is a subprocess call and the answer
-    cannot change mid-run. Used as the default for every ``use_gpu=None``
-    builder argument below — pass ``use_gpu=True``/``False`` explicitly to
-    override auto-detection on a specific machine.
+    This is appropriate for XGBoost and CatBoost's CUDA GPU modes, but not
+    for LightGBM, whose ``device="gpu"`` path requires an OpenCL runtime.
     """
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True, timeout=5, check=False)
@@ -31,7 +29,18 @@ def gpu_available() -> bool:
 
 
 def _resolve_use_gpu(use_gpu: bool | None) -> bool:
+    """Use CUDA automatically for backends that support it directly."""
     return gpu_available() if use_gpu is None else use_gpu
+
+
+def _resolve_lightgbm_use_gpu(use_gpu: bool | None) -> bool:
+    """Keep LightGBM on CPU unless its OpenCL backend is explicitly requested.
+
+    ``nvidia-smi`` only verifies CUDA. It cannot verify that a compatible
+    OpenCL device is available, so using it for LightGBM auto-detection can
+    fail at fit time even on an otherwise GPU-capable machine.
+    """
+    return use_gpu is True
 
 
 class _ZeroIndexedXGBClassifier(BaseEstimator, ClassifierMixin):
@@ -115,10 +124,8 @@ def build_xgboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipelin
 
     ``use_gpu`` trains on CUDA (``device="cuda"``) instead of CPU — a
     machine-specific speed optimisation, not part of the reproducible
-    contract. ``None`` (default) auto-detects via ``gpu_available()``, so
-    results and runtime stay portable on machines without a CUDA GPU (e.g.
-    a grader's machine) without any code change; pass ``True``/``False``
-    to force a specific device.
+    contract. ``None`` (default) auto-detects CUDA; pass ``True`` or
+    ``False`` to override it for a specific machine.
     """
     resolved_use_gpu = _resolve_use_gpu(use_gpu)
     return Pipeline(
@@ -160,10 +167,11 @@ def build_lightgbm_pipeline(
     ``use_gpu`` uses LightGBM's OpenCL GPU backend (``device="gpu"``) — the
     standard PyPI wheel supports this device without a custom build, unlike
     ``device="cuda"`` which needs a ``-DUSE_CUDA=1`` recompile. ``None``
-    (default) auto-detects via ``gpu_available()`` (see
-    ``build_xgboost_pipeline``); pass ``True``/``False`` to force a device.
+    (default) and ``False`` use CPU. A CUDA GPU reported by ``nvidia-smi``
+    is insufficient evidence for this OpenCL backend; pass ``True`` only
+    after verifying an OpenCL device is available to LightGBM.
     """
-    resolved_use_gpu = _resolve_use_gpu(use_gpu)
+    resolved_use_gpu = _resolve_lightgbm_use_gpu(use_gpu)
     return Pipeline(
         steps=[
             ("preprocess", preprocessor),
@@ -203,9 +211,8 @@ def build_catboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipeli
     either.
 
     ``use_gpu`` sets ``task_type="GPU"`` — supported by the standard pip
-    wheel without a custom build. ``None`` (default) auto-detects via
-    ``gpu_available()`` (see ``build_xgboost_pipeline``); pass
-    ``True``/``False`` to force a device.
+    wheel without a custom build. ``None`` (default) auto-detects CUDA;
+    pass ``True`` or ``False`` to override it for a specific machine.
     """
     resolved_use_gpu = _resolve_use_gpu(use_gpu)
     return Pipeline(
