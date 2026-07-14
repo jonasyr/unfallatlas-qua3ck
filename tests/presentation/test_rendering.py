@@ -2,7 +2,7 @@ import copy
 import os
 import subprocess
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import nbformat
 import pytest
@@ -552,6 +552,32 @@ def test_render_notebook_accepts_nested_relative_output_path(tmp_path: Path) -> 
         (result.destination.parent / reference).resolve().is_file()
         for reference in local_references
     )
+
+
+def test_safe_output_relative_path_normalizes_windows_separators() -> None:
+    from unfallatlas.presentation.rendering import _safe_output_relative_path
+
+    expected = Path("phase", "report.html")
+    assert _safe_output_relative_path(PureWindowsPath("phase/report.html")) == expected
+    assert _safe_output_relative_path(Path(r"phase\report.html")) == expected
+
+
+@pytest.mark.parametrize(
+    "unsafe_path",
+    [
+        PureWindowsPath(r"phase\..\outside.html"),
+        PureWindowsPath(r"C:\absolute\report.html"),
+        PureWindowsPath(r"\\server\share\report.html"),
+    ],
+)
+def test_safe_output_relative_path_rejects_unsafe_windows_paths(unsafe_path) -> None:
+    from unfallatlas.presentation.rendering import _safe_output_relative_path
+
+    with pytest.raises(
+        ValueError,
+        match="output_relative_path must be a safe relative path",
+    ):
+        _safe_output_relative_path(unsafe_path)
 
 
 @pytest.mark.parametrize(

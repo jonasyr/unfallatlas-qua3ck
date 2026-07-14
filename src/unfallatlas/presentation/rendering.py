@@ -4,7 +4,7 @@ import mimetypes
 import os
 import warnings
 from dataclasses import asdict, replace
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePath, PureWindowsPath
 from tempfile import NamedTemporaryFile
 from typing import Any
 from urllib.parse import unquote, urlsplit, urlunsplit
@@ -66,18 +66,20 @@ def _write_html_atomic(target: Path, data: bytes) -> None:
         raise
 
 
-def _safe_output_relative_path(path: Path) -> Path:
-    relative = Path(path)
-    windows_path = PureWindowsPath(str(relative))
+def _safe_output_relative_path(path: PurePath) -> Path:
+    native_path = Path(path)
+    windows_path = PureWindowsPath(str(path))
     if (
-        relative.is_absolute()
-        or windows_path.is_absolute()
-        or relative == Path(".")
-        or ".." in relative.parts
-        or "\\" in str(relative)
+        native_path.is_absolute()
+        or native_path == Path(".")
+        or ".." in native_path.parts
+        or windows_path.drive
+        or windows_path.root
+        or windows_path == PureWindowsPath(".")
+        or ".." in windows_path.parts
     ):
         raise ValueError(f"output_relative_path must be a safe relative path: {path}")
-    return relative
+    return Path(*windows_path.parts)
 
 
 def _asset_href_prefix(destination: Path, output_root: Path) -> Path:
