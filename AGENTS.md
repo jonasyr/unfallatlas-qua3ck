@@ -209,6 +209,7 @@ test  = df[df.UJAHR == 2024]
 - CI (`.github/workflows/ci.yml`): GitHub Actions on ubuntu-latest; installs `uv sync --extra dev --extra geo`, runs `ruff check .` then `uv run pytest`; uploads `coverage.xml` to Codecov via `codecov-action@v5` authenticated with `secrets.CODECOV_TOKEN`
 - A³-phase CatBoost fix (commits e7cf9ec/4677517): `class_weights` removed from `build_catboost_pipeline()` constructor to fix `clone()` incompatibility; balanced weighting now applied via `sample_weight` at fit time through `cross_validate(params=...)`
 - A³-phase checkpoint pattern: fitted pipelines cached under `data/processed/a3_checkpoints/<git-sha>/` (joblib); Optuna study persisted alongside at `optuna_study.db`; committed hyperparameter changes automatically land in a fresh, empty directory
+- A³-phase §6 filter (commit 22d84a3): §2 GroupKFold cell is a standalone sanity check only — §7 Optuna builds its own `GroupKFold` from subsample years; `_build_pipeline_for()` raises `NotImplementedError` for SMOTE/ADASYN/ordinal/threshold strategies so only `{family}_balanced` configs enter Optuna; full comparison table persisted to `data/processed/a3_model_comparison.csv`
 
 <!-- END AUTO-MANAGED -->
 
