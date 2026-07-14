@@ -171,3 +171,28 @@ def test_find_best_binary_threshold_works_with_decision_function_range():
     threshold, metrics = find_best_binary_threshold(y_true, scores)
     assert metrics["macro_f1"] == 1.0
     assert -8.0 < threshold <= 8.0
+
+
+def test_select_best_candidate_accepts_custom_recall_column():
+    rows = pd.DataFrame(
+        [
+            {"model": "svm_linear", "macro_f1": 0.50, "recall_ksi": 0.60},
+            {"model": "svm_rbf", "macro_f1": 0.60, "recall_ksi": 0.30},  # fails recall gate
+            {"model": "lightgbm", "macro_f1": 0.45, "recall_ksi": 0.55},
+        ]
+    )
+    winner = select_best_candidate(rows, recall_col="recall_ksi")
+    assert winner["model"] == "svm_linear"  # highest macro_f1 among recall_ksi>=0.5 rows
+
+
+def test_select_best_candidate_default_recall_column_still_recall_class_1():
+    """Regression guard: existing 3-class call sites (no recall_col= passed)
+    must keep reading 'recall_class_1', unchanged by this generalization."""
+    rows = pd.DataFrame(
+        [
+            {"model": "a", "macro_f1": 0.50, "recall_class_1": 0.60},
+            {"model": "b", "macro_f1": 0.60, "recall_class_1": 0.30},
+        ]
+    )
+    winner = select_best_candidate(rows)
+    assert winner["model"] == "a"

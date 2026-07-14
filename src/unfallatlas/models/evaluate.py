@@ -101,23 +101,23 @@ def find_best_binary_threshold(
 
 
 def select_best_candidate(
-    rows: pd.DataFrame, recall_threshold: float = RECALL_CLASS_1_THRESHOLD
+    rows: pd.DataFrame,
+    recall_threshold: float = RECALL_CLASS_1_THRESHOLD,
+    recall_col: str = "recall_class_1",
 ) -> pd.Series:
     """Pick the best row from a (family, strategy) comparison table.
 
-    Rule: highest ``macro_f1`` among rows clearing ``recall_class_1 >=
-    recall_threshold`` (the harder Q-phase gate). If no row clears it,
-    fall back to the highest ``(macro_f1 + recall_class_1) / 2`` combined
-    score across all rows, so there is always a well-defined winner even
-    when nothing meets the gate yet.
+    Gate-aware: prefers the highest macro_f1 among rows whose `recall_col`
+    clears `recall_threshold`. Falls back to the highest combined
+    (macro_f1 + recall_col) / 2 score if no row clears the gate.
 
-    This directly encodes "both acceptance criteria must pass" instead of
-    optimising macro-F1 alone and hoping recall follows — the mistake that
-    picked an unweighted-recall Random Forest as champion in the original
-    A³ selection rule.
+    `recall_col` defaults to 'recall_class_1' (the 3-class column name,
+    from evaluate_predictions) for backward compatibility with every
+    existing call site. Pass recall_col='recall_ksi' for binary-KSI
+    comparisons (the column name from evaluate_binary_predictions).
     """
-    passing = rows[rows["recall_class_1"] >= recall_threshold]
+    passing = rows[rows[recall_col] >= recall_threshold]
     if len(passing) > 0:
         return passing.sort_values("macro_f1", ascending=False).iloc[0]
-    combined = rows.assign(_combined_score=(rows["macro_f1"] + rows["recall_class_1"]) / 2)
+    combined = rows.assign(_combined_score=(rows["macro_f1"] + rows[recall_col]) / 2)
     return combined.sort_values("_combined_score", ascending=False).iloc[0]
