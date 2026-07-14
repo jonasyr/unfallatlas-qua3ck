@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.19.3
 #   kernelspec:
-#     display_name: unfallatlas-qua3ck
+#     display_name: unfallatlas-qua3ck (3.13.11)
 #     language: python
 #     name: python3
 # ---
@@ -137,7 +137,7 @@ def _git_short_sha():
 # project does not depend on).
 
 # %%
-USE_GPU = None  # Auto CUDA for XGBoost/CatBoost; CPU for LightGBM by default.
+USE_GPU = True  # Auto CUDA for XGBoost/CatBoost; CPU for LightGBM by default.
 
 _use_gpu_resolved = gpu_available() if USE_GPU is None else USE_GPU
 print(f"GPU acceleration: {'ON' if _use_gpu_resolved else 'OFF'}  (USE_GPU={USE_GPU})")
@@ -1261,6 +1261,7 @@ print(f"Rows — Train: {len(y_train_bin):,}, Val: {len(y_val_bin):,}, Test: {le
 
 # %%
 from sklearn.metrics import f1_score  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
 
 from unfallatlas.features.preprocessing import build_preprocessor  # noqa: E402
 from unfallatlas.models.boosting import build_lightgbm_binary_pipeline  # noqa: E402
@@ -1273,7 +1274,13 @@ SEED = 42
 SUB_N = 500_000
 
 # Stratified subsample (stratify on 3-class UKATGEORIE to preserve share of class 1 in KSI)
-train_sub = train.sample(n=min(SUB_N, len(train)), random_state=SEED, stratify=train["UKATGEORIE"])
+sub_n = min(SUB_N, len(train))
+if sub_n < len(train):
+    train_sub, _ = train_test_split(
+        train, train_size=sub_n, random_state=SEED, stratify=train["UKATGEORIE"]
+    )
+else:
+    train_sub = train
 groups_sub = train_sub["UJAHR"].values
 X_sub, y_sub_bin = split_features_target_binary(train_sub)
 
@@ -1288,6 +1295,7 @@ for k, v in baseline_bin.items():
     if k != "confusion_matrix":
         print(f"  {k}: {v:.4f}")
 print(f"  Gate passed: {meets_binary_acceptance_criteria(baseline_bin)}")
+
 
 # %%
 import optuna  # noqa: E402
@@ -1413,7 +1421,7 @@ binary_model_card = {
         "rows_test": int(len(y_test_bin)),
         "optuna_trials": OPTUNA_TRIALS,
         "subsample_size": SUB_N,
-        "run_at_utc": pd.Timestamp.utcnow().isoformat() + "Z",
+        "run_at_utc": pd.Timestamp.now("UTC").isoformat(),
         "random_seed": SEED,
     },
 }
@@ -1428,12 +1436,42 @@ print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_card.json'}")
 # %% [markdown]
 # ### §10 — Results Summary: Binary KSI Classification
 #
-# The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation:
+# The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation, and the
+# **revised gate is met on the untouched Test-2024 split**:
 #
-# - **LightGBM binary balanced** with Optuna tuning (20 trials, GroupKFold, subsample 500k)
-# - Gate-optimal threshold from 1D sweep on Val-2023 (Recall(KSI) ≥ 0.50 as constraint)
-# - Test-2024 evaluation performed exactly once after threshold selection
-# - **Gate artefacts**: `data/processed/a3_binary_best_model.joblib`, `a3_binary_model_card.json`
+# | Metric | Val-2023 | Test-2024 | Gate |
+# |---|---|---|---|
+# | macro-F1 | 0.6107 | **0.6069** | ≥ 0.55 ✓ |
+# | Recall(KSI) | — | **0.5233** | ≥ 0.50 ✓ |
+# | Recall(slight) | — | 0.7690 | — |
+#
+# **Gate passed: True.**
+#
+# - **Model**: LightGBM binary, `class_weight="balanced"`, tuned via Optuna (20 trials, 3-fold
+#   GroupKFold-by-year, 500k-row stratified subsample). Best CV macro-F1 during search: 0.598.
+#   Winning hyperparameters: `n_estimators=494, num_leaves=99, max_depth=10,
+#   learning_rate=0.120, min_child_samples=85, reg_lambda=0.101`.
+# - **Threshold**: gate-optimal decision threshold found via 1D sweep on Val-2023
+#   (maximise macro-F1 subject to Recall(KSI) ≥ 0.50) → **0.580**.
+# - **Test-2024 confusion matrix** (rows = true, cols = predicted):
+#
+#   |  | Pred KSI | Pred slight |
+#   |---|---|---|
+#   | True KSI | 23,127 | 21,071 |
+#   | True slight | 51,824 | 172,497 |
+#
+# - **Test-2024 evaluation performed exactly once**, after threshold selection on Val-2023 — no
+#   test-set peeking.
+# - **Comparison to the Technical Review's estimate**: naively relabeling the 3-class champion's
+#   existing predictions (no retraining) gave binary macro-F1 = 0.552 — right at the gate. The
+#   purpose-built binary model reaches **0.607**, confirming the review's prediction that a
+#   directly-trained model would clear 0.55 with margin (projected range was 0.58–0.65).
+# - **Gate artefacts**: `data/processed/a3_binary_best_model.joblib`,
+#   `data/processed/a3_binary_model_card.json` (both saved and present in the repo).
 #
 # The binary formulation is the methodological standard in the road-safety ML literature
-# (Santos 2022, Pakgohar 2021, Schlößler 2024) and provides the verifiable gate for this portfolio.
+# (Santos 2022, Pakgohar 2021, Schlößler 2024) and provides the verifiable, evidence-based gate
+# for this portfolio — see §9 for the empirical and arithmetic proof that the original 3-class
+# gate (macro-F1 ≥ 0.55 AND Recall(class-1) ≥ 0.50) is structurally unreachable with the available
+# Unfallatlas features.
+#
