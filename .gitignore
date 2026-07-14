@@ -103,7 +103,7 @@ instance/
 docs/_build/
 
 # Superpowers plans (local dev tool artefacts)
-docs/superpowers/
+# docs/superpowers/
 
 # PyBuilder
 target/
