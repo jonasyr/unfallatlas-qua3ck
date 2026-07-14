@@ -49,6 +49,15 @@ class AssetStore:
     def __init__(self, output_root: Path) -> None:
         self.output_root = Path(output_root)
 
+    def _target_for(self, relative_path: Path) -> Path:
+        if relative_path.is_absolute() or ".." in relative_path.parts:
+            raise ValueError("asset path must be a relative path inside output_root")
+        output_root = self.output_root.resolve(strict=False)
+        target = (output_root / relative_path).resolve(strict=False)
+        if not target.is_relative_to(output_root):
+            raise ValueError("asset path must be a relative path inside output_root")
+        return target
+
     def put_bytes(
         self,
         *,
@@ -60,9 +69,13 @@ class AssetStore:
         kind: str,
         cell_index: int | None,
     ) -> AssetRecord:
+        for component in (namespace, stem, suffix):
+            path_component = Path(component)
+            if path_component.is_absolute() or ".." in path_component.parts:
+                raise ValueError("asset path must be a relative path inside output_root")
         digest = hashlib.sha256(data).hexdigest()
         relative = Path("assets") / namespace / f"{stem}-{digest[:16]}{suffix}"
-        write_atomic(self.output_root / relative, data)
+        write_atomic(self._target_for(relative), data)
         return AssetRecord(relative, digest, len(data), media_type, kind, cell_index)
 
     def put_named_bytes(
@@ -74,12 +87,14 @@ class AssetStore:
         kind: str,
     ) -> AssetRecord:
         digest = hashlib.sha256(data).hexdigest()
-        write_atomic(self.output_root / relative_path, data)
+        write_atomic(self._target_for(relative_path), data)
         return AssetRecord(relative_path, digest, len(data), media_type, kind, None)
 
 
 def _compact_json_bytes(value: Any) -> bytes:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
 
 
 def _as_text(value: Any) -> str:
@@ -149,6 +164,7 @@ def prepare_notebook_assets(
                     chart_id=chart_id,
                     payload_key=payload_key,
                 )
+                del data[PLOTLY_MIME]
                 continue
 
             for mime in ("image/svg+xml", "image/png", "image/jpeg"):
@@ -166,6 +182,7 @@ def prepare_notebook_assets(
                 )
                 assets_by_path.setdefault(record.relative_path, record)
                 output_metadata["unfallatlas_presentation"] = _metadata(kind="image", record=record)
+                del data[mime]
                 break
 
     return PreparedNotebook(notebook=notebook, assets=tuple(assets_by_path.values()))

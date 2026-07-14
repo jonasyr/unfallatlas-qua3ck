@@ -4,11 +4,13 @@ import hashlib
 from pathlib import Path
 
 import nbformat
+import pytest
 
 from unfallatlas.presentation.assets import (
     AssetStore,
     copy_shared_assets,
     prepare_notebook_assets,
+    write_atomic,
 )
 from unfallatlas.presentation.models import CellCounts, NotebookAnalysis, NotebookStatus
 
@@ -61,6 +63,78 @@ def test_asset_store_uses_deterministic_digest_paths_and_deduplicates_bytes(
     assert (tmp_path / first.relative_path).read_bytes() == data
 
 
+@pytest.mark.parametrize(
+    ("method", "path_kwargs"),
+    [
+        ("named", {"relative_path": Path("/tmp/absolute.js")}),
+        ("named", {"relative_path": Path("../outside.js")}),
+        ("content", {"namespace": "../outside", "stem": "chart", "suffix": ".js"}),
+        ("content", {"namespace": "charts", "stem": "../chart", "suffix": ".js"}),
+    ],
+)
+def test_asset_store_rejects_absolute_and_traversing_public_paths(
+    tmp_path: Path,
+    method: str,
+    path_kwargs: dict[str, object],
+) -> None:
+    store = AssetStore(tmp_path / "site")
+
+    with pytest.raises(ValueError, match="relative path inside output_root"):
+        if method == "named":
+            store.put_named_bytes(
+                **path_kwargs,
+                data=b"asset",
+                media_type="text/javascript",
+                kind="runtime",
+            )
+        else:
+            store.put_bytes(
+                **path_kwargs,
+                data=b"asset",
+                media_type="text/javascript",
+                kind="plotly",
+                cell_index=0,
+            )
+
+
+def test_asset_store_rejects_destination_resolving_outside_output_root(tmp_path: Path) -> None:
+    output_root = tmp_path / "site"
+    output_root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (output_root / "assets").symlink_to(outside, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="relative path inside output_root"):
+        AssetStore(output_root).put_named_bytes(
+            relative_path=Path("assets/escaped.js"),
+            data=b"asset",
+            media_type="text/javascript",
+            kind="runtime",
+        )
+
+    assert not (outside / "escaped.js").exists()
+
+
+def test_atomic_replace_failure_preserves_target_and_cleans_temporary_file(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import unfallatlas.presentation.assets as assets_module
+
+    target = tmp_path / "asset.js"
+    target.write_bytes(b"existing")
+
+    def fail_replace(source: Path, destination: Path) -> None:
+        raise OSError(f"cannot replace {source} with {destination}")
+
+    monkeypatch.setattr(assets_module.os, "replace", fail_replace)
+
+    with pytest.raises(OSError, match="cannot replace"):
+        write_atomic(target, b"replacement")
+
+    assert target.read_bytes() == b"existing"
+    assert list(tmp_path.iterdir()) == [target]
+
+
 def test_plotly_is_externalized_without_mutating_source_notebook(tmp_path: Path) -> None:
     plotly = {"data": [{"type": "bar", "x": ["A"], "y": [3]}], "layout": {}}
     output = nbformat.v4.new_output(
@@ -78,7 +152,10 @@ def test_plotly_is_externalized_without_mutating_source_notebook(tmp_path: Path)
     assert '"data"' in payload
     assert analysis.notebook.cells[0].outputs[0].data["application/vnd.plotly.v1+json"] == original
     assert prepared.notebook is not analysis.notebook
-    metadata = prepared.notebook.cells[0].outputs[0].metadata["unfallatlas_presentation"]
+    copied_output = prepared.notebook.cells[0].outputs[0]
+    assert "application/vnd.plotly.v1+json" not in copied_output.data
+    assert copied_output.data["text/plain"] == "Figure"
+    metadata = copied_output.metadata["unfallatlas_presentation"]
     assert metadata["kind"] == "plotly"
     assert metadata["payload_key"].startswith("plotly-")
     assert metadata["asset_href"] == f"../{record.relative_path.as_posix()}"
@@ -95,7 +172,8 @@ def test_equal_plotly_bundles_share_asset_but_keep_distinct_chart_ids(tmp_path: 
             "display_data", data={"application/vnd.plotly.v1+json": copy.deepcopy(bundle)}
         ),
     ]
-    prepared = prepare_notebook_assets(_analysis(tmp_path, outputs), AssetStore(tmp_path / "site"))
+    analysis = _analysis(tmp_path, outputs)
+    prepared = prepare_notebook_assets(analysis, AssetStore(tmp_path / "site"))
 
     plotly_assets = [asset for asset in prepared.assets if asset.kind == "plotly"]
     assert len(plotly_assets) == 1
@@ -103,6 +181,27 @@ def test_equal_plotly_bundles_share_asset_but_keep_distinct_chart_ids(tmp_path: 
         output.metadata["unfallatlas_presentation"] for output in prepared.notebook.cells[0].outputs
     ]
     assert metadata[0]["chart_id"] != metadata[1]["chart_id"]
+    assert metadata[0]["payload_key"] == metadata[1]["payload_key"]
+    assert metadata[0]["asset_href"] == metadata[1]["asset_href"]
+
+
+def test_semantically_equal_plotly_bundles_ignore_mapping_insertion_order(
+    tmp_path: Path,
+) -> None:
+    first = {"data": [{"x": [1], "y": [2]}], "layout": {"title": "Chart"}}
+    second = {"layout": {"title": "Chart"}, "data": [{"y": [2], "x": [1]}]}
+    outputs = [
+        nbformat.v4.new_output("display_data", data={"application/vnd.plotly.v1+json": first}),
+        nbformat.v4.new_output("display_data", data={"application/vnd.plotly.v1+json": second}),
+    ]
+
+    prepared = prepare_notebook_assets(_analysis(tmp_path, outputs), AssetStore(tmp_path / "site"))
+
+    plotly_assets = [asset for asset in prepared.assets if asset.kind == "plotly"]
+    metadata = [
+        output.metadata["unfallatlas_presentation"] for output in prepared.notebook.cells[0].outputs
+    ]
+    assert len(plotly_assets) == 1
     assert metadata[0]["payload_key"] == metadata[1]["payload_key"]
     assert metadata[0]["asset_href"] == metadata[1]["asset_href"]
 
@@ -118,13 +217,20 @@ def test_images_are_extracted_with_correct_suffix_and_fallbacks_preserved(tmp_pa
         ),
     ]
 
-    prepared = prepare_notebook_assets(_analysis(tmp_path, outputs), AssetStore(tmp_path / "site"))
+    analysis = _analysis(tmp_path, outputs)
+    prepared = prepare_notebook_assets(analysis, AssetStore(tmp_path / "site"))
 
     suffixes = {asset.relative_path.suffix for asset in prepared.assets}
     assert suffixes == {".png", ".jpg", ".svg"}
     copied_outputs = prepared.notebook.cells[0].outputs
+    assert "image/png" not in copied_outputs[0].data
+    assert "image/jpeg" not in copied_outputs[1].data
+    assert "image/svg+xml" not in copied_outputs[2].data
     assert copied_outputs[0].data["text/plain"] == "png"
     assert copied_outputs[2].data["text/html"] == "<b>svg</b>"
+    assert analysis.notebook.cells[0].outputs[0].data["image/png"] == png
+    assert analysis.notebook.cells[0].outputs[1].data["image/jpeg"] == jpeg
+    assert analysis.notebook.cells[0].outputs[2].data["image/svg+xml"] == "<svg></svg>"
     for output in copied_outputs:
         href = output.metadata["unfallatlas_presentation"]["asset_href"]
         assert href.startswith("../assets/notebooks/rich-output/")
