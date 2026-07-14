@@ -3,8 +3,10 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
 
-from nbformat.v4 import new_code_cell, new_notebook, new_output
+import pytest
+from nbformat.v4 import new_code_cell, new_markdown_cell, new_notebook, new_output
 
+from unfallatlas.presentation import metadata as metadata_module
 from unfallatlas.presentation.metadata import (
     build_export_metadata,
     read_git_metadata,
@@ -63,6 +65,56 @@ def test_source_hash_changes_when_code_changes() -> None:
     assert source_sha256(first) != source_sha256(second)
 
 
+def test_snapshot_hash_changes_when_only_output_changes() -> None:
+    first = new_notebook(
+        cells=[
+            new_code_cell(
+                "x = 1",
+                execution_count=1,
+                outputs=[new_output("stream", name="stdout", text="one")],
+            )
+        ]
+    )
+    second = deepcopy(first)
+    second.cells[0].outputs = [new_output("stream", name="stdout", text="two")]
+
+    assert snapshot_sha256(first) != snapshot_sha256(second)
+
+
+def test_source_hash_changes_when_attachment_changes() -> None:
+    first = new_notebook(
+        cells=[
+            new_markdown_cell(
+                "![plot](attachment:plot.png)",
+                attachments={"plot.png": {"image/png": "Zmlyc3Q="}},
+            )
+        ]
+    )
+    second = deepcopy(first)
+    second.cells[0].attachments["plot.png"]["image/png"] = "c2Vjb25k"
+
+    assert source_sha256(first) != source_sha256(second)
+
+
+def test_source_hash_changes_when_cell_tags_change() -> None:
+    first = new_notebook(cells=[new_code_cell("x = 1", metadata={"tags": ["first"]})])
+    second = deepcopy(first)
+    second.cells[0].metadata.tags = ["second"]
+
+    assert source_sha256(first) != source_sha256(second)
+
+
+def test_source_hash_changes_when_presentation_status_changes() -> None:
+    first = new_notebook(
+        cells=[new_code_cell("x = 1")],
+        metadata={"presentation": {"status": "ready"}},
+    )
+    second = deepcopy(first)
+    second.metadata.presentation.status = "wip"
+
+    assert source_sha256(first) != source_sha256(second)
+
+
 def test_hashing_does_not_mutate_the_notebook() -> None:
     notebook = new_notebook(
         cells=[
@@ -101,6 +153,22 @@ def test_read_git_metadata_detects_dirty_repository(tmp_path: Path) -> None:
 
 
 def test_read_git_metadata_returns_unknown_outside_repository(tmp_path: Path) -> None:
+    metadata = read_git_metadata(tmp_path)
+
+    assert metadata.commit == "unknown"
+    assert metadata.short_commit == "unknown"
+    assert metadata.branch == "unknown"
+    assert metadata.dirty is False
+
+
+def test_read_git_metadata_handles_missing_git_executable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def raise_oserror(*args: object, **kwargs: object) -> subprocess.CompletedProcess[str]:
+        raise OSError("git executable not found")
+
+    monkeypatch.setattr(metadata_module.subprocess, "run", raise_oserror)
+
     metadata = read_git_metadata(tmp_path)
 
     assert metadata.commit == "unknown"
