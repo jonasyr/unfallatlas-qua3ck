@@ -1234,18 +1234,28 @@ else:
 #
 
 # %% [markdown]
-# ## §10 — Binary KSI Classification
+# ## 12 — Binary KSI Reframing: Motivation & Target Definition
 #
-# **Motivation**: The 3-class gate is not achievable with the available Unfallatlas features
-# (§9). The *KSI-vs-slight* framing (*Killed or Seriously Injured* vs. slightly injured) is the
-# methodological standard in the road-safety ML literature (Santos 2022, Pakgohar 2021, Schlößler
-# 2024) — precisely because the ceiling problem of the 3-class formulation has been known for years.
+# §11 showed the 3-class gate (macro-F1 >= 0.55 AND Recall(class-1) >= 0.50) is a Bayes-ceiling, not
+# a tuning problem: not one of 19 tested configurations reaches the target quadrant, and the
+# arithmetic ceiling argument shows why. The revised, domain-standard framing (Santos 2022,
+# Pakgohar 2021, Schloessler 2024) collapses the three severity classes into a binary KSI (killed or
+# seriously injured, UKATGEORIE in {1,2}) vs. slight (UKATGEORIE = 3) target, with a same-shaped
+# gate: binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50.
 #
-# **Revised Gate**:
-# - `y_binary = 1` if `UKATGEORIE ∈ {1, 2}` (Killed or Severely Injured = KSI)
-# - `y_binary = 0` if `UKATGEORIE = 3` (Slightly Injured = slight)
-# - Class distribution: KSI ≈ 16.4 % / slight ≈ 83.6 %
-# - Gate: **binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50**
+# Unlike an earlier pass at this reframing, this section runs a genuine **champion search** on the
+# binary target (SS13-SS15) instead of assuming the 3-class champion family (LightGBM) transfers
+# unchanged - mirroring the same Stage 0/Stage 1/gate-aware-selection discipline SS3-SS5 already use
+# for the 3-class problem, with Support Vector Machines (`docs/course-material/Einheit 6 - Support
+# Vector Machines.md`) included as first-class candidate families from the start.
+#
+# **Scope note:** the imbalance-strategy layer from SS6 (SMOTE/ADASYN/threshold-moving/ordinal per
+# candidate family) is intentionally not repeated here. Binary KSI's positive rate (~17-20%) is far
+# milder than the 3-class minority's (~0.9-2%), so `class_weight="balanced"` alone is much less
+# likely to be the binding constraint, and re-deriving that layer's several hard-won edge-case fixes
+# for a binary-labeled variant would substantially raise this section's risk for a speculative
+# benefit. Every candidate below is compared class-weighted/balanced only.
+#
 
 # %%
 from unfallatlas.features.preprocessing import split_features_target_binary  # noqa: E402
@@ -1259,21 +1269,95 @@ print(
 )
 print(f"Rows — Train: {len(y_train_bin):,}, Val: {len(y_val_bin):,}, Test: {len(y_test_bin):,}")
 
-# %%
-from sklearn.metrics import f1_score  # noqa: E402
-from sklearn.model_selection import train_test_split  # noqa: E402
+# %% [markdown]
+# ## 13 — Binary Champion Search: Stage 0 Baselines
+#
+# Random guess and majority class establish the binary macro-F1 floor; Logistic Regression is the
+# first non-trivial benchmark - mirrors SS3's role for the 3-class problem, on the relabelled target.
+#
 
-from unfallatlas.features.preprocessing import build_preprocessor  # noqa: E402
-from unfallatlas.models.boosting import build_lightgbm_binary_pipeline  # noqa: E402
+# %%
 from unfallatlas.models.evaluate import (  # noqa: E402
     evaluate_binary_predictions,
     meets_binary_acceptance_criteria,
 )
 
+binary_comparison_rows: list[dict] = []
+
+
+def _score_binary_on_validation(name: str, fitted_estimator, family: str | None = None) -> None:
+    preds = fitted_estimator.predict(X_val_bin)
+    metrics = evaluate_binary_predictions(y_val_bin.values, preds)
+    binary_comparison_rows.append({"model": name, "family": family or name, **metrics})
+    print(f"{name:30s} macro-F1={metrics['macro_f1']:.3f}  recall(KSI)={metrics['recall_ksi']:.3f}")
+
+
+BINARY_CHECKPOINT_DIR = CHECKPOINT_DIR / "binary"
+BINARY_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _load_or_fit_binary(name: str, fit_callable):
+    """Checkpoint helper for the binary champion search - separate namespace
+    (BINARY_CHECKPOINT_DIR) from the 3-class checkpoints, so e.g. a 3-class
+    'lightgbm_balanced.joblib' and a binary one never collide."""
+    path = BINARY_CHECKPOINT_DIR / f"{name}.joblib"
+    if path.exists():
+        _log_progress(f"  -> {name}: loaded from binary checkpoint ({path.name})")
+        return joblib.load(path)
+    start = time.time()
+    model = fit_callable()
+    elapsed = time.time() - start
+    joblib.dump(model, path)
+    _log_progress(f"  -> {name} done in {elapsed:.1f}s")
+    return model
+
+
+linear_preprocessor_bin = build_preprocessor(scale_for_linear=True)
+
+binary_stage0_specs = [
+    ("binary_random_guess", lambda: build_random_guess_classifier()),
+    ("binary_majority_class", lambda: build_majority_class_classifier()),
+    ("binary_logistic_regression", lambda: build_logreg_pipeline(linear_preprocessor_bin)),
+]
+
+_log_progress(f"Starting binary Stage 0: {len(binary_stage0_specs)} baselines.")
+for _name, _build_fn in binary_stage0_specs:
+    _model = _load_or_fit_binary(
+        _name, lambda _build_fn=_build_fn: _build_fn().fit(X_train_bin, y_train_bin)
+    )
+    _score_binary_on_validation(_name, _model)
+_log_progress("Binary Stage 0 complete.")
+
+# %% [markdown]
+# ## 14 — Binary Champion Search: Stage 1 Candidates (Trees + SVM)
+#
+# Mirrors SS4's role for the 3-class problem: every tree-ensemble family (Random Forest, XGBoost,
+# LightGBM, CatBoost), class-weighted/balanced, trained on the full 2016-2022 training set - plus,
+# new to this project, three SVM variants (`docs/course-material/Einheit 6 - Support Vector
+# Machines.md`): `LinearSVC` and hinge-loss `SGDClassifier` (both linear, scaled features), and
+# `SVC(kernel="rbf")` (the actual kernel trick). SVC's O(m^2)-O(m^3) fit complexity makes the full
+# 1,554,834-row training set infeasible, so it trains on a further 8,000-row stratified subsample;
+# LinearSVC uses the same 500,000-row stratified subsample as the tree families' Optuna tuning in
+# SS16; SGDClassifier, being O(m x n) and incremental-friendly, trains on the full set like the tree
+# ensembles.
+#
+
+# %%
+from sklearn.metrics import f1_score  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
+
+from unfallatlas.models.boosting import build_lightgbm_binary_pipeline  # noqa: E402
+from unfallatlas.models.svm import (  # noqa: E402
+    build_linear_svm_binary_pipeline,
+    build_rbf_svm_binary_pipeline,
+    build_sgd_hinge_binary_pipeline,
+)
+
 SEED = 42
 SUB_N = 500_000
 
-# Stratified subsample (stratify on 3-class UKATGEORIE to preserve share of class 1 in KSI)
+# Stratified subsample for LinearSVC and for Optuna tuning in SS16 (stratify
+# on 3-class UKATGEORIE to preserve the KSI share).
 sub_n = min(SUB_N, len(train))
 if sub_n < len(train):
     train_sub, _ = train_test_split(
@@ -1284,17 +1368,91 @@ else:
 groups_sub = train_sub["UJAHR"].values
 X_sub, y_sub_bin = split_features_target_binary(train_sub)
 
-# Quick baseline on subsample
-pipeline_baseline = build_lightgbm_binary_pipeline(build_preprocessor())
-pipeline_baseline.fit(X_sub, y_sub_bin)
-y_val_pred_baseline = pipeline_baseline.predict(X_val_bin)
-baseline_bin = evaluate_binary_predictions(y_val_bin.values, y_val_pred_baseline)
+# Further stratified subsample for the RBF kernel (Einheit 6 SS9/SS10: O(m^2)-O(m^3)).
+train_svc_sub, _ = train_test_split(
+    train_sub, train_size=8_000, random_state=SEED, stratify=train_sub["UKATGEORIE"]
+)
+groups_svc_sub = train_svc_sub["UJAHR"].values
+X_svc_sub, y_svc_sub = split_features_target_binary(train_svc_sub)
 
-print("Binary baseline (subsample, default threshold, Val-2023):")
-for k, v in baseline_bin.items():
-    if k != "confusion_matrix":
-        print(f"  {k}: {v:.4f}")
-print(f"  Gate passed: {meets_binary_acceptance_criteria(baseline_bin)}")
+tree_preprocessor_bin = build_preprocessor(scale_for_linear=False)
+
+BINARY_BUILDERS = {
+    "random_forest": lambda: build_random_forest_pipeline(
+        tree_preprocessor_bin, class_weight="balanced"
+    ),
+    "xgboost": lambda: build_xgboost_pipeline(tree_preprocessor_bin, use_gpu=_use_gpu_resolved),
+    "lightgbm": lambda: build_lightgbm_binary_pipeline(tree_preprocessor_bin),
+    "catboost": lambda: build_catboost_pipeline(tree_preprocessor_bin, use_gpu=_use_gpu_resolved),
+    "svm_linear": lambda: build_linear_svm_binary_pipeline(linear_preprocessor_bin),
+    "svm_sgd": lambda: build_sgd_hinge_binary_pipeline(linear_preprocessor_bin),
+    "svm_rbf": lambda: build_rbf_svm_binary_pipeline(linear_preprocessor_bin),
+}
+
+# (X, y) each family's Stage-1 fit uses - full train for everything except
+# the two subsampled SVM variants (Einheit 6 SS10 complexity table).
+BINARY_STAGE1_DATA = {
+    "random_forest": (X_train_bin, y_train_bin),
+    "xgboost": (X_train_bin, y_train_bin),
+    "lightgbm": (X_train_bin, y_train_bin),
+    "catboost": (X_train_bin, y_train_bin),
+    "svm_linear": (X_sub, y_sub_bin),
+    "svm_sgd": (X_train_bin, y_train_bin),
+    "svm_rbf": (X_svc_sub, y_svc_sub),
+}
+
+
+def _binary_fit_kwargs(family: str, y_fit) -> dict:
+    """xgboost/catboost have no class_weight constructor kwarg - balanced
+    weighting is applied via sample_weight at fit time instead, exactly
+    like the 3-class xgboost_balanced/catboost_balanced pattern in SS4."""
+    if family in ("xgboost", "catboost"):
+        return {"classify__sample_weight": balanced_sample_weight(y_fit)}
+    return {}
+
+
+_log_progress(f"Starting binary Stage 1: {len(BINARY_BUILDERS)} candidate families.")
+for _family, _build_fn in BINARY_BUILDERS.items():
+    _X_fit, _y_fit = BINARY_STAGE1_DATA[_family]
+    _fit_kwargs = _binary_fit_kwargs(_family, _y_fit)
+    _name = f"binary_{_family}_balanced"
+    _model = _load_or_fit_binary(
+        _name,
+        lambda _build_fn=_build_fn, _X_fit=_X_fit, _y_fit=_y_fit, _fit_kwargs=_fit_kwargs: (
+            _build_fn().fit(_X_fit, _y_fit, **_fit_kwargs)
+        ),
+    )
+    _score_binary_on_validation(_name, _model, family=_family)
+    binary_comparison_rows[-1]["n_train"] = len(_y_fit)
+_log_progress("Binary Stage 1 complete.")
+
+binary_comparison_df = pd.DataFrame(binary_comparison_rows)
+binary_comparison_df.sort_values("macro_f1", ascending=False)
+
+# %% [markdown]
+# ## 15 — Binary Champion Selection
+#
+# Gate-aware, exactly like SS5's rule for the 3-class problem (reusing the same
+# `select_best_candidate` function, generalised with a `recall_col` parameter for this binary-KSI
+# reuse): highest macro-F1 among Stage-1 candidates whose Recall(KSI) clears 0.50, falling back to
+# the highest combined score if none do. Baselines are excluded from the championship (they exist to
+# bound the floor, not compete for it) - same convention as SS5.
+#
+
+# %%
+stage1_only = binary_comparison_df[binary_comparison_df["family"].isin(BINARY_BUILDERS.keys())]
+binary_champion_row = select_best_candidate(stage1_only, recall_col="recall_ksi")
+binary_champion_family = binary_champion_row["family"]
+
+_log_progress(
+    f"Binary champion family (Stage 0/1 search): {binary_champion_family}  "
+    f"Val macro-F1={binary_champion_row['macro_f1']:.4f}  "
+    f"Val recall(KSI)={binary_champion_row['recall_ksi']:.4f}"
+)
+print(f"Binary champion family: {binary_champion_family}")
+print(f"  Val-2023 macro_f1:    {binary_champion_row['macro_f1']:.4f}")
+print(f"  Val-2023 recall_ksi:  {binary_champion_row['recall_ksi']:.4f}")
+stage1_only.sort_values("macro_f1", ascending=False)
 
 # %%
 import optuna  # noqa: E402
