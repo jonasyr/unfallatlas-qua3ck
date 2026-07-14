@@ -194,6 +194,41 @@ def build_lightgbm_pipeline(
     )
 
 
+def build_lightgbm_binary_pipeline(
+    preprocessor,
+    class_weight: str | None = "balanced",
+    use_gpu: bool | None = None,
+) -> Pipeline:
+    """Binary KSI vs. slight classifier.
+
+    Identical architecture to build_lightgbm_pipeline (same regularisation,
+    subsampling, GPU detection). Uses class_weight='balanced' by default to
+    handle the 16.4% KSI minority. Suitable for sklearn set_params() calls
+    since there are no clone()-incompatible constructor arguments.
+    """
+    resolved_use_gpu = _resolve_lightgbm_use_gpu(use_gpu)
+    return Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            (
+                "classify",
+                LGBMClassifier(
+                    n_estimators=300,
+                    subsample=0.8,
+                    subsample_freq=1,
+                    colsample_bytree=0.8,
+                    reg_lambda=1.0,
+                    class_weight=class_weight,
+                    random_state=42,
+                    n_jobs=-1,
+                    verbosity=-1,
+                    device="gpu" if resolved_use_gpu else "cpu",
+                ),
+            ),
+        ]
+    )
+
+
 def build_catboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipeline:
     """CatBoost has no clone()-compatible ``class_weight`` concept in this
     codebase - confirmed empirically that ``sklearn.base.clone()``
