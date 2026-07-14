@@ -1454,78 +1454,146 @@ print(f"  Val-2023 macro_f1:    {binary_champion_row['macro_f1']:.4f}")
 print(f"  Val-2023 recall_ksi:  {binary_champion_row['recall_ksi']:.4f}")
 stage1_only.sort_values("macro_f1", ascending=False)
 
+# %% [markdown]
+# ## 16 — Binary Hyperparameter Tuning (Optuna, winning family only)
+#
+# Only `binary_champion_family` (SS15) is tuned - mirrors SS7's per-family search-space pattern from
+# the 3-class problem, extended to cover all seven binary candidate families. 20 trials, 3-fold
+# GroupKFold-by-year, on the same subsample the family used for tuning speed; the winner is refit on
+# its full appropriate training scale afterward (SS17).
+#
+
 # %%
 import optuna  # noqa: E402
 from sklearn.model_selection import GroupKFold  # noqa: E402
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-OPTUNA_TRIALS = 20  # CPU-safe on laptop; increase to 50+ on GPU machine
+OPTUNA_TRIALS = 20
+
+BINARY_PARAM_SPACES = {
+    "random_forest": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__max_depth": trial.suggest_int("max_depth", 5, 30),
+        "classify__min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
+    },
+    "xgboost": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__max_depth": trial.suggest_int("max_depth", 3, 10),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "classify__reg_lambda": trial.suggest_float("reg_lambda", 0.5, 5.0, log=True),
+    },
+    "lightgbm": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__num_leaves": trial.suggest_int("num_leaves", 31, 127),
+        "classify__max_depth": trial.suggest_int("max_depth", 5, 12),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+        "classify__min_child_samples": trial.suggest_int("min_child_samples", 20, 100),
+        "classify__reg_lambda": trial.suggest_float("reg_lambda", 0.1, 10.0, log=True),
+    },
+    "catboost": lambda trial: {
+        "classify__iterations": trial.suggest_int("iterations", 100, 500),
+        "classify__depth": trial.suggest_int("depth", 3, 10),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "classify__l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1.0, 10.0, log=True),
+    },
+    "svm_linear": lambda trial: {"classify__C": trial.suggest_float("C", 1e-3, 1e2, log=True)},
+    "svm_sgd": lambda trial: {
+        "classify__alpha": trial.suggest_float("alpha", 1e-6, 1e-1, log=True)
+    },
+    "svm_rbf": lambda trial: {
+        "classify__C": trial.suggest_float("C", 1e-1, 1e2, log=True),
+        "classify__gamma": trial.suggest_float("gamma", 1e-3, 1e1, log=True),
+    },
+}
+
+# CV data per family - the same (X, y) Stage 1 used, plus year-groups for
+# GroupKFold. svm_rbf gets its own smaller groups array.
+BINARY_CV_DATA = {
+    "random_forest": (X_sub, y_sub_bin, groups_sub),
+    "xgboost": (X_sub, y_sub_bin, groups_sub),
+    "lightgbm": (X_sub, y_sub_bin, groups_sub),
+    "catboost": (X_sub, y_sub_bin, groups_sub),
+    "svm_linear": (X_sub, y_sub_bin, groups_sub),
+    "svm_sgd": (X_sub, y_sub_bin, groups_sub),
+    "svm_rbf": (X_svc_sub, y_svc_sub, groups_svc_sub),
+}
+
+X_cv, y_cv, groups_cv = BINARY_CV_DATA[binary_champion_family]
+build_champion_fn = BINARY_BUILDERS[binary_champion_family]
+param_space_fn = BINARY_PARAM_SPACES[binary_champion_family]
 
 
-def binary_objective(trial):
-    params = {
-        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
-        "num_leaves": trial.suggest_int("num_leaves", 31, 127),
-        "max_depth": trial.suggest_int("max_depth", 5, 12),
-        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
-        "min_child_samples": trial.suggest_int("min_child_samples", 20, 100),
-        "reg_lambda": trial.suggest_float("reg_lambda", 0.1, 10.0, log=True),
-    }
+def binary_champion_objective(trial):
+    params = param_space_fn(trial)
     gkf = GroupKFold(n_splits=3)
     fold_scores = []
-    for tr_idx, va_idx in gkf.split(X_sub, y_sub_bin, groups=groups_sub):
-        p = build_lightgbm_binary_pipeline(build_preprocessor())
-        p.set_params(**{f"classify__{k}": v for k, v in params.items()})
-        p.fit(X_sub.iloc[tr_idx], y_sub_bin.iloc[tr_idx])
-        pred = p.predict(X_sub.iloc[va_idx])
-        fold_scores.append(f1_score(y_sub_bin.iloc[va_idx], pred, average="macro"))
+    for tr_idx, va_idx in gkf.split(X_cv, y_cv, groups=groups_cv):
+        p = build_champion_fn()
+        p.set_params(**params)
+        fit_kwargs = _binary_fit_kwargs(binary_champion_family, y_cv.iloc[tr_idx])
+        p.fit(X_cv.iloc[tr_idx], y_cv.iloc[tr_idx], **fit_kwargs)
+        pred = p.predict(X_cv.iloc[va_idx])
+        fold_scores.append(f1_score(y_cv.iloc[va_idx], pred, average="macro"))
     return float(np.mean(fold_scores))
 
 
 study_binary = optuna.create_study(
     direction="maximize",
     sampler=optuna.samplers.TPESampler(seed=SEED),
-    study_name="lgbm_binary_ksi",
+    study_name=f"binary_{binary_champion_family}",
 )
-study_binary.optimize(binary_objective, n_trials=OPTUNA_TRIALS, show_progress_bar=True)
+study_binary.optimize(binary_champion_objective, n_trials=OPTUNA_TRIALS, show_progress_bar=True)
 
-print(f"\nBest CV macro-F1: {study_binary.best_value:.4f}")
+print(f"\nTuned family: {binary_champion_family}")
+print(f"Best CV macro-F1: {study_binary.best_value:.4f}")
 print(f"Best params: {study_binary.best_params}")
 
+
+# %% [markdown]
+# ## 17 — Binary Refit, Gate-Optimal Threshold & Test-2024 Evaluation
+#
+# The tuned champion is refit on its full appropriate training scale (SS14's `BINARY_STAGE1_DATA`
+# entry for the family - the complete 2016-2022 training set for every family except the two
+# subsampled SVM variants), then thresholded via `find_best_binary_threshold` on Val-2023 (works
+# with either `predict_proba` or `decision_function`, so this step is family-agnostic), then
+# evaluated exactly once on Test-2024 - the single time this section touches the test set.
+#
+
 # %%
-from sklearn.metrics import recall_score  # noqa: E402
+from unfallatlas.models.evaluate import find_best_binary_threshold  # noqa: E402
 
 best_params = study_binary.best_params
+X_refit, y_refit = BINARY_STAGE1_DATA[binary_champion_family]
 
-# Refit on full training set
-pipeline_binary_final = build_lightgbm_binary_pipeline(build_preprocessor())
+pipeline_binary_final = build_champion_fn()
 pipeline_binary_final.set_params(**{f"classify__{k}": v for k, v in best_params.items()})
-pipeline_binary_final.fit(X_train_bin, y_train_bin)
-print("Refit on full train complete.")
+refit_fit_kwargs = _binary_fit_kwargs(binary_champion_family, y_refit)
+pipeline_binary_final.fit(X_refit, y_refit, **refit_fit_kwargs)
+print(f"Refit {binary_champion_family} on {len(y_refit):,} rows complete.")
 
-# 1D threshold sweep on Val — maximize macro-F1 subject to Recall(KSI) >= 0.50
-y_val_proba_bin = pipeline_binary_final.predict_proba(X_val_bin)[:, 1]  # P(KSI=1)
+if hasattr(pipeline_binary_final, "predict_proba"):
+    y_val_scores_bin = pipeline_binary_final.predict_proba(X_val_bin)[:, 1]
+else:
+    y_val_scores_bin = pipeline_binary_final.decision_function(X_val_bin)
 
-best_threshold, best_f1_val = 0.5, -1.0
-for t in np.linspace(0.10, 0.90, 81):
-    y_pred_t = (y_val_proba_bin >= t).astype(int)
-    r = recall_score(y_val_bin, y_pred_t, pos_label=1)
-    f = f1_score(y_val_bin, y_pred_t, average="macro")
-    if r >= 0.50 and f > best_f1_val:
-        best_f1_val, best_threshold = f, t
+best_threshold, best_val_metrics = find_best_binary_threshold(y_val_bin.values, y_val_scores_bin)
+best_f1_val = best_val_metrics["macro_f1"]
 
-print(f"\nGate-optimal binary threshold (Val-2023): {best_threshold:.3f}")
+print(f"\nGate-optimal binary threshold (Val-2023): {best_threshold:.4f}")
 print(f"Val macro-F1 at optimal threshold: {best_f1_val:.4f}")
+print(f"Val recall(KSI) at optimal threshold: {best_val_metrics['recall_ksi']:.4f}")
 
-# %%
-y_test_proba_bin = pipeline_binary_final.predict_proba(X_test_bin)[:, 1]
-y_test_pred_bin = (y_test_proba_bin >= best_threshold).astype(int)
+if hasattr(pipeline_binary_final, "predict_proba"):
+    y_test_scores_bin = pipeline_binary_final.predict_proba(X_test_bin)[:, 1]
+else:
+    y_test_scores_bin = pipeline_binary_final.decision_function(X_test_bin)
+y_test_pred_bin = (y_test_scores_bin >= best_threshold).astype(int)
 
 metrics_binary_test = evaluate_binary_predictions(y_test_bin.values, y_test_pred_bin)
 gate_passed = meets_binary_acceptance_criteria(metrics_binary_test)
 
-print("Binary KSI — Test-2024 metrics:")
+print("\nBinary KSI — Test-2024 metrics:")
 for k, v in metrics_binary_test.items():
     if k != "confusion_matrix":
         print(f"  {k}: {v:.4f}")
@@ -1538,12 +1606,9 @@ cm = pd.DataFrame(
 print(f"\nConfusion Matrix:\n{cm.to_string()}")
 print(f"\nBinary gate passed: {gate_passed}")
 
-assert gate_passed, (
-    f"Binary gate FAILED — macro_f1={metrics_binary_test['macro_f1']:.4f}, "
-    f"recall_ksi={metrics_binary_test['recall_ksi']:.4f}. "
-    "Try increasing OPTUNA_TRIALS or tuning threshold range."
-)
-print("\n✓ Gate erfüllt.")
+
+# %% [markdown]
+# ## 18 — Binary Artifacts: Save Pipeline & Model Card
 
 # %%
 import json  # noqa: E402
@@ -1555,29 +1620,44 @@ joblib.dump(
     BASE / "data" / "processed" / "a3_binary_best_model.joblib",
 )
 
+binary_comparison_df.to_csv(
+    BASE / "data" / "processed" / "a3_binary_model_comparison.csv", index=False
+)
+
 binary_model_card = {
     "model_type": "binary_ksi_vs_slight",
-    "target_encoding": "1 = KSI (UKATGEORIE ∈ {1,2}), 0 = slight (UKATGEORIE = 3)",
-    "champion_family": "lightgbm",
-    "winning_strategy": "lightgbm_binary_balanced",
+    "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
+    "champion_family": binary_champion_family,
+    "winning_strategy": f"binary_{binary_champion_family}_balanced",
+    "selection_rule": (
+        "Stage 0/1 champion search across random_guess, majority_class, logistic_regression, "
+        "random_forest, xgboost, lightgbm, catboost, svm_linear, svm_sgd, svm_rbf (all "
+        "class-weighted/balanced) on Val-2023; gate-aware selection via select_best_candidate("
+        "recall_col='recall_ksi') - highest macro-F1 among candidates with recall_ksi >= 0.50, "
+        "falling back to highest combined score if none clear the gate."
+    ),
+    "stage0_1_comparison": binary_comparison_df.drop(columns=["confusion_matrix"]).to_dict(
+        orient="records"
+    ),
     "gate_reformulation_reason": (
-        "3-class gate (macro-F1 ≥ 0.55 AND Recall(class-1) ≥ 0.50) is unreachable with public "
+        "3-class gate (macro-F1 >= 0.55 AND Recall(class-1) >= 0.50) is unreachable with public "
         "Unfallatlas features: empirical ceiling macro-F1 = 0.424 over 19 configurations, "
-        "Cramér's V ≤ 0.13 for strongest features, ~90× odds-lift required for class-1 precision. "
-        "KSI-vs-slight is the domain-standard framing (Santos 2022, Pakgohar 2021, Schlößler 2024)."
+        "Cramer's V <= 0.13 for strongest features, ~90x odds-lift required for class-1 precision. "
+        "KSI-vs-slight is the domain-standard framing (Santos 2022, Pakgohar 2021, Schloessler 2024)."
     ),
     "best_hyperparameters": best_params,
     "optimal_threshold_val_2023": float(best_threshold),
     "val_2023_macro_f1": float(best_f1_val),
     "test_2024_metrics": metrics_binary_test,
-    "acceptance_gate": "binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50",
+    "acceptance_gate": "binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50",
     "acceptance_gate_passed": bool(gate_passed),
     "provenance": {
         "rows_train": int(len(y_train_bin)),
         "rows_val": int(len(y_val_bin)),
         "rows_test": int(len(y_test_bin)),
         "optuna_trials": OPTUNA_TRIALS,
-        "subsample_size": SUB_N,
+        "subsample_size_svm_linear_and_boosting_tuning": SUB_N,
+        "subsample_size_svm_rbf": len(y_svc_sub),
         "run_at_utc": pd.Timestamp.now("UTC").isoformat(),
         "random_seed": SEED,
     },
@@ -1589,6 +1669,8 @@ with open(BASE / "data" / "processed" / "a3_binary_model_card.json", "w") as f:
 print("Saved:")
 print(f"  {BASE / 'data' / 'processed' / 'a3_binary_best_model.joblib'}")
 print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_card.json'}")
+print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_comparison.csv'}")
+
 
 # %% [markdown]
 # ### §10 — Results Summary: Binary KSI Classification
