@@ -724,13 +724,6 @@ for family in candidate_families:
     _log_section6_done(f"{family}_ordinal", time.time() - _step_start, _section6_timing)
 
     comparison_df = pd.DataFrame(comparison_rows)
-    # Explicit allow-list, not a startswith(family) prefix match: the
-    # latter also matches f"{family}_default" (a Stufe-1 baseline row with
-    # no refit path in _build_pipeline_for below - NotImplementedError if
-    # it were ever picked). Only the 4 strategies actually compared in
-    # this loop, plus the family's own already-known balanced candidate
-    # (candidate_names[family], e.g. "catboost_balanced" - already scored
-    # in Stufe 1 above, not re-scored here), are eligible to win.
     _family_strategy_names = [
         f"{family}_smote",
         f"{family}_adasyn",
@@ -767,26 +760,25 @@ balanced_builder = {
 
 
 def _build_pipeline_for(family: str, strategy_model_name: str):
-    """Unfitted pipeline matching the given (family, strategy) combination -
-    NOT unweighted_builder's always-unweighted baseline, which exists only
-    to give SMOTE/ADASYN/threshold-moving/ordinal a fair, equally-
-    unweighted opponent in the §6 comparison above. Tuning/refitting the
-    unweighted builder directly here would silently retune the wrong
-    configuration regardless of which strategy actually won - e.g. if the
-    plain balanced classifier (`{family}_balanced`) beat every
-    resampling/ordinal treatment, §7/§8 must tune and refit *that*, not
-    the unweighted variant.
+    """Unfitted pipeline matching the given (family, strategy) combination.
+
+    SMOTE/ADASYN/threshold-moving/ordinal have no Optuna-compatible per-fold
+    CV path (each needs its own resampling/thresholding step inside the fold,
+    not just Pipeline.set_params().fit()). If one of them won §6, we fall back
+    to the balanced candidate and log a warning — the §6 result is still
+    recorded in the model card so the gap is visible, but the notebook doesn't
+    crash and §7/§8 tune the best *implementable* strategy.
     """
     if strategy_model_name == candidate_names[family]:
         return balanced_builder[family](tree_preprocessor)
     if strategy_model_name == f"{family}_unweighted":
         return unweighted_builder[family](tree_preprocessor)
-    raise NotImplementedError(
-        f"No tuning/refit path implemented for winning strategy '{strategy_model_name}' - "
-        "SMOTE/ADASYN/threshold-moving/ordinal each need a fitting procedure "
-        "inside Optuna's per-fold CV other than plain "
-        "Pipeline.set_params().fit(), which is out of scope here."
+    _log_progress(
+        f"[{family}] WARNING: winning strategy '{strategy_model_name}' has no §7 tuning path "
+        f"(SMOTE/ADASYN/threshold-moving/ordinal require per-fold resampling inside Optuna CV). "
+        f"Falling back to '{candidate_names[family]}' for tuning/refit."
     )
+    return balanced_builder[family](tree_preprocessor)
 
 
 def _fit_kwargs_for(family: str, strategy_model_name: str, y) -> dict:

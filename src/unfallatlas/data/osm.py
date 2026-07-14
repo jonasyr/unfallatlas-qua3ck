@@ -439,14 +439,20 @@ def download_road_network(
     # (skip-and-load) so later attempts touch only what's actually missing.
     max_state_retries = 5
     tile_frames = []
-    incomplete_tiles = []
+    incomplete_tiles: list[int] = []
     for state_attempt in range(1, max_state_retries + 1):
         effective_force_refresh = force_refresh if state_attempt == 1 else False
+        # Tiles that failed the previous pass must be re-fetched even when
+        # effective_force_refresh=False: their old stale cache from a prior run
+        # is still on disk (failed fetches never write a new cache), so without
+        # this the cache-hit check below would load the stale file instead of
+        # retrying the actual fetch.
+        retry_these = set(incomplete_tiles)
         tile_frames = []
         incomplete_tiles = []
         for i, tile in enumerate(tiles, start=1):
             tile_cache_path = tile_cache_dir / f"tile_{i:04d}.parquet"
-            if tile_cache_path.exists() and not effective_force_refresh:
+            if tile_cache_path.exists() and not effective_force_refresh and i not in retry_these:
                 log.info(
                     "  [tile %d/%d] cached at %s, skipping fetch", i, len(tiles), tile_cache_path
                 )
@@ -728,6 +734,19 @@ def build_spatial_features(
     df = accidents_df.copy()
     df["h3_cell"] = [assign_h3_cell(lat, lon, resolution) for lat, lon in zip(df["LAT"], df["LON"])]
     df = df.merge(cell_features, on="h3_cell", how="left")
+
+    still_incomplete = [
+        state for state in GERMAN_STATES if not _state_cache_path(osm_cache_dir, state).exists()
+    ]
+    if still_incomplete:
+        log.warning(
+            "%d state(s) still have unresolved tiles after all retry passes: %s — "
+            "NOT writing %s to avoid caching a partial result; re-run to complete them.",
+            len(still_incomplete),
+            still_incomplete,
+            out_path,
+        )
+        return df
 
     df.to_parquet(out_path, index=False)
     log.info("Saved spatially-enriched DataFrame → %s (%d rows)", out_path, len(df))
