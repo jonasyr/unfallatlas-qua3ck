@@ -1251,12 +1251,12 @@ else:
 # %%
 from unfallatlas.features.preprocessing import split_features_target_binary  # noqa: E402
 
+# Preserve UJAHR for GroupKFold (must be extracted before split_features_target_binary drops it)
+groups_train = train["UJAHR"].values
+
 X_train_bin, y_train_bin = split_features_target_binary(train)
 X_val_bin, y_val_bin = split_features_target_binary(val)
 X_test_bin, y_test_bin = split_features_target_binary(test)
-
-# Preserve UJAHR for GroupKFold (must be extracted before split_features_target_binary drops it)
-groups_train = train["UJAHR"].values
 
 print(
     f"KSI share — Train: {y_train_bin.mean():.3f}, Val: {y_val_bin.mean():.3f}, Test: {y_test_bin.mean():.3f}"
@@ -1278,8 +1278,8 @@ SUB_N = 500_000
 
 # Stratified subsample (stratify on 3-class UKATGEORIE to preserve share of class 1 in KSI)
 train_sub = train.sample(n=min(SUB_N, len(train)), random_state=SEED, stratify=train["UKATGEORIE"])
-X_sub, y_sub_bin = split_features_target_binary(train_sub)
 groups_sub = train_sub["UJAHR"].values
+X_sub, y_sub_bin = split_features_target_binary(train_sub)
 
 # Quick baseline on subsample
 pipeline_baseline = build_lightgbm_binary_pipeline(build_preprocessor())
