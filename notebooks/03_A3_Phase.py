@@ -1112,12 +1112,12 @@ print(f"Saved: {comparison_csv_path}")
 # > (Q-phase §11), and the limitations discussion.
 
 # %% [markdown]
-# ## §9 — 3-Class Ceiling: Empirical Evidence & Gate-Optimal Thresholding
+# ## 11 — 3-Class Ceiling: Empirical Evidence & Gate-Optimal Thresholding
 #
 # The champion `lightgbm_balanced` (Test-2024: macro-F1 = 0.362) misses the gate not because of an
 # implementation error but because of structural Bayes-limits in the 3-class formulation.
 # This section documents the empirical evidence and extracts the gate-optimal operating point
-# for the transition into §10.
+# for the transition into §12.
 #
 # **Findings:**
 # - 19 configurations, empirical maximum: macro-F1 = 0.424 (with Recall(1) = 0.212)
@@ -1211,7 +1211,7 @@ if offsets is not None:
     print()
     print("Fazit: Auch mit gate-optimalem Threshold erreicht die 3-Klassen-Formulierung")
     print(f"macro-F1 = {test_opt['macro_f1']:.3f} — deutlich unter der Schwelle 0.55.")
-    print("→ Reformulierung zu binärem KSI in §10.")
+    print("→ Reformulierung zu binärem KSI in §12.")
 else:
     print("Kein feasibler Offset gefunden — Gate für 3-Klassen-Formulierung nicht erreichbar.")
 
@@ -1228,7 +1228,7 @@ else:
 # The Pareto-front chart above shows: not a single one of the 19 tested points lies in the target
 # quadrant (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50). This is a **Bayes-ceiling**, not a tuning problem.
 #
-# **→ Solution: Binary KSI reformulation in §10.**
+# **→ Solution: Binary KSI reformulation in §12.**
 # Naively relabelling the existing champion predictions (KSI={1,2} vs. slight={3}) already yields
 # binary macro-F1 = 0.552. A directly trained binary model will surpass this by a significant margin.
 #
@@ -1295,7 +1295,6 @@ for k, v in baseline_bin.items():
     if k != "confusion_matrix":
         print(f"  {k}: {v:.4f}")
 print(f"  Gate passed: {meets_binary_acceptance_criteria(baseline_bin)}")
-
 
 # %%
 import optuna  # noqa: E402
