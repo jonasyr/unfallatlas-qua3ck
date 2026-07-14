@@ -1628,7 +1628,136 @@ print(f"\nConfusion Matrix:\n{cm.to_string()}")
 print(f"\nBinary gate passed: {gate_passed}")
 
 # %% [markdown]
-# ## 18 — Binary Artifacts: Save Pipeline & Model Card
+# ## 18 — Binary Multi-Objective Tuning & Calibration Refinement
+#
+# The technical review (`docs/project/Technical_Review_Next_Steps.md`, categories 1.4 and 2.3)
+# identified two levers never tried for the binary champion: tuning that optimises macro-F1 and
+# Recall(KSI) jointly (Pareto-aware) instead of macro-F1 alone, and probability calibration before
+# threshold search. This section attempts both, on `binary_champion_family` only (SS15's winner),
+# reusing the same param space, CV data, and 20-trial budget as SS16's single-objective tune.
+#
+# The multi-objective candidate is promoted to champion **only if it is at least as good as the
+# current champion on both Val-2023 macro-F1 and Val-2023 Recall(KSI)** — a strict non-regression
+# gate, never a trade-off. If it does not clear the gate, the negative result is reported honestly
+# and the SS16/SS17 champion is kept unchanged. Test-2024 is evaluated at most once, for whichever
+# pipeline ends up being final.
+
+# %%
+from sklearn.calibration import CalibratedClassifierCV  # noqa: E402
+
+from unfallatlas.models.evaluate import BINARY_RECALL_KSI_THRESHOLD  # noqa: E402
+
+
+def binary_multiobj_objective(trial):
+    params = param_space_fn(trial)
+    gkf = GroupKFold(n_splits=3)
+    fold_f1, fold_recall = [], []
+    for tr_idx, va_idx in gkf.split(X_cv, y_cv, groups=groups_cv):
+        p = build_champion_fn()
+        p.set_params(**params)
+        fit_kwargs = _binary_fit_kwargs(binary_champion_family, y_cv.iloc[tr_idx])
+        p.fit(X_cv.iloc[tr_idx], y_cv.iloc[tr_idx], **fit_kwargs)
+        pred = p.predict(X_cv.iloc[va_idx])
+        fold_f1.append(f1_score(y_cv.iloc[va_idx], pred, average="macro"))
+        fold_recall.append(recall_for_class(y_cv.iloc[va_idx], pred, target_class=1))
+    return float(np.mean(fold_f1)), float(np.mean(fold_recall))
+
+
+study_binary_mo = optuna.create_study(
+    directions=["maximize", "maximize"],
+    sampler=optuna.samplers.TPESampler(seed=SEED),
+    study_name=f"binary_{binary_champion_family}_multiobj",
+)
+study_binary_mo.optimize(binary_multiobj_objective, n_trials=OPTUNA_TRIALS, show_progress_bar=True)
+
+print(f"Multi-objective Pareto front: {len(study_binary_mo.best_trials)} trial(s).")
+
+pareto_rows = pd.DataFrame(
+    [
+        {"params": t.params, "macro_f1": t.values[0], "recall_ksi": t.values[1]}
+        for t in study_binary_mo.best_trials
+    ]
+)
+pareto_best_row = select_best_candidate(
+    pareto_rows, recall_threshold=BINARY_RECALL_KSI_THRESHOLD, recall_col="recall_ksi"
+)
+pareto_best_params = pareto_best_row["params"]
+print(f"Pareto-selected params: {pareto_best_params}")
+print(
+    f"Pareto-selected CV macro_f1={pareto_best_row['macro_f1']:.4f}  "
+    f"CV recall_ksi={pareto_best_row['recall_ksi']:.4f}"
+)
+
+X_refit_mo, y_refit_mo = BINARY_STAGE1_DATA[binary_champion_family]
+pipeline_binary_multiobj = build_champion_fn()
+pipeline_binary_multiobj.set_params(**{f"classify__{k}": v for k, v in pareto_best_params.items()})
+refit_fit_kwargs_mo = _binary_fit_kwargs(binary_champion_family, y_refit_mo)
+
+pipeline_binary_calibrated = CalibratedClassifierCV(
+    pipeline_binary_multiobj, method="isotonic", cv=3
+)
+pipeline_binary_calibrated.fit(X_refit_mo, y_refit_mo, **refit_fit_kwargs_mo)
+print(f"Calibrated refit of {binary_champion_family} on {len(y_refit_mo):,} rows complete.")
+
+y_val_scores_mo = pipeline_binary_calibrated.predict_proba(X_val_bin)[:, 1]
+best_threshold_mo, best_val_metrics_mo = find_best_binary_threshold(
+    y_val_bin.values, y_val_scores_mo
+)
+
+print(f"\nMulti-objective candidate — Val-2023 threshold: {best_threshold_mo:.4f}")
+print(f"Val-2023 macro-F1: {best_val_metrics_mo['macro_f1']:.4f}")
+print(f"Val-2023 recall(KSI): {best_val_metrics_mo['recall_ksi']:.4f}")
+
+promote_multiobj = (
+    best_val_metrics_mo["macro_f1"] >= best_f1_val
+    and best_val_metrics_mo["recall_ksi"] >= best_val_metrics["recall_ksi"]
+)
+
+if promote_multiobj:
+    print(
+        f"\nMulti-objective tuning + calibration improved the Val-2023 operating point "
+        f"(macro_f1 {best_f1_val:.4f} -> {best_val_metrics_mo['macro_f1']:.4f}, "
+        f"recall_ksi {best_val_metrics['recall_ksi']:.4f} -> "
+        f"{best_val_metrics_mo['recall_ksi']:.4f}); promoted to champion."
+    )
+    pipeline_binary_final = pipeline_binary_calibrated
+    best_threshold = best_threshold_mo
+    best_params = pareto_best_params
+    best_f1_val = best_val_metrics_mo["macro_f1"]
+    best_val_metrics = best_val_metrics_mo
+
+    y_test_scores_bin = pipeline_binary_final.predict_proba(X_test_bin)[:, 1]
+    y_test_pred_bin = (y_test_scores_bin >= best_threshold).astype(int)
+    metrics_binary_test = evaluate_binary_predictions(y_test_bin.values, y_test_pred_bin)
+    gate_passed = meets_binary_acceptance_criteria(metrics_binary_test)
+
+    print("\nBinary KSI — Test-2024 metrics (multi-objective champion):")
+    for k, v in metrics_binary_test.items():
+        if k != "confusion_matrix":
+            print(f"  {k}: {v:.4f}")
+    print(f"Binary gate passed: {gate_passed}")
+else:
+    print(
+        f"\nMulti-objective tuning + calibration did not improve on the Val-2023 front "
+        f"(macro_f1={best_val_metrics_mo['macro_f1']:.4f} vs {best_f1_val:.4f}, "
+        f"recall_ksi={best_val_metrics_mo['recall_ksi']:.4f} vs "
+        f"{best_val_metrics['recall_ksi']:.4f}); keeping the single-objective champion."
+    )
+
+multiobj_refinement_record = {
+    "attempted": True,
+    "promoted": bool(promote_multiobj),
+    "val_macro_f1": float(best_val_metrics_mo["macro_f1"]),
+    "val_recall_ksi": float(best_val_metrics_mo["recall_ksi"]),
+    "promotion_rule": (
+        "promoted iff multiobj Val-2023 macro_f1 >= single-objective champion's Val-2023 "
+        "macro_f1 AND multiobj Val-2023 recall_ksi >= single-objective champion's Val-2023 "
+        "recall_ksi (strict non-regression on both axes, Val-to-Val comparison only)"
+    ),
+}
+
+# %% [markdown]
+# ## 19 — Binary Artifacts: Save Pipeline & Model Card
 
 # %%
 import json  # noqa: E402
@@ -1675,6 +1804,7 @@ binary_model_card = {
     "test_2024_metrics": metrics_binary_test,
     "acceptance_gate": "binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50",
     "acceptance_gate_passed": bool(gate_passed),
+    "multiobjective_refinement": multiobj_refinement_record,
     "provenance": {
         "rows_train": int(len(y_train_bin)),
         "rows_val": int(len(y_val_bin)),
@@ -1720,7 +1850,7 @@ print(f"Binary champion-search front plot saved to {out_path}")
 
 
 # %% [markdown]
-# ## 19 — Results Summary: Binary KSI Classification
+# ## 20 — Results Summary: Binary KSI Classification
 #
 # The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation (§11), and
 # this time the binary champion was chosen via a genuine Stage 0/Stage 1 search across ten
