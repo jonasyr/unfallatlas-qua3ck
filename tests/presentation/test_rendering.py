@@ -551,3 +551,156 @@ def test_render_notebook_preserves_previous_html_when_final_replace_fails(
     assert result.error == "final HTML replace failed"
     assert target.read_bytes() == b"old html"
     assert not [path for path in target.parent.iterdir() if path != target]
+
+
+def test_render_notebook_publishes_and_rewrites_local_markdown_image(
+    tmp_path: Path,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    analysis.notebook.cells[0].source += "\n![Lokale Abbildung](local-image.png)"
+    source_before = copy.deepcopy(analysis.notebook)
+    image = analysis.source.parent / "local-image.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(b"local markdown image")
+    output_root = tmp_path / "site"
+
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        output_root,
+        repo_root=tmp_path,
+    )
+
+    assert result.error is None
+    rendered = BeautifulSoup(result.destination.read_text(encoding="utf-8"), "html.parser")
+    href = rendered.select_one('img[alt="Lokale Abbildung"]')["src"]
+    assert href.startswith("../assets/notebooks/renderer-integration/local/")
+    assert "://" not in href
+    assert (result.destination.parent / href).resolve().read_bytes() == image.read_bytes()
+    assert any(
+        asset.kind == "local-resource"
+        and output_root / asset.relative_path == (result.destination.parent / href).resolve()
+        for asset in result.assets
+    )
+    assert analysis.notebook == source_before
+    assert image.read_bytes() == b"local markdown image"
+
+
+def test_render_notebook_does_not_rewrite_already_published_asset_reference(
+    tmp_path: Path,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    analysis.notebook.cells[0].source += '\n<img alt="Published" src="../assets/existing.png">'
+    published = tmp_path / "site" / "assets" / "existing.png"
+    published.parent.mkdir(parents=True)
+    published.write_bytes(b"published")
+
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path,
+    )
+
+    assert result.error is None
+    rendered = BeautifulSoup(result.destination.read_text(encoding="utf-8"), "html.parser")
+    assert rendered.select_one('img[alt="Published"]')["src"] == "../assets/existing.png"
+    assert not [asset for asset in result.assets if asset.kind == "local-resource"]
+
+
+def test_render_notebook_rejects_published_asset_reference_that_traverses_assets(
+    tmp_path: Path,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    analysis.notebook.cells[0].source += '\n<img alt="Traversal" src="../assets/../../outside.png">'
+    (tmp_path / "outside.png").write_bytes(b"outside")
+
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path,
+    )
+
+    assert result.error is not None
+    assert "escapes output assets" in result.error
+    assert not result.destination.exists()
+
+
+def test_render_notebook_does_not_publish_or_rewrite_sandbox_srcdoc_resources(
+    tmp_path: Path,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    analysis.notebook.cells[1].outputs.append(
+        nbformat.v4.new_output(
+            "display_data",
+            data={"text/html": '<div><img src="inside-sandbox.png"></div>'},
+        )
+    )
+
+    result = render_notebook(analysis, _renderer_metadata(), tmp_path / "site")
+
+    assert result.error is None
+    rendered = BeautifulSoup(result.destination.read_text(encoding="utf-8"), "html.parser")
+    srcdoc = rendered.select_one("iframe.sandboxed-output")["srcdoc"]
+    assert 'src="inside-sandbox.png"' in srcdoc
+    assert not [asset for asset in result.assets if asset.kind == "local-resource"]
+
+
+@pytest.mark.parametrize("reference", ["missing.png", "../../outside.png"])
+def test_render_notebook_rejects_missing_or_repo_escaping_local_resources(
+    tmp_path: Path,
+    reference: str,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path / "repository")
+    analysis.notebook.cells[0].source += f"\n![Unsafe]({reference})"
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(b"outside")
+
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path / "repository",
+    )
+
+    assert result.error is not None
+    expected = "escapes repository" if reference.startswith("..") else "does not exist"
+    assert expected in result.error
+    assert not result.destination.exists()
+
+
+def test_render_notebook_error_retains_assets_from_completed_publication_phases(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import unfallatlas.presentation.rendering as rendering
+
+    def fail_preparation(*args, **kwargs):
+        del args, kwargs
+        raise OSError("preparation failed")
+
+    monkeypatch.setattr(rendering, "prepare_notebook_assets", fail_preparation)
+
+    result = rendering.render_notebook(
+        _renderer_analysis(tmp_path),
+        _renderer_metadata(),
+        tmp_path / "site",
+    )
+
+    assert result.error == "preparation failed"
+    assert {asset.kind for asset in result.assets} == {
+        "plotly-runtime",
+        "mathjax-runtime",
+        "ui-style",
+        "ui-script",
+    }
