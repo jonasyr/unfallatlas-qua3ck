@@ -16,12 +16,10 @@ from xgboost import XGBClassifier
 
 @lru_cache(maxsize=1)
 def gpu_available() -> bool:
-    """Auto-detect a usable CUDA GPU via ``nvidia-smi``.
+    """Return whether ``nvidia-smi`` reports a usable CUDA GPU.
 
-    Cached (per process) since this is a subprocess call and the answer
-    cannot change mid-run. Used as the default for every ``use_gpu=None``
-    builder argument below — pass ``use_gpu=True``/``False`` explicitly to
-    override auto-detection on a specific machine.
+    This is appropriate for XGBoost and CatBoost's CUDA GPU modes, but not
+    for LightGBM, whose ``device="gpu"`` path requires an OpenCL runtime.
     """
     try:
         result = subprocess.run(["nvidia-smi"], capture_output=True, timeout=5, check=False)
@@ -31,7 +29,18 @@ def gpu_available() -> bool:
 
 
 def _resolve_use_gpu(use_gpu: bool | None) -> bool:
+    """Use CUDA automatically for backends that support it directly."""
     return gpu_available() if use_gpu is None else use_gpu
+
+
+def _resolve_lightgbm_use_gpu(use_gpu: bool | None) -> bool:
+    """Keep LightGBM on CPU unless its OpenCL backend is explicitly requested.
+
+    ``nvidia-smi`` only verifies CUDA. It cannot verify that a compatible
+    OpenCL device is available, so using it for LightGBM auto-detection can
+    fail at fit time even on an otherwise GPU-capable machine.
+    """
+    return use_gpu is True
 
 
 class _ZeroIndexedXGBClassifier(BaseEstimator, ClassifierMixin):
@@ -115,10 +124,8 @@ def build_xgboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipelin
 
     ``use_gpu`` trains on CUDA (``device="cuda"``) instead of CPU — a
     machine-specific speed optimisation, not part of the reproducible
-    contract. ``None`` (default) auto-detects via ``gpu_available()``, so
-    results and runtime stay portable on machines without a CUDA GPU (e.g.
-    a grader's machine) without any code change; pass ``True``/``False``
-    to force a specific device.
+    contract. ``None`` (default) auto-detects CUDA; pass ``True`` or
+    ``False`` to override it for a specific machine.
     """
     resolved_use_gpu = _resolve_use_gpu(use_gpu)
     return Pipeline(
@@ -148,6 +155,47 @@ def build_xgboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipelin
     )
 
 
+def build_xgboost_binary_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipeline:
+    """Binary KSI vs. slight XGBoost classifier.
+
+    build_xgboost_pipeline hardcodes objective="multi:softprob"/num_class=3
+    for the 3-class UKATGEORIE target and wraps the estimator in
+    _ZeroIndexedXGBClassifier to remap {1,2,3} -> {0,1,2}. Neither applies
+    to the binary target: it is already zero-indexed ({0,1}), and forcing
+    a 3-class softprob objective on 2-class data lets XGBoost's argmax
+    return an index outside the fitted classes_ array (confirmed
+    empirically: IndexError inside _ZeroIndexedXGBClassifier.predict()
+    when build_xgboost_pipeline was reused as-is for the binary champion
+    search). This builder uses the plain binary objective and no wrapper.
+
+    XGBoost has no ``class_weight``; apply class weighting via
+    ``sample_weight`` at ``.fit()`` time (see build_xgboost_pipeline).
+    """
+    resolved_use_gpu = _resolve_use_gpu(use_gpu)
+    return Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            (
+                "classify",
+                XGBClassifier(
+                    n_estimators=300,
+                    max_depth=6,
+                    learning_rate=0.1,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    reg_lambda=1.0,
+                    objective="binary:logistic",
+                    random_state=42,
+                    n_jobs=-1,
+                    eval_metric="logloss",
+                    device="cuda" if resolved_use_gpu else "cpu",
+                    tree_method="hist",
+                ),
+            ),
+        ]
+    )
+
+
 def build_lightgbm_pipeline(
     preprocessor, class_weight: str | dict | None = "balanced", use_gpu: bool | None = None
 ) -> Pipeline:
@@ -160,10 +208,46 @@ def build_lightgbm_pipeline(
     ``use_gpu`` uses LightGBM's OpenCL GPU backend (``device="gpu"``) — the
     standard PyPI wheel supports this device without a custom build, unlike
     ``device="cuda"`` which needs a ``-DUSE_CUDA=1`` recompile. ``None``
-    (default) auto-detects via ``gpu_available()`` (see
-    ``build_xgboost_pipeline``); pass ``True``/``False`` to force a device.
+    (default) and ``False`` use CPU. A CUDA GPU reported by ``nvidia-smi``
+    is insufficient evidence for this OpenCL backend; pass ``True`` only
+    after verifying an OpenCL device is available to LightGBM.
     """
-    resolved_use_gpu = _resolve_use_gpu(use_gpu)
+    resolved_use_gpu = _resolve_lightgbm_use_gpu(use_gpu)
+    return Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            (
+                "classify",
+                LGBMClassifier(
+                    n_estimators=300,
+                    subsample=0.8,
+                    subsample_freq=1,
+                    colsample_bytree=0.8,
+                    reg_lambda=1.0,
+                    class_weight=class_weight,
+                    random_state=42,
+                    n_jobs=-1,
+                    verbosity=-1,
+                    device="gpu" if resolved_use_gpu else "cpu",
+                ),
+            ),
+        ]
+    )
+
+
+def build_lightgbm_binary_pipeline(
+    preprocessor,
+    class_weight: str | None = "balanced",
+    use_gpu: bool | None = None,
+) -> Pipeline:
+    """Binary KSI vs. slight classifier.
+
+    Identical architecture to build_lightgbm_pipeline (same regularisation,
+    subsampling, GPU detection). Uses class_weight='balanced' by default to
+    handle the 16.4% KSI minority. Suitable for sklearn set_params() calls
+    since there are no clone()-incompatible constructor arguments.
+    """
+    resolved_use_gpu = _resolve_lightgbm_use_gpu(use_gpu)
     return Pipeline(
         steps=[
             ("preprocess", preprocessor),
@@ -203,9 +287,8 @@ def build_catboost_pipeline(preprocessor, use_gpu: bool | None = None) -> Pipeli
     either.
 
     ``use_gpu`` sets ``task_type="GPU"`` — supported by the standard pip
-    wheel without a custom build. ``None`` (default) auto-detects via
-    ``gpu_available()`` (see ``build_xgboost_pipeline``); pass
-    ``True``/``False`` to force a device.
+    wheel without a custom build. ``None`` (default) auto-detects CUDA;
+    pass ``True`` or ``False`` to override it for a specific machine.
     """
     resolved_use_gpu = _resolve_use_gpu(use_gpu)
     return Pipeline(

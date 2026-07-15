@@ -58,6 +58,13 @@ optional-dependencies.geo = [
   "h3>=4",
   "osmnx>=1.9",
 ]
+optional-dependencies.presentation = [
+  "beautifulsoup4>=4.12,<5",
+  "nbconvert>=7.17,<8",
+]
+optional-dependencies.presentation-test = [
+  "playwright>=1.52,<2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = [
@@ -92,7 +99,10 @@ lint.isort.known-first-party = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing"
+addopts = '--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing -m "not browser"'
+markers = [
+  "browser: opt-in Playwright checks for exported presentation HTML",
+]
 
 [tool.jupytext]
 formats = "ipynb,py:percent"

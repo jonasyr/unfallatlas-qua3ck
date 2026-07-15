@@ -1,0 +1,160 @@
+{% extends 'basic/index.html.j2' %}
+
+{% block header %}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{ resources.presentation.title | e }}</title>
+  <link rel="stylesheet" href="{{ resources.presentation.style_href | e }}">
+  {% for css in resources.inlining.css %}<style>{{ css }}</style>{% endfor %}
+</head>
+<body
+  data-snapshot-sha256="{{ resources.presentation.snapshot_sha256 | e }}"
+  data-plotly-runtime="{{ resources.presentation.plotly_runtime_href | e }}"
+  data-mathjax-runtime="{{ resources.presentation.mathjax_runtime_href | e }}"
+>
+<a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
+<header class="presentation-header">
+  <div class="header-content">
+    <p class="document-kind">Unfallatlas Notebook</p>
+    <h1>{{ resources.presentation.title | e }}</h1>
+    <p class="source-path">{{ resources.presentation.source_path | e }}</p>
+    <dl class="metadata-grid">
+      <div><dt>Export</dt><dd>{{ resources.presentation.metadata.exported_at_local | e }}</dd></div>
+      <div><dt>Commit</dt><dd><code>{{ resources.presentation.metadata.git.short_commit | e }}</code></dd></div>
+      <div><dt>Branch</dt><dd>{{ resources.presentation.metadata.git.branch | e }}</dd></div>
+      <div><dt>Repository</dt><dd>{% if resources.presentation.metadata.git.dirty %}Arbeitsbaum geändert{% else %}Arbeitsbaum sauber{% endif %}</dd></div>
+      <div><dt>Status</dt><dd>{{ resources.presentation.status | e }}</dd></div>
+      <div><dt>Warnungen</dt><dd>{{ resources.presentation.warning_count }}</dd></div>
+      <div><dt>Ausführungsstand</dt><dd>{% if resources.presentation.execution_complete %}Vollständig{% else %}Unvollständig{% endif %}</dd></div>
+      <div><dt>Zellen</dt><dd>{{ resources.presentation.counts.markdown }} Markdown, {{ resources.presentation.counts.code }} Code</dd></div>
+      <div><dt>Ausgaben</dt><dd>{{ resources.presentation.counts.code_with_output }} mit Ausgabe, {{ resources.presentation.counts.error_outputs }} Fehlerausgabe</dd></div>
+    </dl>
+    {% if resources.presentation.findings %}
+    <section class="findings" aria-labelledby="findings-title">
+      <h2 id="findings-title">Hinweise zum Export</h2>
+      <ul>
+      {% for finding in resources.presentation.findings %}
+        <li data-severity="{{ finding.severity | e }}"><strong>{{ finding.code | e }}</strong>: {{ finding.message | e }}</li>
+      {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+</header>
+<div class="presentation-toolbar" aria-label="Ansichtssteuerung">
+  <button class="toc-trigger" type="button" data-action="toggle-toc" aria-controls="presentation-toc" aria-expanded="false">Inhalt</button>
+  <button type="button" data-action="show-all-code">Code öffnen</button>
+  <button type="button" data-action="hide-all-code">Code schließen</button>
+  <button type="button" data-action="show-all-output">Ausgaben öffnen</button>
+  <button type="button" data-action="hide-all-output">Ausgaben schließen</button>
+  <button type="button" data-action="print">Drucken</button>
+</div>
+<div class="presentation-shell">
+  <nav id="presentation-toc" class="toc" aria-label="Inhaltsverzeichnis">
+    <div class="toc-heading">
+      <h2>Inhalt</h2>
+      <button class="toc-close" type="button" data-action="close-toc">Schließen</button>
+    </div>
+    {% macro toc_list(nodes) %}
+    <ol>
+      {% for node in nodes %}
+      <li><a class="toc-link" href="#{{ node.anchor | e }}">{{ node.title | e }}</a>{% if node.children %}{{ toc_list(node.children) }}{% endif %}</li>
+      {% endfor %}
+    </ol>
+    {% endmacro %}
+    {{ toc_list(resources.presentation.toc | nest_toc) }}
+  </nav>
+  <main id="notebook-content" class="notebook-main" tabindex="-1">
+{% endblock header %}
+
+{% block codecell %}
+<article class="notebook-cell code-notebook-cell">
+{{ super() }}
+</article>
+{% endblock codecell %}
+
+{% block input_group %}
+<details class="code-cell">
+  <summary aria-expanded="false">Code</summary>
+  <div class="code-content">{{ super() }}</div>
+</details>
+{% endblock input_group %}
+
+{% block output_group %}
+<details class="output-cell" open>
+  <summary aria-expanded="true">Ausgabe</summary>
+  <div class="output-content">{{ super() }}</div>
+</details>
+{% endblock output_group %}
+
+{% block markdowncell scoped %}
+<section class="notebook-cell markdown-cell rendered_html">
+  {% if resources.should_sanitize_html %}
+    {% set html_value = cell.source | markdown2html | strip_files_prefix | clean_html %}
+  {% else %}
+    {% set html_value = cell.source | markdown2html | strip_files_prefix %}
+  {% endif %}
+  {{ html_value }}
+</section>
+{% endblock markdowncell %}
+
+{% block data_priority scoped %}
+{% set prepared = output.get('metadata', {}).get('unfallatlas_presentation', {}) %}
+{% if prepared.get('kind') == 'plotly' %}
+<div class="plotly-output"
+     id="{{ prepared.chart_id | e }}"
+     data-chart-id="{{ prepared.chart_id | e }}"
+     data-payload-key="{{ prepared.payload_key | e }}"
+     data-asset="{{ prepared.asset_href | e }}"
+     data-size-bytes="{{ prepared.size_bytes }}"
+     role="img"
+     aria-label="Interaktive Plotly-Grafik">
+  <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
+</div>
+{% elif prepared.get('kind') == 'image' %}
+<figure class="output-image">
+  <img src="{{ prepared.asset_href | e }}" alt="Notebook-Grafik" loading="lazy">
+</figure>
+{% else %}
+{{ super() }}
+{% endif %}
+{% endblock data_priority %}
+
+{% block data_html scoped %}
+{% set classified = output.data['text/html'] | classify_html_output %}
+{% if classified.kind == 'table' %}
+<div class="table-scroll" tabindex="0" aria-label="Tabelle mit horizontalem Bildlauf">{{ classified.content }}</div>
+{% else %}
+<iframe class="sandboxed-output" sandbox="" title="Isolierte Notebook-Ausgabe" srcdoc="{{ classified.content | e }}"></iframe>
+{% endif %}
+{% endblock data_html %}
+
+{% block stream_stdout %}
+<div class="text-output stream-output stdout-output"><pre>{{ output.text | ansi2html }}</pre></div>
+{% endblock stream_stdout %}
+
+{% block stream_stderr %}
+<div class="text-output stream-output stderr-output"><pre>{{ output.text | ansi2html }}</pre></div>
+{% endblock stream_stderr %}
+
+{% block data_text scoped %}
+<div class="text-output"><pre>{{ output.data['text/plain'] | ansi2html }}</pre></div>
+{% endblock data_text %}
+
+{% block error %}
+<div class="error-output" role="alert"><pre>{{ super() }}</pre></div>
+{% endblock error %}
+
+{% block footer %}
+  </main>
+</div>
+<button class="back-to-top" type="button" data-action="back-to-top">Nach oben</button>
+<p class="sr-only" aria-live="polite" data-status-region></p>
+<script src="{{ resources.presentation.script_href | e }}" defer></script>
+</body>
+</html>
+{% endblock footer %}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unfallatlas – Notebook-Präsentationen</title>
+  <link rel="stylesheet" href="{{ style_href }}">
+  <script src="{{ script_src }}" defer></script>
+</head>
+<body>
+  <main class="notebook-content">
+    <header>
+      <p class="eyebrow">Unfallatlas QUA³CK</p>
+      <h1>Notebook-Präsentationen</h1>
+      {% if manifest.generated_at %}<p>Stand: <time>{{ manifest.generated_at }}</time></p>{% endif %}
+    </header>
+    {% for title, rows in sections %}
+    <section aria-labelledby="section-{{ loop.index }}">
+      <h2 id="section-{{ loop.index }}">{{ title }}</h2>
+      <ul>
+        {% for row in rows %}
+        <li>
+          {% if row.link %}<a href="{{ row.link }}">{{ row.entry.title }}</a>{% else %}<span>{{ row.entry.title }}</span>{% endif %}
+          <small>{{ row.entry.status }} · {{ row.state }}</small>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </main>
+</body>
+</html>

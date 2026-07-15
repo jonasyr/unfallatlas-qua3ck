@@ -33,25 +33,25 @@
     },
     "lightgbm": {
       "model": "lightgbm_balanced",
-      "macro_f1": 0.3720417212391798,
-      "recall_class_1": 0.6207987346777383,
-      "recall_class_2": 0.4326896551724138,
-      "recall_class_3": 0.6149789928212395,
+      "macro_f1": 0.3719603176662725,
+      "recall_class_1": 0.620007908264136,
+      "recall_class_2": 0.4336551724137931,
+      "recall_class_3": 0.6143960828449594,
       "confusion_matrix": [
         [
-          1570,
-          676,
+          1568,
+          678,
           283
         ],
         [
-          10940,
-          18822,
-          13738
+          10942,
+          18864,
+          13694
         ],
         [
-          26264,
-          59603,
-          137152
+          26200,
+          59797,
+          137022
         ]
       ]
     }
@@ -76,8 +76,8 @@
         "min_child_samples": 33,
         "reg_lambda": 1.162336424475217
       },
-      "cv_macro_f1": 0.38680731936370705,
-      "cv_recall_class_1": 0.5871563062110662
+      "cv_macro_f1": 0.38680394200514123,
+      "cv_recall_class_1": 0.5866818103629048
     }
   },
   "tuned_hyperparameters": {
@@ -116,8 +116,8 @@
     "rows_train": 1554834,
     "rows_val": 269048,
     "rows_test": 268519,
-    "git_commit": "22d84a3",
-    "run_at_utc": "2026-07-09T07:10:03Z",
+    "git_commit": "e3827a3",
+    "run_at_utc": "2026-07-15T07:42:27Z",
     "random_seed": 42
   }
 }

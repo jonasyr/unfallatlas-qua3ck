@@ -1,11 +1,12 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, recall_score
 
 from unfallatlas.models.imbalance import (
     balanced_sample_weight,
     find_best_threshold_for_class,
+    find_gate_optimal_offsets,
     resample_adasyn,
     resample_smote,
 )
@@ -119,3 +120,66 @@ def test_find_best_threshold_for_class_detects_other_classes_index_swap():
     fallback = other_classes[np.argmax(other_proba, axis=1)]
     y_pred = np.where(y_proba[:, target_idx] >= threshold, 1, fallback)
     assert f1_score(y_true, y_pred, average="macro") == pytest.approx(0.7095238095238094)
+
+
+def test_find_gate_optimal_offsets_feasible_returns_offsets_that_satisfy_constraint():
+    # class 1 samples have second-highest P(1)=0.28 < P(3)=0.44 → default argmax gives class 3
+    y_true = np.array([1, 1, 2, 2, 3, 3, 3, 3])
+    y_proba = np.array(
+        [
+            [0.28, 0.28, 0.44],  # true=1, default pred=3
+            [0.28, 0.28, 0.44],  # true=1, default pred=3
+            [0.10, 0.70, 0.20],  # true=2
+            [0.10, 0.70, 0.20],  # true=2
+            [0.05, 0.05, 0.90],  # true=3
+            [0.05, 0.05, 0.90],  # true=3
+            [0.05, 0.05, 0.90],  # true=3
+            [0.05, 0.05, 0.90],  # true=3
+        ]
+    )
+    offsets, best_f1 = find_gate_optimal_offsets(
+        y_true, y_proba, classes=[1, 2, 3], recall_gate_class=1, recall_gate=0.50
+    )
+    assert offsets is not None, "Expected feasible offsets"
+    o1, o2 = offsets
+
+    # Verify the returned offsets actually satisfy the recall gate
+    logit = np.log(np.clip(y_proba, 1e-9, 1)).copy()
+    logit[:, [1, 2, 3].index(1)] += o1
+    logit[:, [1, 2, 3].index(2)] += o2
+    y_pred = np.array([1, 2, 3])[logit.argmax(1)]
+    r1 = recall_score(y_true, y_pred, labels=[1], average="macro")
+    assert r1 >= 0.50
+    assert best_f1 > 0.0
+
+
+def test_find_gate_optimal_offsets_infeasible_returns_none_offsets():
+    # recall_gate=1.01 is mathematically infeasible → offsets must be None
+    y_true = np.array([1, 2, 3])
+    y_proba = np.array([[0.8, 0.1, 0.1], [0.1, 0.8, 0.1], [0.1, 0.1, 0.8]])
+    offsets, best_f1 = find_gate_optimal_offsets(
+        y_true, y_proba, classes=[1, 2, 3], recall_gate=1.01
+    )
+    assert offsets is None
+    assert best_f1 >= 0.0  # still returns the unconstrained best
+
+
+def test_find_gate_optimal_offsets_returns_positive_or_zero_offsets():
+    # Offsets are additive boosts — they must never be negative (no penalising)
+    y_true = np.array([1, 1, 2, 2, 3, 3, 3, 3])
+    y_proba = np.array(
+        [
+            [0.28, 0.28, 0.44],
+            [0.28, 0.28, 0.44],
+            [0.10, 0.70, 0.20],
+            [0.10, 0.70, 0.20],
+            [0.05, 0.05, 0.90],
+            [0.05, 0.05, 0.90],
+            [0.05, 0.05, 0.90],
+            [0.05, 0.05, 0.90],
+        ]
+    )
+    offsets, _ = find_gate_optimal_offsets(y_true, y_proba, classes=[1, 2, 3])
+    if offsets is not None:
+        assert offsets[0] >= 0.0
+        assert offsets[1] >= 0.0

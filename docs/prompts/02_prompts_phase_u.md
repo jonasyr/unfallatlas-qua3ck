@@ -1,8 +1,14 @@
-# AI Prompt for Phase U
+# AI Prompt Records — Phase U
 
-## Build the U-Phase from the Q-Phase Contract
+## U-phase build-out
 
-**Claude Code (Sonnet 4.6) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
+**Tool:** Claude Code (Sonnet 4.6)<br>
+**Model release:** February 17, 2026<br>
+**Used:** May 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+
+### Recorded prompt
 ```markdown
 You are a senior Data Scientist, Machine Learning Engineer, curriculum designer, technical reviewer, and repository-quality documentation architect.
 
@@ -787,9 +793,16 @@ Do not paste the entire notebook into the final response unless explicitly reque
 
 ```
 
-## Final U-Phase Polish & Alignment Pass
+## U-phase polish and alignment
 
-**Claude Code (Sonnet 4.6) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
+**Tool:** Claude Code (Sonnet 4.6)<br>
+**Model release:** February 17, 2026<br>
+**Used:** May 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+**Related implementation plans:** [2026-05-26-u-phase-summary-update.md](../superpowers/plans/2026-05-26-u-phase-summary-update.md), [2026-05-26-update-glossary.md](../superpowers/plans/2026-05-26-update-glossary.md)
+
+### Recorded prompt
 
 ````md
 You are working in Claude Code with full repository access.
@@ -1594,203 +1607,28 @@ List unresolved issues, skipped validations, or plots that still need manual rev
 
 ````
 
-## U-Phase Addendum — OSM/H3 Road-Context Features
+## U-phase OSM/H3 road-context features
 
-**Claude Code (Sonnet 5) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
+**Tool:** Claude Code (Sonnet 5)<br>
+**Model release:** June 30, 2026<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+**Implementation plan:** [2026-07-06-u-phase-osm-spatial-features.md](../superpowers/plans/2026-07-06-u-phase-osm-spatial-features.md)
 
-### Initial prompt / context
+### Planning context
 
-Unlike the two entries above, this addendum was not produced from a single
-verbatim user instruction. It was developed in-conversation with the
-`superpowers:brainstorming` skill, followed by `superpowers:writing-plans`,
-in a session that picked up after the A³ champion-pivot follow-up plan (see
-`docs/prompts/03_prompts_phase_a3.md`) had already landed on this branch.
-`src/unfallatlas/features/spatial.py` and `src/unfallatlas/data/osm.py` had
-existed as empty stub files since the original project setup — `AGENTS.md`'s
-architecture map anticipated them, but neither was ever implemented. The
-user and Claude Code discussed giving the model a genuinely new predictive
-signal that the existing feature set entirely lacked — *where* an accident
-happened, beyond administrative region codes — by filling these stubs with
-OpenStreetMap road-network data aggregated per H3 hexagonal cell and joined
-to every accident. Following this project's established "U decides, A³
-implements" convention (already used for the DWD weather addendum earlier
-in this same file), the work was scoped as a U-phase task: add the feature
-source and document its preprocessing decision in an extended §10 table,
-but do not wire the new columns into A³'s `build_preprocessor()` or
-re-train any model — that was deliberately left for a separate, later plan
-(see the two A³ follow-up entries in `docs/prompts/03_prompts_phase_a3.md`).
+This addendum added OpenStreetMap road-context features aggregated by H3 cell to the U-phase preprocessing contract. It was developed in conversation with `superpowers:brainstorming` and `superpowers:writing-plans`, then implemented with `superpowers:subagent-driven-development`.
 
-The resulting task-by-task plan lives at
-`docs/superpowers/plans/2026-07-06-u-phase-osm-spatial-features.md`,
-implemented with the `superpowers:subagent-driven-development` skill. What
-follows is a summary of that plan's Goal, Architecture, and Global
-Constraints, plus a task-by-task outline — see the plan file for full
-code-level detail (exact function bodies, test code, notebook cell content).
+## U-phase OSM fetch OOM hotfix
 
-**Goal:** Add OpenStreetMap-derived road-context features (dominant road
-class, speed-limit statistics, road density, way count) to the U-phase
-preprocessing contract, aggregated per H3-8 hexagonal cell (~0.7 km²) and
-joined onto every accident by location — filling `spatial.py` and `osm.py`
-and giving A³ a genuinely new predictive signal the current feature set
-entirely lacks.
+**Tool:** Claude Code (Sonnet 5)<br>
+**Model release:** June 30, 2026<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+**Implementation plan:** External record at `~/.claude/plans/twinkly-tinkering-bachman.md` (not stored under `docs/superpowers/plans/`)
 
-**Architecture:** Two new library modules mirroring `unfallatlas.data.dwd`'s
-existing structure exactly:
-- `src/unfallatlas/features/spatial.py` — pure, network-free geometry/
-  aggregation functions (H3 cell assignment, `maxspeed` tag parsing, road-
-  class ranking, per-cell aggregation of a road GeoDataFrame). Fully
-  unit-testable with synthetic data.
-- `src/unfallatlas/data/osm.py` — network I/O: fetches Germany's road
-  network from OpenStreetMap via `osmnx`, originally in 16 per-Bundesland
-  queries (one per state, to avoid a single Overpass query timing out on
-  the whole country), each cached to `data/raw/osm/<state>.parquet`; a
-  `build_spatial_features()` orchestrator (mirrors
-  `unfallatlas.data.dwd.build_weather_features`'s signature and caching
-  pattern) joins the H3 aggregates onto the accident frame and caches the
-  combined result to `data/interim/accidents_with_weather_spatial.parquet`.
+### Planning context
 
-`notebooks/02_U_Phase.ipynb` gets new cells: run the enrichment, visualize
-the new features, run a leakage/temporal-consistency probe (mirroring the
-existing §9.4 conditional-entropy probe), and extend the §10 preprocessing
-decision table with the new columns.
-
-**Global Constraints (summary):**
-- U decides, A³ implements — this plan only adds a feature source and
-  documents its preprocessing decision; it does not touch `build_preprocessor()`.
-- No relitigating the existing §10 table — only append new rows/sections.
-- Compute budget: chunk the OSM fetch by the 16 Bundesländer (not one
-  whole-country Overpass query), caching each state's result immediately.
-- H3 resolution 8 (~0.7 km² hexagons), chosen to avoid sparse, noisy
-  per-cell aggregates in rural areas.
-- Known, documented (not solved) limitation: OSM reflects the present-day
-  road network, while accidents span 2016–2024.
-- `data/raw/` stays git-ignored; the combined `accidents_with_weather_spatial.parquet`
-  follows the existing `data/interim/*.parquet` Git LFS convention.
-- Every function in `src/unfallatlas/` gets a focused pytest test; the
-  actual network-bound Overpass/osmnx fetch is not directly unit-tested
-  (matches the existing `dwd.py` precedent), but every pure-logic piece
-  (parsing, cleaning, aggregation, cell assignment) is split out to be
-  synthetic-data-testable.
-- Notebook policy and code conventions unchanged from the rest of the project.
-
-**Tasks (see the plan file for full code/tests):**
-1. `spatial.py` — H3 cell assignment (`assign_h3_cell`) and OSM `maxspeed`
-   tag parsing (`parse_maxspeed`, `ROAD_CLASS_RANK`, `dominant_road_class`).
-2. `osm.py` — fetch and clean Germany's road network per Bundesland
-   (`GERMAN_STATES`, `_clean_road_gdf`, `download_road_network`).
-3. `spatial.py` — aggregate road geometry to H3 cells (`aggregate_roads_to_h3`),
-   producing `[h3_cell, osm_dominant_road_class, osm_maxspeed_mean,
-   osm_maxspeed_max, osm_road_density, osm_way_count]`.
-4. `build_spatial_features` orchestrator in `osm.py` + update
-   `load_training_frame()` in `preprocessing.py` to read the new combined cache.
-5. U-phase notebook: run the enrichment, add visualizations, add a §9.5
-   OSM consistency/leakage probe mirroring §9.4.
-6. Extend the U-phase §10 decision table with an "OSM road-context
-   features" subsection and add a 5th risk to the "Top-4 risks for A³" list.
-7. Documentation updates: `AGENTS.md` architecture block, `docs/GLOSSARY.md`
-   new terms (H3, OSM road-context features), a new `AI TOOL DISCLOSURE.md` row.
-8. Execute the U-phase notebook end-to-end and verify (16-state OSM fetch,
-   coverage check, consistency-probe pass, full test suite + lint, commit
-   the executed notebook and the new enriched cache).
-
----
-
-## U-Phase Addendum Follow-Up — OSM Fetch OOM Hotfix (Tiled Fetching)
-
-**Claude Code (Sonnet 5) (Effort: Medium) [AI_TOOL_DISCLOSURE.md](AI_TOOL_DISCLOSURE.md):**
-
-### Initial prompt / context
-
-This is a bugfix continuation of the OSM addendum immediately above, not a
-separately user-requested plan. During Task 8's live execution (running
-`notebooks/02_U_Phase.ipynb`'s new OSM enrichment cells end-to-end for the
-first time), fetching a whole large Bundesland's road network in one
-`osmnx` call reproducibly got the process **OOM-killed by the Linux
-kernel** after ~10 minutes — confirmed via `journalctl`
-(`Out of memory: Killed process ... anon-rss:27643136kB` ≈ 26.4 GiB) and
-directly observed live via `htop` (26.5 GB RSS, 98% system memory, heavy
-swapping). Two earlier fix attempts in the same session — switching from
-`osmnx.features.features_from_place` to `osmnx.graph_from_place`, and
-switching `simplify=False` → `simplify=True` — each addressed a real but
-insufficient issue and did not stop the OOM kill (see the plan file's
-"Context" section for the root-cause read of `osmnx`'s own source: it
-always builds the full, raw, unsimplified graph before ever simplifying,
-so `simplify=True` alone cannot bound peak memory). Claude Code's plan
-mode was used to design a proper fix — a differently-named plan file,
-written by Claude Code's plan-mode workflow rather than
-`superpowers:writing-plans`, stored at `~/.claude/plans/twinkly-tinkering-bachman.md`
-(outside this repository's own `docs/superpowers/plans/` directory, hence
-the unrelated filename) — then implemented with
-`superpowers:subagent-driven-development`.
-
-**Goal:** Fetch and process each state's road network in geographic tiles
-small enough that peak memory per tile stays in the hundreds-of-MB range —
-never materializing a whole large state's raw graph at once — then combine
-tiles' outputs into the same per-state cached GeoDataFrame shape as before,
-so nothing downstream of `download_road_network` changes. A second,
-related risk found during design review had to be fixed in the same pass:
-`aggregate_roads_to_h3`'s nested per-vertex Python loop had never actually
-been exercised at a large state's real scale (the fetch always OOM'd
-first) and was independently estimated at 75–160 million per-vertex loop
-iterations for Baden-Württemberg alone — a plausible second OOM or
-multi-hour hang once the fetch itself was fixed.
-
-**Architecture:**
-- `src/unfallatlas/data/osm.py`: a new pure, network-free `_grid_tiles()`
-  helper splits a state's bounding box into a grid of ≤0.2°×0.2° tiles
-  (index-count-based, not an accumulating float loop, to avoid drift); a
-  new `_fetch_tile_edges()` helper fetches one tile via
-  `ox.graph_from_bbox(..., simplify=True, retain_all=True,
-  truncate_by_edge=True)`. `truncate_by_edge=True` is a required
-  correctness fix (not just a memory one): the default would silently drop
-  boundary-crossing edges in a grid-aligned pattern; the tradeoff is exact
-  duplication of boundary edges across neighboring tiles, resolved by a
-  post-concatenation dedup keyed on `(highway, maxspeed, geometry-as-WKB)`.
-  `download_road_network()` is rewritten to loop over tiles instead of
-  issuing one whole-state `graph_from_place()` call, then cache to parquet
-  exactly as before.
-- `src/unfallatlas/features/spatial.py`: `aggregate_roads_to_h3()`'s nested
-  `iterrows()`/per-vertex-dict-append loop is replaced with a vectorized
-  implementation using `shapely.get_coordinates(..., return_index=True)`
-  plus numpy indexing for per-way `highway`/`maxspeed` lookups, with H3
-  cell assignment as the only remaining necessarily-per-point step. The
-  function's public signature, output columns, and documented aggregation
-  semantics are unchanged — this is a performance refactor only, and the
-  plan requires every existing `aggregate_roads_to_h3` test to keep passing
-  unmodified as the primary correctness check.
-
-**Global Constraints (summary):** tile size fixed at 0.2° (validated against
-an empirically-safe Frankfurt-am-Main reference, ~550 km²/654 MB
-unsimplified, giving roughly a 40x safety margin under the 26 GB OOM
-threshold); no change to `build_spatial_features`'s or the notebook's call
-signatures — only `download_road_network`'s internals and
-`aggregate_roads_to_h3`'s internals change; a dedicated single-state,
-live-monitored (`free`/`htop`) verification run against Baden-Württemberg
-(the state that had already OOM'd twice) is required before trusting the
-fix across all 16 states unattended.
-
-**Tasks (see the plan file for full code):**
-1. `_grid_tiles()` in `osm.py` (pure, unit-tested: sub-tile bbox, exact
-   multiple, non-evenly-divisible remainder, degenerate-input `ValueError`,
-   plus a general "union of tiles reconstructs the original bbox" invariant).
-2. `_fetch_tile_edges()` in `osm.py` (network-bound, not directly unit-tested,
-   matching the existing `download_road_network` precedent).
-3. Rewrite `download_road_network()` to tile, fetch per tile, concatenate,
-   clean, dedup, and cache — same output shape as before.
-4. Vectorize `aggregate_roads_to_h3()` in `spatial.py` without changing its
-   public behavior; existing tests must pass unmodified.
-5. Verification: full test suite + ruff, then a single monitored
-   Baden-Württemberg fetch-and-aggregate run watching live memory usage
-   through both the tiled fetch stage and the vectorized aggregation stage,
-   before proceeding to the full 16-state run.
-
-Later live-execution hardening on top of this fix (per-tile caching with a
-`_TransientFetchError` distinction between "retry later" and "confirmed
-empty," a state-level retry loop, and adaptive ETA logging for an
-unattended overnight run) is recorded in `docs/osm-feature-retrospective.md`
-rather than in a separate formal plan document. The first fully successful
-16-state run (2026-07-09, after this fix) fetched 2,546 tiles across all 16
-states and joined OSM road-context features onto all 2,092,401 accident
-rows, with 100% coverage for road class/density/way-count and 96.2%
-coverage for maxspeed.
-````
+This continuation replaced memory-intensive whole-state OSM fetches with tiled fetching and vectorized H3 aggregation after reproducible OOM failures. Later production hardening and the executed result are recorded in `docs/osm-feature-retrospective.md`.

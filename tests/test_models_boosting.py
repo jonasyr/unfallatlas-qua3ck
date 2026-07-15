@@ -5,8 +5,10 @@ from sklearn.base import clone
 from unfallatlas.features.preprocessing import build_preprocessor
 from unfallatlas.models.boosting import (
     build_catboost_pipeline,
+    build_lightgbm_binary_pipeline,
     build_lightgbm_pipeline,
     build_random_forest_pipeline,
+    build_xgboost_binary_pipeline,
     build_xgboost_pipeline,
     gpu_available,
 )
@@ -142,9 +144,57 @@ def test_gpu_available_returns_bool_and_is_consistent():
     assert gpu_available() == result  # lru_cache'd, must be stable within a process
 
 
+def test_lightgbm_defaults_to_cpu_without_opencl_auto_detection():
+    """A CUDA GPU alone does not prove LightGBM can use its OpenCL backend."""
+    lgbm = build_lightgbm_pipeline(build_preprocessor()).named_steps["classify"]
+    assert lgbm.get_params()["device"] == "cpu"
+
+
+def test_build_lightgbm_binary_pipeline_fits_and_predicts_binary():
+    X, y3 = _toy_X_y(n=120)
+    # Binary target: 1 if original label == 1 or 2, else 0
+    y_bin = (np.array(y3) <= 2).astype(int)
+    preprocessor = build_preprocessor()
+    pipeline = build_lightgbm_binary_pipeline(preprocessor)
+    pipeline.fit(X, y_bin)
+    preds = pipeline.predict(X)
+    assert set(np.unique(preds)) <= {0, 1}
+    proba = pipeline.predict_proba(X)
+    assert proba.shape == (len(X), 2)
+    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-6)
+
+
+def test_build_xgboost_binary_pipeline_fits_and_predicts_binary():
+    """Regression test for a real bug found via live execution: reusing
+    build_xgboost_pipeline (hardcoded objective='multi:softprob', num_class=3)
+    for a binary {0,1} target makes _ZeroIndexedXGBClassifier.predict() raise
+    IndexError, because argmax over 3 phantom classes can return index 2,
+    which is out of range for a 2-element classes_ array. This builder must
+    fit and predict binary labels without that wrapper or that objective."""
+    X, y3 = _toy_X_y(n=120)
+    y_bin = (np.array(y3) <= 2).astype(int)
+    preprocessor = build_preprocessor()
+    pipeline = build_xgboost_binary_pipeline(preprocessor)
+    pipeline.fit(X, y_bin)
+    preds = pipeline.predict(X)
+    assert set(np.unique(preds)) <= {0, 1}
+    proba = pipeline.predict_proba(X)
+    assert proba.shape == (len(X), 2)
+    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-6)
+
+
+def test_build_lightgbm_binary_pipeline_set_params_works():
+    X, y3 = _toy_X_y(n=60)
+    y_bin = (np.array(y3) <= 2).astype(int)
+    preprocessor = build_preprocessor()
+    pipeline = build_lightgbm_binary_pipeline(preprocessor)
+    pipeline.set_params(classify__n_estimators=50)
+    pipeline.fit(X, y_bin)
+    assert pipeline.named_steps["classify"].n_estimators == 50
+
+
 def test_builders_accept_explicit_use_gpu_false_forcing_cpu():
-    """use_gpu=False must always work, regardless of what's auto-detected on
-    this machine — this is the portability guarantee for non-GPU machines."""
+    """use_gpu=False must always force CPU, regardless of local hardware."""
     X, y = _toy_X_y()
     preprocessor = build_preprocessor()
 

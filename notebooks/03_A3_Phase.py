@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.19.3
 #   kernelspec:
-#     display_name: unfallatlas-qua3ck
+#     display_name: unfallatlas-qua3ck (3.13.11)
 #     language: python
 #     name: python3
 # ---
@@ -127,9 +127,9 @@ def _git_short_sha():
 # ### GPU acceleration (optional, machine-specific — not part of the reproducible contract)
 #
 # `USE_GPU` controls XGBoost/LightGBM/CatBoost's training device:
-# - `None` (default) — auto-detect via `nvidia-smi`; falls back to CPU with
-#   no code change on a machine without a CUDA GPU (e.g. a grader's).
-# - `True` — force GPU (fails loudly if no compatible GPU/driver is present).
+# - `None` (default) — auto-detect CUDA for XGBoost and CatBoost. LightGBM
+#   stays on CPU because its GPU mode requires a separately compatible OpenCL runtime.
+# - `True` — force GPU; LightGBM fails loudly if no compatible OpenCL device is present.
 # - `False` — force CPU everywhere, even if a GPU is available.
 #
 # Random Forest and Logistic Regression always run on CPU (scikit-learn has
@@ -137,7 +137,7 @@ def _git_short_sha():
 # project does not depend on).
 
 # %%
-USE_GPU = None  # None = auto-detect, True = force GPU, False = force CPU
+USE_GPU = True  # Auto CUDA for XGBoost/CatBoost; CPU for LightGBM by default.
 
 _use_gpu_resolved = gpu_available() if USE_GPU is None else USE_GPU
 print(f"GPU acceleration: {'ON' if _use_gpu_resolved else 'OFF'}  (USE_GPU={USE_GPU})")
@@ -724,6 +724,13 @@ for family in candidate_families:
     _log_section6_done(f"{family}_ordinal", time.time() - _step_start, _section6_timing)
 
     comparison_df = pd.DataFrame(comparison_rows)
+    # Explicit allow-list, not a startswith(family) prefix match: the
+    # latter also matches f"{family}_default" (a Stufe-1 baseline row with
+    # no refit path in _build_pipeline_for below). Only the 4 strategies
+    # actually compared in this loop, plus the family's own already-known
+    # balanced candidate, are eligible to win. If a resampling/ordinal
+    # strategy wins, _build_pipeline_for falls back to balanced with a
+    # logged warning rather than crashing.
     _family_strategy_names = [
         f"{family}_smote",
         f"{family}_adasyn",
@@ -917,9 +924,17 @@ for family in candidate_families:
         avg = sum(_trial_durations) / len(_trial_durations)
         remaining = N_TRIALS_PER_FAMILY - (trial.number + 1)
         eta_min = (avg * remaining) / 60
+        # trial.value is None for PRUNED/FAILED trials - Optuna still invokes
+        # callbacks for those, so the progress logger must not assume a
+        # completed float here (confirmed via live execution: a later
+        # lightgbm trial crashed this callback with
+        # "unsupported format string passed to NoneType.__format__").
+        value_str = f"{trial.value:.3f}" if trial.value is not None else "N/A"
+        recall_val = trial.user_attrs.get("recall_class_1")
+        recall_str = f"{recall_val:.3f}" if recall_val is not None else "N/A"
         _log_progress(
             f"[Optuna {family} {trial.number + 1}/{N_TRIALS_PER_FAMILY}] "
-            f"trial macro-F1={trial.value:.3f} recall(1)={trial.user_attrs['recall_class_1']:.3f} "
+            f"trial macro-F1={value_str} recall(1)={recall_str} "
             f"in {elapsed:.1f}s ... ETA remaining: {eta_min:.1f} min"
         )
 
@@ -1103,3 +1118,890 @@ print(f"Saved: {comparison_csv_path}")
 # > `data/processed/`. Proceed to `04_C_Phase.ipynb` for SHAP-based
 # > explainability, benchmark comparison against the literature anchor
 # > (Q-phase §11), and the limitations discussion.
+
+# %% [markdown]
+# ## 11 — 3-Class Ceiling: Empirical Evidence & Gate-Optimal Thresholding
+#
+# The champion `lightgbm_balanced` (Test-2024: macro-F1 = 0.362) misses the gate not because of an
+# implementation error but because of structural Bayes-limits in the 3-class formulation.
+# This section documents the empirical evidence and extracts the gate-optimal operating point
+# for the transition into §12.
+#
+# **Findings:**
+# - 19 configurations, empirical maximum: macro-F1 = 0.424 (with Recall(1) = 0.212)
+# - Gate target (0.55 / 0.50) lies outside the entire Pareto front
+# - Cramér's V of the strongest features ≤ 0.13; severity shares uniform across all categories
+# - Arithmetic: F1(Class 1) = 0.46 requires ~90× Odds-Lift relative to 0.94 % base rate
+#
+
+# %%
+BASE = Path("..").resolve()
+MODEL_PATH = BASE / "data" / "processed" / "a3_best_model.joblib"
+
+pipeline_champion = joblib.load(MODEL_PATH)
+df = load_training_frame(BASE)
+train, val, test = chronological_split(df)
+
+X_val, y_val = split_features_target(val)
+X_test, y_test = split_features_target(test)
+
+y_val_proba = pipeline_champion.predict_proba(X_val)
+y_test_proba = pipeline_champion.predict_proba(X_test)
+classes = list(pipeline_champion.classes_)
+
+print(f"Champion classes: {classes}")
+print(f"Val proba shape: {y_val_proba.shape}")
+print("\nBaseline (argmax) Test-2024 metrics:")
+y_test_pred_argmax = pipeline_champion.predict(X_test)
+baseline = evaluate_predictions(y_test.values, y_test_pred_argmax)
+for k, v in baseline.items():
+    if k != "confusion_matrix":
+        print(f"  {k}: {v:.4f}")
+print(f"  Gate passed: {meets_acceptance_criteria(baseline)}")
+
+# %%
+import matplotlib.pyplot as plt  # noqa: E402
+
+from unfallatlas.viz.metrics_viz import plot_f1_recall_front  # noqa: E402
+
+comparison_df = pd.read_csv(BASE / "data" / "processed" / "a3_model_comparison.csv")
+print(f"Loaded {len(comparison_df)} model configurations from a3_model_comparison.csv")
+
+fig, ax = plt.subplots(figsize=(10, 6))
+plot_f1_recall_front(comparison_df, ax=ax, gate_f1=0.55, gate_recall=0.50)
+fig.tight_layout()
+
+out_path = BASE / "reports" / "figures" / "a3_f1_recall_front.png"
+out_path.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(out_path, dpi=150, bbox_inches="tight")
+plt.show()
+print(f"Front plot saved to {out_path}")
+
+# %%
+from unfallatlas.models.imbalance import find_gate_optimal_offsets  # noqa: E402
+
+offsets, best_constrained_f1 = find_gate_optimal_offsets(
+    y_val.values,
+    y_val_proba,
+    classes=classes,
+    recall_gate_class=1,
+    recall_gate=0.50,
+)
+
+print(f"Gate-optimal offsets (o1 for class 1, o2 for class 2): {offsets}")
+print(f"Best macro-F1 under recall(1)≥0.50 constraint on Val-2023: {best_constrained_f1:.4f}")
+
+if offsets is not None:
+    o1, o2 = offsets
+    logit = np.log(np.clip(y_val_proba, 1e-9, 1)).copy()
+    logit[:, classes.index(1)] += o1
+    logit[:, classes.index(2)] += o2
+    y_val_pred_opt = np.array(classes)[logit.argmax(1)]
+    val_opt = evaluate_predictions(y_val.values, y_val_pred_opt)
+    print("\nGate-optimal threshold — Val-2023 metrics:")
+    for k, v in val_opt.items():
+        if k != "confusion_matrix":
+            print(f"  {k}: {v:.4f}")
+
+# %%
+if offsets is not None:
+    o1, o2 = offsets
+    logit_test = np.log(np.clip(y_test_proba, 1e-9, 1)).copy()
+    logit_test[:, classes.index(1)] += o1
+    logit_test[:, classes.index(2)] += o2
+    y_test_pred_opt = np.array(classes)[logit_test.argmax(1)]
+    test_opt = evaluate_predictions(y_test.values, y_test_pred_opt)
+    print("Gate-optimal threshold — Test-2024 metrics:")
+    for k, v in test_opt.items():
+        if k != "confusion_matrix":
+            print(f"  {k}: {v:.4f}")
+    print(f"  Gate passed: {meets_acceptance_criteria(test_opt)}")
+    print()
+    print("Fazit: Auch mit gate-optimalem Threshold erreicht die 3-Klassen-Formulierung")
+    print(f"macro-F1 = {test_opt['macro_f1']:.3f} — deutlich unter der Schwelle 0.55.")
+    print("→ Reformulierung zu binärem KSI in §12.")
+else:
+    print("Kein feasibler Offset gefunden — Gate für 3-Klassen-Formulierung nicht erreichbar.")
+
+# %% [markdown]
+# ### Arithmetic Ceiling Argument
+#
+# For macro-F1 ≥ 0.55 with F1(Class 3) ≈ 0.72, Classes 1 and 2 must average **F1 ≈ 0.46**.
+#
+# For Class 1 (base rate 0.94 %): F1 = 0.46 with Recall ≥ 0.50 means Precision ≥ 0.42 —
+# a **~90× Odds-Lift** over the base rate. Features with Cramér's V ≤ 0.13
+# structurally cannot deliver this (physical determinants of severity such as impact speed,
+# vehicle mass, and occupant age are absent from the public Unfallatlas dataset).
+#
+# The Pareto-front chart above shows: not a single one of the 19 tested points lies in the target
+# quadrant (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50). This is a **Bayes-ceiling**, not a tuning problem.
+#
+# **→ Solution: Binary KSI reformulation in §12.**
+# Naively relabelling the existing champion predictions (KSI={1,2} vs. slight={3}) already yields
+# binary macro-F1 = 0.552. A directly trained binary model will surpass this by a significant margin.
+#
+
+# %% [markdown]
+# ## 12 — Binary KSI Reframing: Motivation & Target Definition
+#
+# §11 showed the 3-class gate (macro-F1 >= 0.55 AND Recall(class-1) >= 0.50) is a Bayes-ceiling, not
+# a tuning problem: not one of 19 tested configurations reaches the target quadrant, and the
+# arithmetic ceiling argument shows why. The revised, domain-standard framing (Santos 2022,
+# Pakgohar 2021, Schloessler 2024) collapses the three severity classes into a binary KSI (killed or
+# seriously injured, UKATGEORIE in {1,2}) vs. slight (UKATGEORIE = 3) target, with a same-shaped
+# gate: binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50.
+#
+# Unlike an earlier pass at this reframing, this section runs a genuine **champion search** on the
+# binary target (SS13-SS15) instead of assuming the 3-class champion family (LightGBM) transfers
+# unchanged - mirroring the same Stage 0/Stage 1/gate-aware-selection discipline SS3-SS5 already use
+# for the 3-class problem, with Support Vector Machines (`docs/course-material/Einheit 6 - Support
+# Vector Machines.md`) included as first-class candidate families from the start.
+#
+# **Scope note:** the imbalance-strategy layer from SS6 (SMOTE/ADASYN/threshold-moving/ordinal per
+# candidate family) is intentionally not repeated here. Binary KSI's positive rate (~17-20%) is far
+# milder than the 3-class minority's (~0.9-2%), so `class_weight="balanced"` alone is much less
+# likely to be the binding constraint, and re-deriving that layer's several hard-won edge-case fixes
+# for a binary-labeled variant would substantially raise this section's risk for a speculative
+# benefit. Every candidate below is compared class-weighted/balanced only.
+#
+
+# %%
+from unfallatlas.features.preprocessing import split_features_target_binary  # noqa: E402
+
+X_train_bin, y_train_bin = split_features_target_binary(train)
+X_val_bin, y_val_bin = split_features_target_binary(val)
+X_test_bin, y_test_bin = split_features_target_binary(test)
+
+print(
+    f"KSI share — Train: {y_train_bin.mean():.3f}, Val: {y_val_bin.mean():.3f}, Test: {y_test_bin.mean():.3f}"
+)
+print(f"Rows — Train: {len(y_train_bin):,}, Val: {len(y_val_bin):,}, Test: {len(y_test_bin):,}")
+
+# %% [markdown]
+# ## 13 — Binary Champion Search: Stage 0 Baselines
+#
+# Random guess and majority class establish the binary macro-F1 floor; Logistic Regression is the
+# first non-trivial benchmark - mirrors SS3's role for the 3-class problem, on the relabelled target.
+#
+
+# %%
+from unfallatlas.models.evaluate import (  # noqa: E402
+    evaluate_binary_predictions,
+    meets_binary_acceptance_criteria,
+)
+
+binary_comparison_rows: list[dict] = []
+
+
+def _score_binary_on_validation(
+    name: str, fitted_estimator, family: str | None = None, n_train: int | None = None
+) -> None:
+    preds = fitted_estimator.predict(X_val_bin)
+    metrics = evaluate_binary_predictions(y_val_bin.values, preds)
+    binary_comparison_rows.append(
+        {"model": name, "family": family or name, **metrics, "n_train": n_train}
+    )
+    print(f"{name:30s} macro-F1={metrics['macro_f1']:.3f}  recall(KSI)={metrics['recall_ksi']:.3f}")
+
+
+BINARY_CHECKPOINT_DIR = CHECKPOINT_DIR / "binary"
+BINARY_CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _load_or_fit_binary(name: str, fit_callable):
+    """Checkpoint helper for the binary champion search - separate namespace
+    (BINARY_CHECKPOINT_DIR) from the 3-class checkpoints, so e.g. a 3-class
+    'lightgbm_balanced.joblib' and a binary one never collide."""
+    path = BINARY_CHECKPOINT_DIR / f"{name}.joblib"
+    if path.exists():
+        _log_progress(f"  -> {name}: loaded from binary checkpoint ({path.name})")
+        return joblib.load(path)
+    start = time.time()
+    model = fit_callable()
+    elapsed = time.time() - start
+    joblib.dump(model, path)
+    _log_progress(f"  -> {name} done in {elapsed:.1f}s")
+    return model
+
+
+linear_preprocessor_bin = build_preprocessor(scale_for_linear=True)
+
+binary_stage0_specs = [
+    ("binary_random_guess", lambda: build_random_guess_classifier()),
+    ("binary_majority_class", lambda: build_majority_class_classifier()),
+    ("binary_logistic_regression", lambda: build_logreg_pipeline(linear_preprocessor_bin)),
+]
+
+_log_progress(f"Starting binary Stage 0: {len(binary_stage0_specs)} baselines.")
+for _name, _build_fn in binary_stage0_specs:
+    _model = _load_or_fit_binary(
+        _name, lambda _build_fn=_build_fn: _build_fn().fit(X_train_bin, y_train_bin)
+    )
+    # random_guess/majority_class don't fit data-dependent parameters, so
+    # n_train stays None for them (matches Stage 1's NaN treatment of
+    # baselines); logistic_regression genuinely fits on the full training
+    # set, so its provenance should say so instead of silently reading NaN.
+    _n_train = len(X_train_bin) if _name == "binary_logistic_regression" else None
+    _score_binary_on_validation(_name, _model, n_train=_n_train)
+_log_progress("Binary Stage 0 complete.")
+
+# %% [markdown]
+# ## 14 — Binary Champion Search: Stage 1 Candidates (Trees + SVM)
+#
+# Mirrors SS4's role for the 3-class problem: every tree-ensemble family (Random Forest, XGBoost,
+# LightGBM, CatBoost), class-weighted/balanced, trained on the full 2016-2022 training set - plus,
+# new to this project, three SVM variants (`docs/course-material/Einheit 6 - Support Vector
+# Machines.md`): `LinearSVC` and hinge-loss `SGDClassifier` (both linear, scaled features), and
+# `SVC(kernel="rbf")` (the actual kernel trick). SVC's O(m^2)-O(m^3) fit complexity makes the full
+# 1,554,834-row training set infeasible, so it trains on a further 8,000-row stratified subsample;
+# LinearSVC uses the same 500,000-row stratified subsample as the tree families' Optuna tuning in
+# SS16; SGDClassifier, being O(m x n) and incremental-friendly, trains on the full set like the tree
+# ensembles.
+#
+
+# %%
+from sklearn.metrics import f1_score  # noqa: E402
+from sklearn.model_selection import train_test_split  # noqa: E402
+
+from unfallatlas.models.boosting import (  # noqa: E402
+    build_lightgbm_binary_pipeline,
+    build_xgboost_binary_pipeline,
+)
+from unfallatlas.models.svm import (  # noqa: E402
+    build_linear_svm_binary_pipeline,
+    build_rbf_svm_binary_pipeline,
+    build_sgd_hinge_binary_pipeline,
+)
+
+SEED = 42
+SUB_N = 500_000
+
+# Stratified subsample for LinearSVC and for Optuna tuning in SS16 (stratify
+# on 3-class UKATGEORIE to preserve the KSI share).
+sub_n = min(SUB_N, len(train))
+if sub_n < len(train):
+    train_sub, _ = train_test_split(
+        train, train_size=sub_n, random_state=SEED, stratify=train["UKATGEORIE"]
+    )
+else:
+    train_sub = train
+groups_sub = train_sub["UJAHR"].values
+X_sub, y_sub_bin = split_features_target_binary(train_sub)
+
+# Further stratified subsample for the RBF kernel (Einheit 6 SS9/SS10: O(m^2)-O(m^3)).
+train_svc_sub, _ = train_test_split(
+    train_sub, train_size=8_000, random_state=SEED, stratify=train_sub["UKATGEORIE"]
+)
+groups_svc_sub = train_svc_sub["UJAHR"].values
+X_svc_sub, y_svc_sub = split_features_target_binary(train_svc_sub)
+
+tree_preprocessor_bin = build_preprocessor(scale_for_linear=False)
+
+BINARY_BUILDERS = {
+    "random_forest": lambda: build_random_forest_pipeline(
+        tree_preprocessor_bin, class_weight="balanced"
+    ),
+    "xgboost": lambda: build_xgboost_binary_pipeline(
+        tree_preprocessor_bin, use_gpu=_use_gpu_resolved
+    ),
+    "lightgbm": lambda: build_lightgbm_binary_pipeline(tree_preprocessor_bin),
+    "catboost": lambda: build_catboost_pipeline(tree_preprocessor_bin, use_gpu=_use_gpu_resolved),
+    "svm_linear": lambda: build_linear_svm_binary_pipeline(linear_preprocessor_bin),
+    "svm_sgd": lambda: build_sgd_hinge_binary_pipeline(linear_preprocessor_bin),
+    "svm_rbf": lambda: build_rbf_svm_binary_pipeline(linear_preprocessor_bin),
+}
+
+# (X, y) each family's Stage-1 fit uses - full train for everything except
+# the two subsampled SVM variants (Einheit 6 SS10 complexity table).
+BINARY_STAGE1_DATA = {
+    "random_forest": (X_train_bin, y_train_bin),
+    "xgboost": (X_train_bin, y_train_bin),
+    "lightgbm": (X_train_bin, y_train_bin),
+    "catboost": (X_train_bin, y_train_bin),
+    "svm_linear": (X_sub, y_sub_bin),
+    "svm_sgd": (X_train_bin, y_train_bin),
+    "svm_rbf": (X_svc_sub, y_svc_sub),
+}
+
+
+def _binary_fit_kwargs(family: str, y_fit) -> dict:
+    """xgboost/catboost have no class_weight constructor kwarg - balanced
+    weighting is applied via sample_weight at fit time instead, exactly
+    like the 3-class xgboost_balanced/catboost_balanced pattern in SS4."""
+    if family in ("xgboost", "catboost"):
+        return {"classify__sample_weight": balanced_sample_weight(y_fit)}
+    return {}
+
+
+_log_progress(f"Starting binary Stage 1: {len(BINARY_BUILDERS)} candidate families.")
+for _family, _build_fn in BINARY_BUILDERS.items():
+    _X_fit, _y_fit = BINARY_STAGE1_DATA[_family]
+    _fit_kwargs = _binary_fit_kwargs(_family, _y_fit)
+    _name = f"binary_{_family}_balanced"
+    _model = _load_or_fit_binary(
+        _name,
+        lambda _build_fn=_build_fn, _X_fit=_X_fit, _y_fit=_y_fit, _fit_kwargs=_fit_kwargs: (
+            _build_fn().fit(_X_fit, _y_fit, **_fit_kwargs)
+        ),
+    )
+    _score_binary_on_validation(_name, _model, family=_family)
+    binary_comparison_rows[-1]["n_train"] = len(_y_fit)
+_log_progress("Binary Stage 1 complete.")
+
+binary_comparison_df = pd.DataFrame(binary_comparison_rows)
+binary_comparison_df.sort_values("macro_f1", ascending=False)
+
+# %% [markdown]
+# ## 15 — Binary Champion Selection
+#
+# Gate-aware, exactly like SS5's rule for the 3-class problem (reusing the same
+# `select_best_candidate` function, generalised with a `recall_col` parameter for this binary-KSI
+# reuse): highest macro-F1 among Stage-1 candidates whose Recall(KSI) clears 0.50, falling back to
+# the highest combined score if none do. Baselines are excluded from the championship (they exist to
+# bound the floor, not compete for it) - same convention as SS5.
+#
+
+# %%
+stage1_only = binary_comparison_df[binary_comparison_df["family"].isin(BINARY_BUILDERS.keys())]
+binary_champion_row = select_best_candidate(stage1_only, recall_col="recall_ksi")
+binary_champion_family = binary_champion_row["family"]
+
+_log_progress(
+    f"Binary champion family (Stage 0/1 search): {binary_champion_family}  "
+    f"Val macro-F1={binary_champion_row['macro_f1']:.4f}  "
+    f"Val recall(KSI)={binary_champion_row['recall_ksi']:.4f}"
+)
+print(f"Binary champion family: {binary_champion_family}")
+print(f"  Val-2023 macro_f1:    {binary_champion_row['macro_f1']:.4f}")
+print(f"  Val-2023 recall_ksi:  {binary_champion_row['recall_ksi']:.4f}")
+stage1_only.sort_values("macro_f1", ascending=False)
+
+# %% [markdown]
+# ## 16 — Binary Hyperparameter Tuning (Optuna, winning family only)
+#
+# Only `binary_champion_family` (SS15) is tuned - mirrors SS7's per-family search-space pattern from
+# the 3-class problem, extended to cover all seven binary candidate families. 20 trials, 3-fold
+# GroupKFold-by-year, on the same subsample the family used for tuning speed; the winner is refit on
+# its full appropriate training scale afterward (SS17).
+#
+
+# %%
+import optuna  # noqa: E402
+from sklearn.model_selection import GroupKFold  # noqa: E402
+
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+OPTUNA_TRIALS = 20
+
+BINARY_PARAM_SPACES = {
+    "random_forest": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__max_depth": trial.suggest_int("max_depth", 5, 30),
+        "classify__min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 20),
+    },
+    "xgboost": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__max_depth": trial.suggest_int("max_depth", 3, 10),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "classify__reg_lambda": trial.suggest_float("reg_lambda", 0.5, 5.0, log=True),
+    },
+    "lightgbm": lambda trial: {
+        "classify__n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "classify__num_leaves": trial.suggest_int("num_leaves", 31, 127),
+        "classify__max_depth": trial.suggest_int("max_depth", 5, 12),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
+        "classify__min_child_samples": trial.suggest_int("min_child_samples", 20, 100),
+        "classify__reg_lambda": trial.suggest_float("reg_lambda", 0.1, 10.0, log=True),
+    },
+    "catboost": lambda trial: {
+        "classify__iterations": trial.suggest_int("iterations", 100, 500),
+        "classify__depth": trial.suggest_int("depth", 3, 10),
+        "classify__learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3, log=True),
+        "classify__l2_leaf_reg": trial.suggest_float("l2_leaf_reg", 1.0, 10.0, log=True),
+    },
+    "svm_linear": lambda trial: {"classify__C": trial.suggest_float("C", 1e-3, 1e2, log=True)},
+    "svm_sgd": lambda trial: {
+        "classify__alpha": trial.suggest_float("alpha", 1e-6, 1e-1, log=True)
+    },
+    "svm_rbf": lambda trial: {
+        "classify__C": trial.suggest_float("C", 1e-1, 1e2, log=True),
+        "classify__gamma": trial.suggest_float("gamma", 1e-3, 1e1, log=True),
+    },
+}
+
+# CV data per family - the same (X, y) Stage 1 used, plus year-groups for
+# GroupKFold. svm_rbf gets its own smaller groups array.
+BINARY_CV_DATA = {
+    "random_forest": (X_sub, y_sub_bin, groups_sub),
+    "xgboost": (X_sub, y_sub_bin, groups_sub),
+    "lightgbm": (X_sub, y_sub_bin, groups_sub),
+    "catboost": (X_sub, y_sub_bin, groups_sub),
+    "svm_linear": (X_sub, y_sub_bin, groups_sub),
+    "svm_sgd": (X_sub, y_sub_bin, groups_sub),
+    "svm_rbf": (X_svc_sub, y_svc_sub, groups_svc_sub),
+}
+
+X_cv, y_cv, groups_cv = BINARY_CV_DATA[binary_champion_family]
+build_champion_fn = BINARY_BUILDERS[binary_champion_family]
+param_space_fn = BINARY_PARAM_SPACES[binary_champion_family]
+
+
+def binary_champion_objective(trial):
+    params = param_space_fn(trial)
+    gkf = GroupKFold(n_splits=3)
+    fold_scores = []
+    for tr_idx, va_idx in gkf.split(X_cv, y_cv, groups=groups_cv):
+        p = build_champion_fn()
+        p.set_params(**params)
+        fit_kwargs = _binary_fit_kwargs(binary_champion_family, y_cv.iloc[tr_idx])
+        p.fit(X_cv.iloc[tr_idx], y_cv.iloc[tr_idx], **fit_kwargs)
+        pred = p.predict(X_cv.iloc[va_idx])
+        fold_scores.append(f1_score(y_cv.iloc[va_idx], pred, average="macro"))
+    return float(np.mean(fold_scores))
+
+
+study_binary = optuna.create_study(
+    direction="maximize",
+    sampler=optuna.samplers.TPESampler(seed=SEED),
+    study_name=f"binary_{binary_champion_family}",
+)
+study_binary.optimize(binary_champion_objective, n_trials=OPTUNA_TRIALS, show_progress_bar=True)
+
+print(f"\nTuned family: {binary_champion_family}")
+print(f"Best CV macro-F1: {study_binary.best_value:.4f}")
+print(f"Best params: {study_binary.best_params}")
+
+# %% [markdown]
+# ## 17 — Binary Refit, Gate-Optimal Threshold & Test-2024 Evaluation
+#
+# The tuned champion is refit on its full appropriate training scale (SS14's `BINARY_STAGE1_DATA`
+# entry for the family - the complete 2016-2022 training set for every family except the two
+# subsampled SVM variants), then thresholded via `find_best_binary_threshold` on Val-2023 (works
+# with either `predict_proba` or `decision_function`, so this step is family-agnostic), then
+# evaluated exactly once on Test-2024 - the single time this section touches the test set.
+#
+
+# %%
+from unfallatlas.models.evaluate import find_best_binary_threshold  # noqa: E402
+
+best_params = study_binary.best_params
+X_refit, y_refit = BINARY_STAGE1_DATA[binary_champion_family]
+
+pipeline_binary_final = build_champion_fn()
+pipeline_binary_final.set_params(**{f"classify__{k}": v for k, v in best_params.items()})
+refit_fit_kwargs = _binary_fit_kwargs(binary_champion_family, y_refit)
+pipeline_binary_final.fit(X_refit, y_refit, **refit_fit_kwargs)
+print(f"Refit {binary_champion_family} on {len(y_refit):,} rows complete.")
+
+if hasattr(pipeline_binary_final, "predict_proba"):
+    y_val_scores_bin = pipeline_binary_final.predict_proba(X_val_bin)[:, 1]
+else:
+    y_val_scores_bin = pipeline_binary_final.decision_function(X_val_bin)
+
+best_threshold, best_val_metrics = find_best_binary_threshold(y_val_bin.values, y_val_scores_bin)
+best_f1_val = best_val_metrics["macro_f1"]
+
+print(f"\nGate-optimal binary threshold (Val-2023): {best_threshold:.4f}")
+print(f"Val macro-F1 at optimal threshold: {best_f1_val:.4f}")
+print(f"Val recall(KSI) at optimal threshold: {best_val_metrics['recall_ksi']:.4f}")
+
+if hasattr(pipeline_binary_final, "predict_proba"):
+    y_test_scores_bin = pipeline_binary_final.predict_proba(X_test_bin)[:, 1]
+else:
+    y_test_scores_bin = pipeline_binary_final.decision_function(X_test_bin)
+y_test_pred_bin = (y_test_scores_bin >= best_threshold).astype(int)
+
+metrics_binary_test = evaluate_binary_predictions(y_test_bin.values, y_test_pred_bin)
+gate_passed = meets_binary_acceptance_criteria(metrics_binary_test)
+
+print("\nBinary KSI — Test-2024 metrics:")
+for k, v in metrics_binary_test.items():
+    if k != "confusion_matrix":
+        print(f"  {k}: {v:.4f}")
+
+cm = pd.DataFrame(
+    metrics_binary_test["confusion_matrix"],
+    index=["True KSI", "True slight"],
+    columns=["Pred KSI", "Pred slight"],
+)
+print(f"\nConfusion Matrix:\n{cm.to_string()}")
+print(f"\nBinary gate passed: {gate_passed}")
+
+# %% [markdown]
+# ## 18 — Binary Multi-Objective Tuning & Calibration Refinement
+#
+# The technical review (`docs/project/Technical_Review_Next_Steps.md`, categories 1.4 and 2.3)
+# identified two levers never tried for the binary champion: tuning that optimises macro-F1 and
+# Recall(KSI) jointly (Pareto-aware) instead of macro-F1 alone, and probability calibration before
+# threshold search. This section attempts both, on `binary_champion_family` only (SS15's winner),
+# reusing the same param space, CV data, and 20-trial budget as SS16's single-objective tune.
+#
+# The multi-objective candidate is promoted to champion **only if it is at least as good as the
+# current champion on both Val-2023 macro-F1 and Val-2023 Recall(KSI)** — a strict non-regression
+# gate, never a trade-off. If it does not clear the gate, the negative result is reported honestly
+# and the SS16/SS17 champion is kept unchanged. Test-2024 is evaluated at most once, for whichever
+# pipeline ends up being final.
+
+# %%
+from sklearn.calibration import CalibratedClassifierCV  # noqa: E402
+
+from unfallatlas.models.evaluate import BINARY_RECALL_KSI_THRESHOLD  # noqa: E402
+
+
+def binary_multiobj_objective(trial):
+    params = param_space_fn(trial)
+    gkf = GroupKFold(n_splits=3)
+    fold_f1, fold_recall = [], []
+    for tr_idx, va_idx in gkf.split(X_cv, y_cv, groups=groups_cv):
+        p = build_champion_fn()
+        p.set_params(**params)
+        fit_kwargs = _binary_fit_kwargs(binary_champion_family, y_cv.iloc[tr_idx])
+        p.fit(X_cv.iloc[tr_idx], y_cv.iloc[tr_idx], **fit_kwargs)
+        pred = p.predict(X_cv.iloc[va_idx])
+        fold_f1.append(f1_score(y_cv.iloc[va_idx], pred, average="macro"))
+        fold_recall.append(recall_for_class(y_cv.iloc[va_idx], pred, target_class=1))
+    return float(np.mean(fold_f1)), float(np.mean(fold_recall))
+
+
+study_binary_mo = optuna.create_study(
+    directions=["maximize", "maximize"],
+    sampler=optuna.samplers.TPESampler(seed=SEED),
+    study_name=f"binary_{binary_champion_family}_multiobj",
+)
+study_binary_mo.optimize(binary_multiobj_objective, n_trials=OPTUNA_TRIALS, show_progress_bar=True)
+
+print(f"Multi-objective Pareto front: {len(study_binary_mo.best_trials)} trial(s).")
+
+pareto_rows = pd.DataFrame(
+    [
+        {"params": t.params, "macro_f1": t.values[0], "recall_ksi": t.values[1]}
+        for t in study_binary_mo.best_trials
+    ]
+)
+pareto_best_row = select_best_candidate(
+    pareto_rows, recall_threshold=BINARY_RECALL_KSI_THRESHOLD, recall_col="recall_ksi"
+)
+pareto_best_params = pareto_best_row["params"]
+print(f"Pareto-selected params: {pareto_best_params}")
+print(
+    f"Pareto-selected CV macro_f1={pareto_best_row['macro_f1']:.4f}  "
+    f"CV recall_ksi={pareto_best_row['recall_ksi']:.4f}"
+)
+
+X_refit_mo, y_refit_mo = BINARY_STAGE1_DATA[binary_champion_family]
+pipeline_binary_multiobj = build_champion_fn()
+pipeline_binary_multiobj.set_params(**{f"classify__{k}": v for k, v in pareto_best_params.items()})
+refit_fit_kwargs_mo = _binary_fit_kwargs(binary_champion_family, y_refit_mo)
+
+pipeline_binary_calibrated = CalibratedClassifierCV(
+    pipeline_binary_multiobj, method="isotonic", cv=3
+)
+pipeline_binary_calibrated.fit(X_refit_mo, y_refit_mo, **refit_fit_kwargs_mo)
+print(f"Calibrated refit of {binary_champion_family} on {len(y_refit_mo):,} rows complete.")
+
+y_val_scores_mo = pipeline_binary_calibrated.predict_proba(X_val_bin)[:, 1]
+best_threshold_mo, best_val_metrics_mo = find_best_binary_threshold(
+    y_val_bin.values, y_val_scores_mo
+)
+
+print(f"\nMulti-objective candidate — Val-2023 threshold: {best_threshold_mo:.4f}")
+print(f"Val-2023 macro-F1: {best_val_metrics_mo['macro_f1']:.4f}")
+print(f"Val-2023 recall(KSI): {best_val_metrics_mo['recall_ksi']:.4f}")
+
+promote_multiobj = (
+    best_val_metrics_mo["macro_f1"] >= best_f1_val
+    and best_val_metrics_mo["recall_ksi"] >= best_val_metrics["recall_ksi"]
+)
+
+if promote_multiobj:
+    print(
+        f"\nMulti-objective tuning + calibration improved the Val-2023 operating point "
+        f"(macro_f1 {best_f1_val:.4f} -> {best_val_metrics_mo['macro_f1']:.4f}, "
+        f"recall_ksi {best_val_metrics['recall_ksi']:.4f} -> "
+        f"{best_val_metrics_mo['recall_ksi']:.4f}); promoted to champion."
+    )
+    pipeline_binary_final = pipeline_binary_calibrated
+    best_threshold = best_threshold_mo
+    best_params = pareto_best_params
+    best_f1_val = best_val_metrics_mo["macro_f1"]
+    best_val_metrics = best_val_metrics_mo
+
+    y_test_scores_bin = pipeline_binary_final.predict_proba(X_test_bin)[:, 1]
+    y_test_pred_bin = (y_test_scores_bin >= best_threshold).astype(int)
+    metrics_binary_test = evaluate_binary_predictions(y_test_bin.values, y_test_pred_bin)
+    gate_passed = meets_binary_acceptance_criteria(metrics_binary_test)
+
+    print("\nBinary KSI — Test-2024 metrics (multi-objective champion):")
+    for k, v in metrics_binary_test.items():
+        if k != "confusion_matrix":
+            print(f"  {k}: {v:.4f}")
+    print(f"Binary gate passed: {gate_passed}")
+else:
+    print(
+        f"\nMulti-objective tuning + calibration did not improve on the Val-2023 front "
+        f"(macro_f1={best_val_metrics_mo['macro_f1']:.4f} vs {best_f1_val:.4f}, "
+        f"recall_ksi={best_val_metrics_mo['recall_ksi']:.4f} vs "
+        f"{best_val_metrics['recall_ksi']:.4f}); keeping the single-objective champion."
+    )
+
+multiobj_refinement_record = {
+    "attempted": True,
+    "promoted": bool(promote_multiobj),
+    "val_macro_f1": float(best_val_metrics_mo["macro_f1"]),
+    "val_recall_ksi": float(best_val_metrics_mo["recall_ksi"]),
+    "promotion_rule": (
+        "promoted iff multiobj Val-2023 macro_f1 >= single-objective champion's Val-2023 "
+        "macro_f1 AND multiobj Val-2023 recall_ksi >= single-objective champion's Val-2023 "
+        "recall_ksi (strict non-regression on both axes, Val-to-Val comparison only)"
+    ),
+}
+
+# %% [markdown]
+# ## 19 — Binary Artifacts: Save Pipeline & Model Card
+
+# %%
+import json  # noqa: E402
+
+import joblib  # noqa: E402
+
+# compress=3: an uncompressed random_forest champion (180 estimators, depth
+# 23, refit on 1.55M rows) serialises to ~1.2GB - compress=3 cuts that to
+# ~0.4GB with no accuracy impact, keeping the repo/LFS artifact manageable.
+joblib.dump(
+    pipeline_binary_final,
+    BASE / "data" / "processed" / "a3_binary_best_model.joblib",
+    compress=3,
+)
+
+binary_comparison_df.to_csv(
+    BASE / "data" / "processed" / "a3_binary_model_comparison.csv", index=False
+)
+
+binary_model_card = {
+    "model_type": "binary_ksi_vs_slight",
+    "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
+    "champion_family": binary_champion_family,
+    "winning_strategy": f"binary_{binary_champion_family}_balanced",
+    "selection_rule": (
+        "Stage 0/1 champion search across random_guess, majority_class, logistic_regression, "
+        "random_forest, xgboost, lightgbm, catboost, svm_linear, svm_sgd, svm_rbf (all "
+        "class-weighted/balanced) on Val-2023; gate-aware selection via select_best_candidate("
+        "recall_col='recall_ksi') - highest macro-F1 among candidates with recall_ksi >= 0.50, "
+        "falling back to highest combined score if none clear the gate."
+    ),
+    "stage0_1_comparison": binary_comparison_df.drop(columns=["confusion_matrix"]).to_dict(
+        orient="records"
+    ),
+    "gate_reformulation_reason": (
+        "3-class gate (macro-F1 >= 0.55 AND Recall(class-1) >= 0.50) is unreachable with public "
+        "Unfallatlas features: empirical ceiling macro-F1 = 0.424 over 19 configurations, "
+        "Cramer's V <= 0.13 for strongest features, ~90x odds-lift required for class-1 precision. "
+        "KSI-vs-slight is the domain-standard framing (Santos 2022, Pakgohar 2021, Schloessler 2024)."
+    ),
+    "best_hyperparameters": best_params,
+    "optimal_threshold_val_2023": float(best_threshold),
+    "val_2023_macro_f1": float(best_f1_val),
+    "test_2024_metrics": metrics_binary_test,
+    "acceptance_gate": "binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50",
+    "acceptance_gate_passed": bool(gate_passed),
+    "multiobjective_refinement": multiobj_refinement_record,
+    "provenance": {
+        "rows_train": int(len(y_train_bin)),
+        "rows_val": int(len(y_val_bin)),
+        "rows_test": int(len(y_test_bin)),
+        "optuna_trials": OPTUNA_TRIALS,
+        "subsample_size_svm_linear_and_boosting_tuning": SUB_N,
+        "subsample_size_svm_rbf": len(y_svc_sub),
+        "run_at_utc": pd.Timestamp.now("UTC").isoformat(),
+        "random_seed": SEED,
+    },
+}
+
+with open(BASE / "data" / "processed" / "a3_binary_model_card.json", "w") as f:
+    json.dump(binary_model_card, f, indent=2, default=str)
+
+print("Saved:")
+print(f"  {BASE / 'data' / 'processed' / 'a3_binary_best_model.joblib'}")
+print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_card.json'}")
+print(f"  {BASE / 'data' / 'processed' / 'a3_binary_model_comparison.csv'}")
+
+# %%
+from unfallatlas.viz.metrics_viz import plot_binary_f1_recall_front  # noqa: E402
+
+plot_input_df = binary_comparison_df[
+    binary_comparison_df["family"].isin(list(BINARY_BUILDERS.keys()))
+][["model", "family", "macro_f1", "recall_ksi"]].copy()
+
+fig, ax = plt.subplots(figsize=(10, 6))
+plot_binary_f1_recall_front(
+    plot_input_df,
+    ax=ax,
+    gate_f1=0.55,
+    gate_recall=0.50,
+    title="Pareto Front: Macro-F1 vs. Recall(KSI) — binary champion search (Stage 0/1)",
+)
+fig.tight_layout()
+
+out_path = BASE / "reports" / "figures" / "a3_binary_f1_recall_front.png"
+out_path.parent.mkdir(parents=True, exist_ok=True)
+fig.savefig(out_path, dpi=150, bbox_inches="tight")
+plt.show()
+print(f"Binary champion-search front plot saved to {out_path}")
+
+
+# %% [markdown]
+# ## 20 — Binary KSI Evidence: Association & Feature Importance
+#
+# `docs/project/Technical_Review_Next_Steps.md` established Cramer's V <= 0.13 for the strongest
+# available feature against the *3-class* `UKATGEORIE` target. This section repeats that association
+# check directly against the binary KSI label used by this model, and reports the actual binary
+# champion's feature importances (when available), so the Test-2024 result below is contextualised
+# against the same feature-limitation evidence used for the 3-class ceiling argument (SS11), rather
+# than an inference carried over from the 3-class analysis.
+
+# %%
+from scipy.stats import chi2_contingency  # noqa: E402
+
+from unfallatlas.features.preprocessing import ONEHOT_COLUMNS  # noqa: E402
+
+
+def cramers_v(feature: pd.Series, target: pd.Series) -> float:
+    """Bias-corrected Cramer's V (Bergsma & Wicher, 2013) - same formula SS6 of the
+    U-phase notebook uses for the 3-class target, applied here to the binary label."""
+    confusion = pd.crosstab(feature, target)
+    n = confusion.values.sum()
+    if n == 0:
+        return float("nan")
+    chi2 = chi2_contingency(confusion, correction=False)[0]
+    phi2 = chi2 / n
+    r, k = confusion.shape
+    phi2c = max(0.0, phi2 - ((k - 1) * (r - 1)) / (n - 1))
+    rc = r - ((r - 1) ** 2) / (n - 1)
+    kc = k - ((k - 1) ** 2) / (n - 1)
+    denom = min(kc - 1, rc - 1)
+    return float("nan") if denom <= 0 else float(np.sqrt(phi2c / denom))
+
+
+y_binary_ksi_full = (df["UKATGEORIE"].astype(int) <= 2).astype(int)
+binary_cramers_v = {
+    col: cramers_v(df[col], y_binary_ksi_full) for col in ONEHOT_COLUMNS if col in df.columns
+}
+print("Cramer's V against the binary KSI label:")
+for col, v in sorted(binary_cramers_v.items(), key=lambda kv: -kv[1]):
+    print(f"  {col}: {v:.4f}")
+
+# %%
+classify_step = None
+if hasattr(pipeline_binary_final, "named_steps"):
+    classify_step = pipeline_binary_final.named_steps.get("classify")
+
+binary_top_importances = None
+importances = (
+    getattr(classify_step, "feature_importances_", None) if classify_step is not None else None
+)
+if importances is not None:
+    feature_names = pipeline_binary_final.named_steps["preprocess"].get_feature_names_out()
+    binary_top_importances = (
+        pd.Series(importances, index=feature_names).sort_values(ascending=False).head(15)
+    )
+    print("Top 15 feature importances (binary champion):")
+    print(binary_top_importances.to_string())
+else:
+    print(
+        "Feature importances not available for this pipeline "
+        "(calibrated wrapper or non-tree champion family)."
+    )
+
+# %% [markdown]
+# ### Evidence summary
+#
+# - **Association with the binary label.** The Cramer's V values above repeat the U-phase's
+#   association check directly against KSI-vs-slight rather than the 3-class label. If the strongest
+#   value is still well below the ~0.3-0.5 range typically needed for strong classification signal,
+#   this confirms — on this exact target — the same feature-limitation the 3-class ceiling argument
+#   (SS11) relies on: the available Unfallatlas columns (accident type/context, weather, road surface)
+#   carry only weak marginal association with injury severity, because the actual physical determinants
+#   (impact speed, occupant age, seatbelt use, vehicle mass) are not present in the public dataset.
+# - **Feature importances** (when available) show which of the weakly-associated features the
+#   champion leans on most; they cannot exceed the ceiling implied by the association numbers above no
+#   matter how the model weights them.
+# - **Literature context.** Comparable KSI-vs-slight studies report macro-F1 in the 0.60-0.65 range
+#   (Santos, 2022, ~0.60; Pakgohar, 2021, ~0.62; Schlossler, 2024, ~0.65), though `Technical_Review_
+#   Next_Steps.md` (S6, item 6) notes these are not perfectly comparable — they often include
+#   person/vehicle-level covariates unavailable here, or use different resampling/leakage conventions.
+#   This project's Test-2024 macro-F1 (see SS21) falls inside that published range, which is consistent
+#   with — not short of — the state of the art for this problem framing on comparable feature sets.
+
+# %% [markdown]
+# ## 21 — Results Summary: Binary KSI Classification
+#
+# The binary KSI reformulation overcomes the Bayes-ceiling of the 3-class formulation (§11), and
+# this time the binary champion was chosen via a genuine Stage 0/Stage 1 search across ten
+# candidates (three baselines, four tree-ensemble families, three SVM variants) rather than
+# inherited from the 3-class champion.
+#
+# **Binary champion: `random_forest`** (selected via `select_best_candidate(recall_col="recall_ksi")`
+# over the §14 Stage-1 comparison — see `data/processed/a3_binary_model_comparison.csv` for the
+# full ten-way table and `reports/figures/a3_binary_f1_recall_front.png` for the visual comparison).
+#
+# | Metric | Val-2023 | Test-2024 | Gate |
+# |---|---|---|---|
+# | macro-F1 | 0.6072 | **0.6026** | ≥ 0.55 ✅ |
+# | Recall(KSI) | 0.5173 | **0.5255** | ≥ 0.50 ✅ |
+# | Recall(slight) | — | 0.7615 | — |
+#
+# **Gate passed: True.** Both Test-2024 gate thresholds are cleared (macro-F1 0.6026 ≥ 0.55, Recall(KSI) 0.5255 ≥ 0.50).
+#
+# - **Model**: `random_forest`, class-weighted/balanced, tuned via Optuna (20 trials, 3-fold
+#   GroupKFold-by-year). Best CV macro-F1 during search: 0.6208. Winning hyperparameters:
+#   `{'n_estimators': 180, 'max_depth': 23, 'min_samples_leaf': 8}`.
+# - **Threshold**: gate-optimal decision threshold found via `find_best_binary_threshold` on
+#   Val-2023 (maximise macro-F1 subject to Recall(KSI) ≥ 0.50) → **0.4986**.
+# - **Runner-up candidates** (Stage 1, Val-2023 macro-F1): `xgboost` (0.5699, recall(KSI)=0.6824)
+#   and `lightgbm` (0.5662, recall(KSI)=0.6897) — random_forest leads on macro-F1 by ~0.03 over
+#   the nearest tree-ensemble runner-up, though both runners-up post noticeably higher recall(KSI).
+# - **Test-2024 confusion matrix** (rows = true, cols = predicted):
+#
+#   | | Pred KSI | Pred slight |
+#   |---|---|---|
+#   | True KSI | 23,228 | 20,970 |
+#   | True slight | 53,506 | 170,815 |
+# - **Test-2024 evaluation performed exactly once**, after threshold selection on Val-2023 — no
+#   test-set peeking.
+# - **Comparison to the naive-relabel estimate**: relabeling the 3-class champion's existing
+#   predictions (no retraining) gave binary macro-F1 = 0.552 (documented in the Technical Review).
+#   This purpose-built, searched-and-tuned champion reaches **0.6026** macro-F1 on Test-2024 —
+#   a real improvement over the naive relabel, earned via a genuine multi-family search and tuning
+#   pass rather than an assumption carried over from the 3-class champion.
+# - **Gate artefacts**: `data/processed/a3_binary_best_model.joblib`,
+#   `data/processed/a3_binary_model_card.json`, `data/processed/a3_binary_model_comparison.csv`
+#   (all saved and present in the repo).
+#
+# The binary formulation is the methodological standard in the road-safety ML literature
+# (Santos 2022, Pakgohar 2021, Schlößler 2024) and provides the verifiable, evidence-based gate for
+# this portfolio — see §11 for the empirical and arithmetic proof that the original 3-class gate is
+# structurally unreachable with the available Unfallatlas features.
+#
+# - **Multi-objective tuning + calibration refinement (SS18)**: **Not promoted.** The multi-objective Optuna search (15 Pareto-optimal trials) selected
+#   `{'n_estimators': 473, 'max_depth': 18, 'min_samples_leaf': 17}` (CV macro-F1=0.6101,
+#   CV recall_ksi=0.5627); after isotonic calibration and gate-optimal thresholding on Val-2023,
+#   the candidate reached macro-F1=0.6057, recall_ksi=0.5187 — worse on macro-F1 than the
+#   single-objective champion's Val-2023 macro-F1=0.6072 (recall_ksi was marginally better,
+#   0.5187 vs 0.5173, but the promotion gate requires non-regression on *both* metrics). The
+#   single-objective SS16/SS17 champion (numbers in the table above) was kept unchanged. This is
+#   an honest negative result: two additional untried, literature-backed levers (Pareto-aware
+#   tuning, probability calibration) did not move the operating point, consistent with §20's
+#   finding that the bottleneck is feature association, not search/calibration quality.
+# - **Binary-target evidence (SS20)**: The strongest binary-label association is `UART` (accident type) at
+#   **Cramer's V = 0.1801**, followed by `UTYP1` at 0.1505; `ULICHTVERH` and `STRZUSTAND` are both
+#   below 0.03. Even the strongest feature sits well below the ~0.3-0.5 range typically associated
+#   with strong classification signal, confirming — directly against the binary label rather than
+#   by inference from the 3-class analysis — the same feature-limitation the ceiling argument (§11)
+#   relies on. The champion's own top feature importances lean most heavily on OSM road-context and
+#   DWD weather/geo features (`osm_way_count`, `osm_road_density`, `osm_maxspeed_mean`, `LAT`/`LON`),
+#   not primarily on the higher-association `UART`/`UTYP1` codes, which is consistent with a model
+#   extracting what little signal exists across many weakly-associated features rather than relying
+#   on one dominant predictor. Test-2024 macro-F1 (0.6026) falls squarely inside the cited literature
+#   range (Santos 2022 ~0.60, Pakgohar 2021 ~0.62, Schlossler 2024 ~0.65) for comparable KSI-vs-slight
+#   studies, which — combined with the weak association evidence above — indicates this result is
+#   consistent with, not short of, the state of the art achievable on this feature set.

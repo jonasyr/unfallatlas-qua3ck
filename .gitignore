@@ -103,7 +103,7 @@ instance/
 docs/_build/
 
 # Superpowers plans (local dev tool artefacts)
-docs/superpowers/
+# docs/superpowers/
 
 # PyBuilder
 target/
@@ -149,3 +149,6 @@ cython_debug/
 # Claude Code auto-memory
 .claude/auto-memory/dirty-files*
 .claude/auto-memory/config.json
+
+# Interrupted atomic presentation writes
+reports/presentation/**/.tmp-*

@@ -2,6 +2,7 @@
 
 - [Overview](#Overview)
 - [Detailed overview of the AI tools used in each phase](#Detailed%20overview%20of%20the%20AI%20tools%20used%20in%20each%20phase)
+- [Implementation plan index](#Implementation%20plan%20index)
 - [Data sets that were used](#Data%20sets%20that%20were%20used)
 - [Bibliography](#Bibliography)
 
@@ -24,19 +25,41 @@ The QUA3CK model is an iterative process for developing ML solutions. It stands 
 
 ## Detailed overview of the AI tools used in each phase
 
-| **Phase**   | **AI-Tool**                                                | **Purpose**                                                                                                                                                                                                                                                                                                                                | **Prompt/Use Case**                                                           |
-| ----------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
-| **Phase Q** | Claude Opus 4.7 Thinking, effort: extra (Anthropic, 2026)  | Dataset research: scouting candidate public datasets against course requirements, then deepening the GovData Unfallatlas idea into a concrete DIG-framework project approach with complementary data sources, target ML tasks, and visualization potential                                                                                 | view [docs/prompts/01_prompts_phase_q.md](docs/prompts/01_prompts_phase_q.md) |
-| **Phase Q** | Claude Code (Sonnet 4.6), effort: medium (Anthropic, 2026) | Q-Phase build-out: defining scope and boundaries against the later QUA³CK phases, designing the documentation architecture, and producing the first complete Q-Phase notebook draft (problem framing, stakeholders, success criteria, artifacts, Q-to-U handoff checklist)                                                                 | view [docs/prompts/01_prompts_phase_q.md](docs/prompts/01_prompts_phase_q.md) |
-| **Phase U** | Claude Code (Sonnet 4.6), effort: medium (Anthropic, 2026) | U-Phase build-out from the Q-Phase contract: dataset overview, schema audit, target variable analysis, descriptive statistics, missing-value and data-quality assessment, outlier/plausibility checks, correlation analysis, visualization suite, preprocessing planning, leakage prevention, and the U-to-A³ handoff (16 scoped tasks)    | view [docs/prompts/02_prompts_phase_u.md](docs/prompts/02_prompts_phase_u.md) |
-| **Phase U** | Claude Code (Sonnet 4.6), effort: medium (Anthropic, 2026) | Final U-Phase polish pass: consistency and visualization cleanup across §1–§9; `GLOSSARY.md` and `README.md` updates; DWD CDC weather enrichment in `src/unfallatlas/data/dwd.py` (station parsing, nearest-station lookup via cKDTree, per-station download, left-join enrichment) plus §8.5–§8.7 weather analysis and §9.4 leakage probe | view [docs/prompts/02_prompts_phase_u.md](docs/prompts/02_prompts_phase_u.md) |
-| **Phase U** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | U-phase addendum built with `superpowers:brainstorming` and `superpowers:writing-plans`: OSM road-context feature engineering (`src/unfallatlas/data/osm.py`, `src/unfallatlas/features/spatial.py`) aggregated per H3-8 cell and joined to every accident, filling stub files scaffolded in the original project setup but never implemented; extends the §10 preprocessing decision table and §11 risk list following the same pattern as the existing DWD weather addendum | view [docs/prompts/02_prompts_phase_u.md](docs/prompts/02_prompts_phase_u.md) |
-| **Phase U** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | U-phase OSM fetch hotfix (plan-mode, ad-hoc): root-caused a reproducible OOM kill during the whole-Bundesland OSM fetch to `osmnx` always materializing the full unsimplified road graph before any simplification step; replaced the per-state fetch with a tiled 0.2° grid fetch (`_grid_tiles`, per-tile caching/resumability, boundary-edge dedup) and vectorized `aggregate_roads_to_h3` (`shapely.get_coordinates` + numpy indexing) to handle the resulting tens-of-millions-of-vertices scale without a second OOM | view [docs/prompts/02_prompts_phase_u.md](docs/prompts/02_prompts_phase_u.md) |
-| **Phase A³** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | A³-Phase scope definition and implementation plan, built with the `superpowers:writing-plans` skill from a two-message user prompt: translating the U-Phase §10 preprocessing contract and top-4 risks into an exact, bounded task plan (baselines, boosting models, imbalance-strategy comparison, Optuna tuning, single test-2024 evaluation) with an explicit in-scope/out-of-scope boundary against Phase C | view [docs/prompts/03_prompts_phase_a3.md](docs/prompts/03_prompts_phase_a3.md) |
-| **Phase A³** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | A³-Phase build-out: preprocessing pipeline, baseline/tree/ordinal/imbalance library modules with pytest coverage, `03_A3_Phase.ipynb` (model comparison table, champion selection, Optuna tuning, held-out test evaluation, model-card artefact), A³-to-C handoff | view [docs/prompts/03_prompts_phase_a3.md](docs/prompts/03_prompts_phase_a3.md) |
-| **Phase A³** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | A³ champion-pivot follow-up plan, built with `superpowers:brainstorming` and `superpowers:writing-plans` after the first champion-selection rule (highest validation macro-F1 alone) picked Random Forest despite it failing the recall(class 1) ≥ 0.50 acceptance gate: replaces that rule with a recall-gate-aware selection carrying CatBoost and LightGBM forward as candidates instead, tuned and compared under a stricter single-test-touch constraint | view [docs/prompts/03_prompts_phase_a3.md](docs/prompts/03_prompts_phase_a3.md) |
-| **Phase A³** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | A³ champion-pivot build-out with `superpowers:subagent-driven-development`: `select_best_candidate()` selection-rule module, two-family imbalance-strategy comparison and Optuna tuning, single cross-family test-2024 evaluation; three live-execution hotfixes root-caused with `superpowers:systematic-debugging` (a `CatBoostClassifier`/`class_weights` incompatibility with scikit-learn's `clone()`, ultimately fixed by moving CatBoost's class weighting to `sample_weight` at fit time) | view [docs/prompts/03_prompts_phase_a3.md](docs/prompts/03_prompts_phase_a3.md) |
-| **Phase A³** | Claude Code (Sonnet 5), effort: medium (Anthropic, 2026) | A³ OSM-feature integration built with `superpowers:writing-plans` and `superpowers:subagent-driven-development`: wired the 5 U-phase OSM road-context columns into `build_preprocessor()` per the already-decided §10 contract, fixed the 3 Minor findings deferred from the champion-pivot plan's final review (a latent `_default`-row selection bug, an undocumented dead CV-strategy cell, a missing committed comparison-table CSV), then retrained and re-evaluated the champion end-to-end on the enlarged feature set | view [docs/prompts/03_prompts_phase_a3.md](docs/prompts/03_prompts_phase_a3.md) |
+| **Phase** | **AI tool** | **Purpose** | **Record / plan** |
+| --- | --- | --- | --- |
+| **Phase Q** | Claude Opus 4.7 Thinking, effort: extra; used May 2026 | Dataset research and project-idea development using the Unfallatlas dataset | [Prompt record](prompts/01_prompts_phase_q.md) |
+| **Phase Q** | Claude Code (Sonnet 4.6), effort: medium; used May 2026 | Q-Phase scope, documentation architecture, and notebook draft | [Prompt record](prompts/01_prompts_phase_q.md) |
+| **Phase U** | Claude Code (Sonnet 4.6), effort: medium; used May 2026 | U-Phase data understanding, preprocessing planning, leakage prevention, and handoff to A³ | [Prompt record](prompts/02_prompts_phase_u.md) |
+| **Phase U** | Claude Code (Sonnet 4.6), effort: medium; used May 2026 | U-Phase polish, documentation alignment, DWD weather enrichment, and leakage analysis | [Prompt record](prompts/02_prompts_phase_u.md) |
+| **Phase U** | Claude Code (Sonnet 4.6), effort: medium; used May 2026 | U-phase §11 summary and glossary maintenance | [Summary-update plan](superpowers/plans/2026-05-26-u-phase-summary-update.md); [Glossary-update plan](superpowers/plans/2026-05-26-update-glossary.md) |
+| **Phase U** | Claude Code (Sonnet 5), effort: medium; used July 2026 | U-phase OSM/H3 road-context feature engineering and preprocessing-contract update | [Prompt record](prompts/02_prompts_phase_u.md); [Implementation plan](superpowers/plans/2026-07-06-u-phase-osm-spatial-features.md) |
+| **Phase U** | Claude Code (Sonnet 5), effort: medium; used July 2026 | U-phase OSM tiled-fetch and aggregation performance hotfix after the whole-state fetch exhausted memory | [Prompt record](prompts/02_prompts_phase_u.md) |
+| **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | A³ modelling plan, build-out, recall-aware champion pivot, and OSM-feature integration | [Prompt record](prompts/03_prompts_phase_a3.md); [Modelling plan](superpowers/plans/2026-07-01-a3-phase-modelling.md); [Champion-pivot plan](superpowers/plans/2026-07-06-a3-champion-pivot.md); [OSM-integration plan](superpowers/plans/2026-07-09-a3-osm-feature-integration.md) |
+| **Phase A³ / Q / U** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Binary KSI reformulation and the corresponding cross-phase scientific documentation | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-14-binary-ksi-reframe.md) |
+| **Phase A³** | Codex (GPT-5.6 Terra), effort: medium; used July 2026 | AI-tool disclosure and prompt-record audit: provenance correction, plan indexing, link normalization, and plan-body de-duplication | [Prompt record](prompts/03_prompts_phase_a3.md); [This disclosure](AI%20TOOL%20DISCLOSURE.md) |
+| **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Course-material-driven review of the A³ phase against SVM/kernel-method coverage; added SVM candidates and a genuine, searched (not assumed) binary KSI champion, with a real end-to-end notebook execution | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-14-svm-algorithm-selection.md) |
+| **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Evidence-grounded investigation of whether the binary macro-F1 could be significantly improved; attempted multi-objective tuning + calibration (correctly not promoted, an honest negative result) and added a binary-target-specific Cramér's V/feature-importance evidence section | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-15-binary-ksi-front-refinement.md) |
+
+---
+
+## Implementation plan index
+
+All implementation plans are stored as separate, detailed artefacts. Prompt
+records link to them by path rather than duplicating their contents.
+
+| Date | Scope | Model / effort | Plan |
+| --- | --- | --- | --- |
+| 2026-05-26 | U-phase §11 summary update | Sonnet 4.6, medium | [2026-05-26-u-phase-summary-update.md](superpowers/plans/2026-05-26-u-phase-summary-update.md) |
+| 2026-05-26 | U-phase glossary update | Sonnet 4.6, medium | [2026-05-26-update-glossary.md](superpowers/plans/2026-05-26-update-glossary.md) |
+| 2026-07-01 | A³ modelling | Sonnet 5, medium | [2026-07-01-a3-phase-modelling.md](superpowers/plans/2026-07-01-a3-phase-modelling.md) |
+| 2026-07-01 | Documentation tidy-up and Serena memory sync | Sonnet 4.6, medium | [2026-07-01-docs-tidy-and-serena-memories.md](superpowers/plans/2026-07-01-docs-tidy-and-serena-memories.md) |
+| 2026-07-01 | Course documentation for units 3–5 | Sonnet 4.6, medium | [2026-07-01-einheit-3-4-5-course-docs.md](superpowers/plans/2026-07-01-einheit-3-4-5-course-docs.md) |
+| 2026-07-06 | A³ recall-aware champion pivot | Sonnet 5, medium | [2026-07-06-a3-champion-pivot.md](superpowers/plans/2026-07-06-a3-champion-pivot.md) |
+| 2026-07-06 | U-phase OSM/H3 road-context features | Sonnet 5, medium | [2026-07-06-u-phase-osm-spatial-features.md](superpowers/plans/2026-07-06-u-phase-osm-spatial-features.md) |
+| 2026-07-09 | A³ OSM feature integration | Sonnet 5, medium | [2026-07-09-a3-osm-feature-integration.md](superpowers/plans/2026-07-09-a3-osm-feature-integration.md) |
+| 2026-07-14 | Binary KSI reframe | Sonnet 5, medium | [2026-07-14-binary-ksi-reframe.md](superpowers/plans/2026-07-14-binary-ksi-reframe.md) |
+| 2026-07-14 | SVM algorithm selection and genuine binary champion search | Sonnet 5, medium | [2026-07-14-svm-algorithm-selection.md](superpowers/plans/2026-07-14-svm-algorithm-selection.md) |
+| 2026-07-15 | Binary KSI front refinement and evidence | Sonnet 5, medium | [2026-07-15-binary-ksi-front-refinement.md](superpowers/plans/2026-07-15-binary-ksi-front-refinement.md) |
 
 ---
 
@@ -51,7 +74,9 @@ The QUA3CK model is an iterative process for developing ML solutions. It stands 
 
 ## Bibliography
 
-- Anthropic. (2026). _Claude Opus 4.7_ [Large language model with extended thinking, effort: extra]. https://www.anthropic.com/claude/opus
-- Anthropic. (2026). _Claude Sonnet 4.6_ [Large language model, effort: medium]. Claude Code CLI. https://www.anthropic.com/claude/sonnet
-- Deutscher Wetterdienst. (n.d.). _Climate Data Center (CDC) — Observations Germany_ [Dataset]. https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/
-- Statistische Ämter des Bundes und der Länder. (2024). _Unfallatlas_ [Dataset]. GovData / Mobilithek. https://unfallatlas.statistikportal.de/
+- Anthropic. (2026, April 16). _Introducing Claude Opus 4.7_. https://www.anthropic.com/news/claude-opus-4-7
+- Anthropic. (2026, February 17). _Introducing Claude Sonnet 4.6_. https://www.anthropic.com/news/claude-sonnet-4-6
+- Anthropic. (2026, June 30). _Introducing Claude Sonnet 5_. https://www.anthropic.com/news/claude-sonnet-5
+- Deutscher Wetterdienst. (n.d.). _Climate Data Center (CDC): Hourly station observations for Germany_ [Data set]. Retrieved May 18, 2026, from https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly/
+- OpenAI. (2026, July 9). _GPT-5.6: Frontier intelligence that scales with your ambition_. https://openai.com/index/gpt-5-6/
+- Statistische Ämter des Bundes und der Länder. (2024). _Unfallatlas_ [Data set]. https://unfallatlas.statistikportal.de/

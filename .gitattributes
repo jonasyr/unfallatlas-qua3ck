@@ -1,2 +1,5 @@
 *.parquet filter=lfs diff=lfs merge=lfs -text
 data/processed/a3_best_model.joblib filter=lfs diff=lfs merge=lfs -text
+data/processed/a3_binary_best_model.joblib filter=lfs diff=lfs merge=lfs -text
+reports/presentation/assets/notebooks/** filter=lfs diff=lfs merge=lfs -text
+reports/presentation/assets/vendor/** filter=lfs diff=lfs merge=lfs -text
