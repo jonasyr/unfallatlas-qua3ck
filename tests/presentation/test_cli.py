@@ -332,16 +332,50 @@ def test_custom_output_directory_is_used_for_manifest_and_freshness(
     assert cli.main(["--check", "--output-dir", "../site"]) == 1
 
 
-def test_check_never_renders(
+def test_check_missing_manifest_fails_without_rendering(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     lightweight_publication: list[Path],
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     repo = _repo(tmp_path)
     _notebook(repo, "one")
     monkeypatch.chdir(repo)
-    assert cli.main(["--check"]) == 0
+
+    assert cli.main(["--check"]) == 1
     assert lightweight_publication == []
+    error = capsys.readouterr().err
+    assert error.startswith("error: presentation manifest not found:")
+    assert "reports/presentation/manifest.json" in error
+
+
+def test_check_valid_empty_manifest_fails_without_rendering(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    lightweight_publication: list[Path],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    repo = _repo(tmp_path)
+    manifest_path = repo / "reports" / "presentation" / "manifest.json"
+    manifest_path.parent.mkdir(parents=True)
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "exporter_version": "1",
+                "generated_at": "",
+                "entries": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(repo)
+
+    assert cli.main(["--check"]) == 1
+    assert lightweight_publication == []
+    error = capsys.readouterr().err
+    assert error.startswith("error: presentation manifest has no notebook entries:")
+    assert "reports/presentation/manifest.json" in error
 
 
 def test_malformed_manifest_is_request_failure_not_selection_error(

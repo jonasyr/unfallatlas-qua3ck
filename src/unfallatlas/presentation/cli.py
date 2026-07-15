@@ -264,7 +264,14 @@ def _run_check(args: argparse.Namespace, repo_root: Path) -> int:
         if args.output_dir is not None
         else repo_root / "reports" / "presentation"
     )
-    manifest = load_manifest(output_root / "manifest.json")
+    manifest_path = output_root / "manifest.json"
+    if not manifest_path.is_file():
+        sys.stderr.write(f"error: presentation manifest not found: {manifest_path}\n")
+        return 1
+    manifest = load_manifest(manifest_path)
+    if not manifest.entries:
+        sys.stderr.write(f"error: presentation manifest has no notebook entries: {manifest_path}\n")
+        return 1
     freshness = check_freshness(
         manifest,
         notebooks_dir=repo_root / "notebooks",

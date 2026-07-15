@@ -41,8 +41,11 @@ uv run python scripts/export_notebooks.py notebooks/02_U_Phase.ipynb
 ```
 
 Die Ausgabe liegt standardmäßig unter `reports/presentation/`. Ein anderes Ziel ist mit
-`--output-dir PFAD` möglich. `--open` öffnet nach einem erfolgreichen Einzelexport die
-HTML-Datei, bei einem Sammelexport die Indexseite, im Standardbrowser.
+`--output-dir PFAD` möglich. Mit `--open` wird bei genau einem Snapshot dessen
+Notebook-HTML geöffnet; entscheidend ist dabei die Anzahl tatsächlich gerenderter
+Snapshots. Wurden mehrere Snapshots gerendert, öffnet der Standardbrowser
+stattdessen die Indexseite. Werden alle ausgewählten Notebooks übersprungen oder schlägt
+die Publikation fehl, wird kein Browser geöffnet.
 
 Die Discovery durchsucht `notebooks/` rekursiv nach `.ipynb`-Dateien, sortiert sie
 deterministisch und ignoriert die generierten Jupytext-`.py`-Spiegel. Gleichnamige
@@ -146,8 +149,8 @@ Ein lokaler HTTP-Server ist für den vorgesehenen `file://`-Betrieb nicht erford
 
 ## PDF
 
-Nutze in der Präsentation die Schaltfläche „Als PDF drucken“ und anschließend die
-PDF-Funktion des Browsers. Die Schaltfläche lädt Plotly-Grafiken vor dem Druck; auch der
+Nutze in der Präsentation die Schaltfläche „Drucken“ und anschließend die PDF-Funktion
+des Browsers. Die Schaltfläche lädt Plotly-Grafiken vor dem Druck; auch der
 Browser-Druck-Event öffnet Code- und Outputbereiche. Navigation und Bedienelemente werden
 in der Druckansicht ausgeblendet, Tabellenbegrenzungen aufgehoben und Grafiken auf die
 Seitenbreite begrenzt. Kontrolliere Seitenumbrüche und Papierformat in der Druckvorschau.
@@ -169,25 +172,27 @@ offlinefähige Präsentation einen statischen PNG-/SVG-Kartenexport.
 
 ## Widgets und Karten
 
-Ein Jupyter-Widget ist nur dann als interaktive Ausgabe belastbar, wenn der passende
-Widget-Zustand im Notebook eingebettet ist. Fehlt er, verwendet die MIME-Auswahl nach
-Möglichkeit eine vorhandene HTML-, Bild- oder Textdarstellung; ohne geeigneten Fallback
-entsteht ein Strict-Blocker. Da Widget-Manager und Widget-Erweiterungen zusätzliche
-Browser-Laufzeiten benötigen können, sollte jedes wichtige Ergebnis zusätzlich als
-statisches PNG, SVG, HTML-Tabelle oder Textoutput gespeichert werden.
+Interaktive Jupyter-Widgets werden derzeit nicht unterstützt, auch wenn der passende
+Widget-Zustand im Notebook eingebettet ist: Widget-Manager-Laufzeit und Widget-Zustand
+werden nicht veröffentlicht und stehen daher nicht als ausführbare Präsentations-Assets
+zur Verfügung.
+Fehlt der Zustand, meldet die Validierung zusätzlich `WIDGET_STATE_MISSING`. Für jedes
+wichtige Widget-Ergebnis ist daher ein statischer Fallback als PNG, SVG, HTML-Tabelle oder
+Textoutput erforderlich.
 
 Aktive HTML-Ausgaben, iframes und damit typische Folium-Ausgaben werden aus
-Sicherheitsgründen in einem restriktiven Sandbox-iframe dargestellt. Skripte und externe
-Tiles dürfen dort nicht als garantiert offlinefähig gelten. Für Folium-Karten ist deshalb
-ein statischer Bild-Fallback die verlässliche Präsentationsvariante. Passive HTML-Tabellen
-werden dagegen direkt, scrollbar und druckbar gerendert.
+Sicherheitsgründen in einem restriktiven Sandbox-iframe dargestellt. Skripte sind in
+dieser Sandbox deaktiviert; externe Tiles funktionieren offline ebenfalls nicht. Für
+Folium-Karten ist deshalb ein statischer PNG- oder SVG-Fallback erforderlich. Passive
+HTML-Tabellen und Textoutputs werden dagegen direkt, scrollbar und druckbar gerendert.
 
 ## Git LFS
 
 Die Repository-Regeln verwalten große Dateien unter
-`reports/presentation/assets/notebooks/**` und `assets/vendor/**` mit Git LFS. HTML,
-`index.html`, `manifest.json` und die kleinen UI-Assets bleiben normale Git-Dateien. Das
-5-MiB-Limit des Pre-Commit-Hooks wird nicht umgangen.
+`reports/presentation/assets/notebooks/**` und
+`reports/presentation/assets/vendor/**` mit Git LFS. HTML, `index.html`, `manifest.json`
+und die kleinen UI-Assets bleiben normale Git-Dateien. Das 5-MiB-Limit des
+Pre-Commit-Hooks wird nicht umgangen.
 
 Prüfe vor dem Commit, ob LFS aktiv ist und die großen Assets als LFS-Objekte erkannt
 werden:
@@ -217,6 +222,11 @@ sind `fresh`, `stale`, `missing-export`, `orphaned` und `invalid-source`. Nur we
 Einträge `fresh` sind, endet der Check mit Exit-Code `0`. Ein Dirty-Working-Tree-Hinweis
 im HTML macht zusätzlich sichtbar, dass der Snapshot uncommittete Änderungen enthalten
 kann; der angezeigte Commit-Hash beschreibt dann nur den letzten Git-Stand.
+
+Fehlt das Manifest, endet der Check kontrolliert mit Exit-Code `1`. Enthält ein valides
+Manifest keine Einträge, endet er ebenfalls mit Exit-Code `1`; ein leerer Vergleich gilt
+nicht als frischer Export. Ein syntaktisch oder strukturell ungültiges Manifest bleibt
+davon getrennt und wird als Manifestfehler gemeldet.
 
 Das Manifest und die eingebetteten Metadaten dokumentieren außerdem Exportzeitpunkt,
 Quellpfad, Git-Commit, Branch, Zellzahlen, Befunde und veröffentlichte Assets. Der Exporter
