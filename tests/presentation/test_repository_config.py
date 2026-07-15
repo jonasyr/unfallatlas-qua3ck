@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -6,6 +7,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def _read(relative_path: str) -> str:
     path = REPO_ROOT / relative_path
     return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
+def _git(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        shell=False,
+    )
 
 
 def test_presentation_large_assets_are_narrowly_lfs_scoped() -> None:
@@ -94,3 +106,40 @@ def test_large_file_hook_remains_at_five_mibibytes() -> None:
     config = _read(".pre-commit-config.yaml")
 
     assert "args: [--maxkb=5120]" in config
+
+
+def test_committed_presentation_files_are_trackable_and_not_lfs_managed() -> None:
+    paths = (
+        "reports/presentation/index.html",
+        "reports/presentation/manifest.json",
+        "reports/presentation/assets/ui/presentation.css",
+        "reports/presentation/assets/ui/presentation.js",
+    )
+
+    ignore_result = _git("check-ignore", "--no-index", "--", *paths)
+    assert ignore_result.returncode == 1
+    assert ignore_result.stdout == ""
+    assert ignore_result.stderr == ""
+
+    attr_result = _git("check-attr", "filter", "--", *paths)
+    assert attr_result.returncode == 0
+    assert attr_result.stdout.splitlines() == [f"{path}: filter: unspecified" for path in paths]
+    assert attr_result.stderr == ""
+
+
+def test_large_assets_resolve_to_lfs_and_interrupted_writes_are_ignored() -> None:
+    lfs_paths = (
+        "reports/presentation/assets/notebooks/example.js",
+        "reports/presentation/assets/vendor/plotly.min.js",
+    )
+
+    attr_result = _git("check-attr", "filter", "--", *lfs_paths)
+    assert attr_result.returncode == 0
+    assert attr_result.stdout.splitlines() == [f"{path}: filter: lfs" for path in lfs_paths]
+    assert attr_result.stderr == ""
+
+    temporary_path = "reports/presentation/notebooks/.tmp-export.html"
+    ignore_result = _git("check-ignore", "--no-index", "--", temporary_path)
+    assert ignore_result.returncode == 0
+    assert ignore_result.stdout == f"{temporary_path}\n"
+    assert ignore_result.stderr == ""
