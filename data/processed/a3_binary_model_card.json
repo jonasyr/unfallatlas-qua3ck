@@ -56,9 +56,9 @@
     {
       "model": "binary_catboost_balanced",
       "family": "catboost",
-      "macro_f1": 0.564988826165381,
-      "recall_ksi": 0.686067479197897,
-      "recall_slight": 0.623866127998063,
+      "macro_f1": 0.5649920951224464,
+      "recall_ksi": 0.686110930065828,
+      "recall_slight": 0.6238526762293796,
       "n_train": 1554834.0
     },
     {
@@ -125,7 +125,7 @@
     "optuna_trials": 20,
     "subsample_size_svm_linear_and_boosting_tuning": 500000,
     "subsample_size_svm_rbf": 8000,
-    "run_at_utc": "2026-07-15T01:59:37.012839+00:00",
+    "run_at_utc": "2026-07-15T10:16:49.924825+00:00",
     "random_seed": 42
   }
 }
