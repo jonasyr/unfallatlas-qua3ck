@@ -111,15 +111,19 @@ window.UnfallatlasPresentation = (() => {
       const saved = readStorage(storageKey(details, index));
       if (saved !== null) details.open = saved === "open";
       const summary = details.querySelector(":scope > summary");
+      let synchronizedOpen;
       const synchronize = (loadOutput = true) => {
         if (summary) summary.setAttribute("aria-expanded", String(details.open));
         writeStorage(storageKey(details, index), details.open ? "open" : "closed");
+        synchronizedOpen = details.open;
         if (loadOutput && details.open && details.classList.contains("output-cell")) {
           details.querySelectorAll(".plotly-output").forEach(loadPlotly);
         }
       };
       synchronize(false);
-      details.addEventListener("toggle", () => synchronize());
+      details.addEventListener("toggle", () => {
+        if (details.open !== synchronizedOpen) synchronize();
+      });
     });
 
     function setDetails(selector, open) {

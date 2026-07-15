@@ -377,6 +377,10 @@ def test_plotly_lazy_loads_from_local_assets_without_runtime_errors(
     )
     try:
         plot = page.locator(".plotly-output")
+        page.evaluate(
+            "() => new Promise(resolve => "
+            "requestAnimationFrame(() => requestAnimationFrame(resolve)))"
+        )
         assert plot.get_attribute("data-loaded") != "true"
         assert page.locator(".plotly-output.js-plotly-plot").count() == 0
         dynamic_script_sources = page.locator("script[src]").evaluate_all(
