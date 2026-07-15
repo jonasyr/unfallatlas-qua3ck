@@ -1,3 +1,4 @@
+import re
 import subprocess
 from pathlib import Path
 
@@ -106,6 +107,29 @@ def test_large_file_hook_remains_at_five_mibibytes() -> None:
     config = _read(".pre-commit-config.yaml")
 
     assert "args: [--maxkb=5120]" in config
+
+
+def test_nbstripout_preserves_saved_output_fixtures_but_covers_source_notebooks() -> None:
+    config = _read(".pre-commit-config.yaml")
+    hook = re.search(r"(?ms)^      - id: nbstripout\n(?P<body>(?:^        .*\n)+)", config)
+
+    assert hook is not None
+    body = hook.group("body")
+    files_match = re.search(r"^        files: (.+)$", body, flags=re.MULTILINE)
+    exclude_match = re.search(r"^        exclude: (.+)$", body, flags=re.MULTILINE)
+    assert files_match is not None
+    assert exclude_match is not None
+    assert exclude_match.group(1) == "^tests/presentation/fixtures/"
+
+    files_pattern = re.compile(files_match.group(1))
+    exclude_pattern = re.compile(exclude_match.group(1))
+    source_notebook = "notebooks/02_U_Phase.ipynb"
+    output_fixture = "tests/presentation/fixtures/gallery.ipynb"
+
+    assert files_pattern.search(source_notebook)
+    assert not exclude_pattern.search(source_notebook)
+    assert files_pattern.search(output_fixture)
+    assert exclude_pattern.search(output_fixture)
 
 
 def test_committed_presentation_files_are_trackable_and_not_lfs_managed() -> None:
