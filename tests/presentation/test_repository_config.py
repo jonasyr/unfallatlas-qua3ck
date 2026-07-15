@@ -1,5 +1,7 @@
 import re
+import shlex
 import subprocess
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -130,6 +132,17 @@ def test_nbstripout_preserves_saved_output_fixtures_but_covers_source_notebooks(
     assert not exclude_pattern.search(source_notebook)
     assert files_pattern.search(output_fixture)
     assert exclude_pattern.search(output_fixture)
+
+
+def test_browser_checks_are_opt_in() -> None:
+    pyproject = tomllib.loads(_read("pyproject.toml"))
+    addopts = shlex.split(pyproject["tool"]["pytest"]["ini_options"]["addopts"])
+    marker_index = addopts.index("-m")
+
+    assert addopts[marker_index + 1] == "not browser"
+    assert "--cov=src/unfallatlas" in addopts
+    assert "--cov-report=xml" in addopts
+    assert "--cov-report=term-missing" in addopts
 
 
 def test_committed_presentation_files_are_trackable_and_not_lfs_managed() -> None:

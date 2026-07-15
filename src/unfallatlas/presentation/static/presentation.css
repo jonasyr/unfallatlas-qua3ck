@@ -175,7 +175,7 @@ button:active { transform: translateY(1px); }
   .presentation-shell { display: block; width: 100%; margin: 0; }
   .presentation-header { border: 0; }
   .header-content, .notebook-main { width: 100%; max-width: none; }
-  details > * { display: block !important; }
+  details > :not(summary) { display: block !important; }
   .code-cell, .output-cell { break-inside: avoid; border-color: #b7b7b7; }
   .table-scroll, .text-output { max-height: none; overflow: visible; }
   .plotly-output { min-height: 0; break-inside: avoid; }

@@ -12,8 +12,6 @@ from unfallatlas.presentation.metadata import build_export_metadata
 from unfallatlas.presentation.rendering import render_notebook
 from unfallatlas.presentation.validation import read_and_validate_notebook
 
-pytestmark = pytest.mark.browser
-
 REPO_ROOT = Path(__file__).parents[2]
 GALLERY_NOTEBOOK = Path(__file__).parent / "fixtures" / "gallery.ipynb"
 SCREENSHOT_ROOT = Path("/tmp/unfallatlas-presentation-verification")
@@ -123,6 +121,7 @@ def test_gallery_fixture_exports_saved_outputs_without_execution(gallery_html: P
     ("name", "width", "height"),
     [("desktop", 1440, 900), ("laptop", 1366, 768), ("mobile", 390, 844)],
 )
+@pytest.mark.browser
 def test_gallery_layout_is_usable_at_supported_viewports(
     chromium_browser: Any,
     gallery_html: Path,
@@ -175,6 +174,7 @@ def test_gallery_layout_is_usable_at_supported_viewports(
         context.close()
 
 
+@pytest.mark.browser
 def test_keyboard_controls_and_code_output_toggles_keep_aria_in_sync(
     chromium_browser: Any, gallery_html: Path
 ) -> None:
@@ -208,12 +208,51 @@ def test_keyboard_controls_and_code_output_toggles_keep_aria_in_sync(
         assert first_output.get_attribute("open") is None
         assert first_output.locator(":scope > summary").get_attribute("aria-expanded") == "false"
 
-        page.locator('[data-action="show-all-output"]').click()
+        page.locator('[data-action="show-all-code"]').click()
+        page.wait_for_function(
+            "() => [...document.querySelectorAll('details.code-cell')]"
+            ".every(details => details.open && "
+            "details.querySelector(':scope > summary').getAttribute('aria-expanded') === 'true')"
+        )
+        assert page.locator("details.code-cell:not([open])").count() == 0
+        assert (
+            page.locator("details.code-cell > summary[aria-expanded='true']").count()
+            == page.locator("details.code-cell").count()
+        )
+
         page.locator('[data-action="hide-all-code"]').click()
-        assert page.locator("details.output-cell:not([open])").count() == 0
+        page.wait_for_function(
+            "() => [...document.querySelectorAll('details.code-cell')]"
+            ".every(details => !details.open && "
+            "details.querySelector(':scope > summary').getAttribute('aria-expanded') === 'false')"
+        )
         assert page.locator("details.code-cell[open]").count() == 0
         assert (
+            page.locator("details.code-cell > summary[aria-expanded='false']").count()
+            == page.locator("details.code-cell").count()
+        )
+
+        page.locator('[data-action="show-all-output"]').click()
+        page.wait_for_function(
+            "() => [...document.querySelectorAll('details.output-cell')]"
+            ".every(details => details.open && "
+            "details.querySelector(':scope > summary').getAttribute('aria-expanded') === 'true')"
+        )
+        assert page.locator("details.output-cell:not([open])").count() == 0
+        assert (
             page.locator("details.output-cell > summary[aria-expanded='true']").count()
+            == page.locator("details.output-cell").count()
+        )
+
+        page.locator('[data-action="hide-all-output"]').click()
+        page.wait_for_function(
+            "() => [...document.querySelectorAll('details.output-cell')]"
+            ".every(details => !details.open && "
+            "details.querySelector(':scope > summary').getAttribute('aria-expanded') === 'false')"
+        )
+        assert page.locator("details.output-cell[open]").count() == 0
+        assert (
+            page.locator("details.output-cell > summary[aria-expanded='false']").count()
             == page.locator("details.output-cell").count()
         )
         _assert_clean_runtime(requests, console_errors, page_errors)
@@ -221,6 +260,7 @@ def test_keyboard_controls_and_code_output_toggles_keep_aria_in_sync(
         context.close()
 
 
+@pytest.mark.browser
 def test_detail_state_survives_reload_for_the_same_snapshot(
     chromium_browser: Any, gallery_html: Path
 ) -> None:
@@ -285,6 +325,7 @@ def test_detail_state_survives_reload_for_the_same_snapshot(
         context.close()
 
 
+@pytest.mark.browser
 def test_large_table_and_log_can_be_scrolled_and_expanded(
     chromium_browser: Any, gallery_html: Path
 ) -> None:
@@ -312,22 +353,38 @@ def test_large_table_and_log_can_be_scrolled_and_expanded(
         context.close()
 
 
+@pytest.mark.browser
 def test_plotly_lazy_loads_from_local_assets_without_runtime_errors(
     chromium_browser: Any, gallery_html: Path
 ) -> None:
     context, page, requests, console_errors, page_errors = _open_gallery(
-        chromium_browser, gallery_html, width=1366, height=768
+        chromium_browser, gallery_html, width=390, height=844
     )
     try:
         plot = page.locator(".plotly-output")
         plot.scroll_into_view_if_needed()
         page.wait_for_selector(".plotly-output.js-plotly-plot", timeout=15_000)
         assert plot.get_attribute("data-loaded") == "true"
+        metrics = plot.evaluate(
+            "node => ({clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, "
+            "overflowX: getComputedStyle(node).overflowX, "
+            "left: node.getBoundingClientRect().left, right: node.getBoundingClientRect().right})"
+        )
+        assert metrics["left"] >= 0
+        assert metrics["right"] <= 390
+        assert metrics["scrollWidth"] <= metrics["clientWidth"] or metrics["overflowX"] in {
+            "auto",
+            "scroll",
+        }
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+        SCREENSHOT_ROOT.mkdir(parents=True, exist_ok=True)
+        page.screenshot(path=SCREENSHOT_ROOT / "gallery-mobile-plotly.png", full_page=True)
         _assert_clean_runtime(requests, console_errors, page_errors)
     finally:
         context.close()
 
 
+@pytest.mark.browser
 def test_reduced_motion_and_print_media_preserve_readable_static_content(
     chromium_browser: Any, gallery_html: Path
 ) -> None:
@@ -349,10 +406,17 @@ def test_reduced_motion_and_print_media_preserve_readable_static_content(
         page.evaluate("window.dispatchEvent(new Event('beforeprint'))")
         page.emulate_media(media="print")
         assert page.locator("details:not([open])").count() == 0
-        assert (
-            page.locator(".presentation-toolbar").evaluate("node => getComputedStyle(node).display")
-            == "none"
-        )
+        for selector in (
+            ".presentation-toolbar",
+            "#presentation-toc",
+            ".back-to-top",
+            ".skip-link",
+        ):
+            assert (
+                page.locator(selector).evaluate("node => getComputedStyle(node).display") == "none"
+            )
+        assert page.locator("button:visible").count() == 0
+        assert page.locator("summary:visible").count() == 0
         assert (
             page.locator("details.code-cell .code-content").first.evaluate(
                 "node => getComputedStyle(node).display"

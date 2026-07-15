@@ -99,7 +99,7 @@ lint.isort.known-first-party = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing"
+addopts = '--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing -m "not browser"'
 markers = [
   "browser: opt-in Playwright checks for exported presentation HTML",
 ]
