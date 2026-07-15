@@ -399,9 +399,130 @@
       "source_sha256": "85160cdfbe308eb827825aa043e11a7e971eb4a4a5240bbbc3935f5c7dea74dc",
       "status": "ready",
       "title": "Unfallatlas Deutschland U Phase"
+    },
+    {
+      "assets": [
+        {
+          "cell_index": null,
+          "kind": "plotly-runtime",
+          "media_type": "text/javascript",
+          "relative_path": "assets/vendor/plotly-6.7.0.min.js",
+          "sha256": "7c76cd2cff869485cdf9e7db41e73bf1491e994cf7349a7b5267c6c42d6d371b",
+          "size_bytes": 4842553
+        },
+        {
+          "cell_index": null,
+          "kind": "mathjax-runtime",
+          "media_type": "text/javascript",
+          "relative_path": "assets/vendor/mathjax-3.2.2-tex-svg-full.js",
+          "sha256": "a4354ff94fd868aea0cc6eaaa79a57fda0588646fc46ee3700a349ee0a11cbe6",
+          "size_bytes": 2275113
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-style",
+          "media_type": "text/css",
+          "relative_path": "assets/ui/presentation-83e6909e0af834ab.css",
+          "sha256": "83e6909e0af834abd40a8cf1c98711c2251fa27c9b2114b0127063931981649b",
+          "size_bytes": 8004
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-script",
+          "media_type": "text/javascript",
+          "relative_path": "assets/ui/presentation-e441c0f491aa8ad4.js",
+          "sha256": "e441c0f491aa8ad4c6edc7a543fee35a42ef5e801924a9a76944c91b106574cb",
+          "size_bytes": 10281
+        },
+        {
+          "cell_index": 19,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-9fa0ed8d489473ed.js",
+          "sha256": "9fa0ed8d489473ed79d9a2cfe27d605940adc39ea2fd9d00759eb2cf8c00de4f",
+          "size_bytes": 7968
+        },
+        {
+          "cell_index": 34,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/03_A3_Phase/image-c16d3045c05e6f0b.png",
+          "sha256": "c16d3045c05e6f0b0bf7ace574ed0ae9abb997d32627d227476e96dc0e987c8f",
+          "size_bytes": 57919
+        },
+        {
+          "cell_index": 54,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/03_A3_Phase/image-191d2b081707f1f6.png",
+          "sha256": "191d2b081707f1f670042c639b0441446fa1cfe80607d389f8253c757c0bca8c",
+          "size_bytes": 49286
+        }
+      ],
+      "cell_counts": {
+        "code": 31,
+        "code_with_output": 28,
+        "error_outputs": 0,
+        "executed_without_output": 3,
+        "markdown": 29,
+        "raw": 0,
+        "unexecuted_code": 0
+      },
+      "exported_at": "2026-07-15T16:50:06+00:00",
+      "exported_at_local": "2026-07-15T18:50:06+02:00",
+      "findings": [
+        {
+          "cell_index": 3,
+          "code": "EXECUTED_NO_OUTPUT",
+          "message": "Code cell was executed and legitimately stored no output.",
+          "severity": "info",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 4,
+          "code": "EXECUTED_NO_OUTPUT",
+          "message": "Code cell was executed and legitimately stored no output.",
+          "severity": "info",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 8,
+          "code": "EXECUTED_NO_OUTPUT",
+          "message": "Code cell was executed and legitimately stored no output.",
+          "severity": "info",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 47,
+          "code": "WIDGET_UNSUPPORTED",
+          "message": "Interactive widget output is unsupported; using a stored static fallback.",
+          "severity": "warning",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 51,
+          "code": "WIDGET_UNSUPPORTED",
+          "message": "Interactive widget output is unsupported; using a stored static fallback.",
+          "severity": "warning",
+          "strict_blocker": false
+        }
+      ],
+      "git": {
+        "branch": "feature/binary_classifaction",
+        "commit": "15de77510c0b7055f0af37db635cfb3c0a273b35",
+        "dirty": true,
+        "short_commit": "15de77510c0b"
+      },
+      "output": "notebooks/03_A3_Phase.html",
+      "size_bytes": 420116,
+      "snapshot_sha256": "05e0840ed943c0fa291a119f4f79ffbd4227fed3d0ce899c84d7a078e69371bc",
+      "source": "notebooks/03_A3_Phase.ipynb",
+      "source_sha256": "6ad13e432334b63f2643f51109bdefdbb3db4e3aaa0752985bbbf1029678d943",
+      "status": "ready",
+      "title": "Unfallatlas Deutschland A³ Phase"
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-15T07:46:47+00:00",
+  "generated_at": "2026-07-15T16:50:06+00:00",
   "schema_version": 1
 }
