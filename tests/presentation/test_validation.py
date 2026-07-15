@@ -4,6 +4,7 @@ import nbformat
 import pytest
 from conftest import write_notebook
 
+from unfallatlas.presentation.metadata import snapshot_sha256
 from unfallatlas.presentation.models import NotebookStatus, Severity
 from unfallatlas.presentation.validation import (
     LARGE_OUTPUT_BYTES,
@@ -98,6 +99,8 @@ def test_error_output_is_strict(tmp_path: Path) -> None:
     assert finding.cell_index == 0
     assert finding.strict_blocker
     assert analysis.counts.error_outputs == 1
+    assert analysis.status is NotebookStatus.WIP
+    assert "WIP_NOTEBOOK" in codes(analysis)
 
 
 def test_increasing_execution_counts_are_valid(tmp_path: Path) -> None:
@@ -194,7 +197,8 @@ def test_widget_without_state_is_strict(tmp_path: Path) -> None:
     analysis = read_and_validate_notebook(path, tmp_path)
 
     assert "WIDGET_STATE_MISSING" in codes(analysis)
-    assert "UNSUPPORTED_MIME" not in codes(analysis)
+    assert "WIDGET_UNSUPPORTED" in codes(analysis)
+    assert "UNSUPPORTED_MIME" in codes(analysis)
     assert analysis.strict_blocked
 
 
@@ -211,11 +215,21 @@ def test_widget_without_state_uses_valid_html_fallback(tmp_path: Path) -> None:
     analysis = read_and_validate_notebook(path, tmp_path)
 
     assert "WIDGET_STATE_MISSING" not in codes(analysis)
+    finding = next(item for item in analysis.findings if item.code == "WIDGET_UNSUPPORTED")
+    assert finding.severity is Severity.WARNING
+    assert not finding.strict_blocker
     assert not analysis.strict_blocked
+    assert analysis.notebook.cells[0].outputs[0].data == output.data
+    assert analysis.snapshot_sha256 == snapshot_sha256(analysis.notebook)
 
 
-def test_widget_with_notebook_state_is_supported(tmp_path: Path) -> None:
-    output = display_data({"application/vnd.jupyter.widget-view+json": {"model_id": "widget-id"}})
+def test_widget_with_notebook_state_still_requires_static_fallback(tmp_path: Path) -> None:
+    output = display_data(
+        {
+            "application/vnd.jupyter.widget-view+json": {"model_id": "widget-id"},
+            "text/plain": "static widget fallback",
+        }
+    )
     metadata = {
         "widgets": {
             "application/vnd.jupyter.widget-state+json": {
@@ -231,7 +245,77 @@ def test_widget_with_notebook_state_is_supported(tmp_path: Path) -> None:
     analysis = read_and_validate_notebook(path, tmp_path)
 
     assert "WIDGET_STATE_MISSING" not in codes(analysis)
+    assert "WIDGET_UNSUPPORTED" in codes(analysis)
     assert "UNSUPPORTED_MIME" not in codes(analysis)
+    assert not analysis.strict_blocked
+    assert analysis.notebook.cells[0].outputs[0].data == output.data
+
+
+def test_widget_with_state_but_no_static_fallback_is_strict(tmp_path: Path) -> None:
+    output = display_data({"application/vnd.jupyter.widget-view+json": {"model_id": "widget-id"}})
+    metadata = {
+        "widgets": {
+            "application/vnd.jupyter.widget-state+json": {
+                "state": {"widget-id": {}},
+                "version_major": 2,
+                "version_minor": 0,
+            }
+        }
+    }
+    cell = nbformat.v4.new_code_cell("widget", execution_count=1, outputs=[output])
+    path = write_notebook(tmp_path / "notebooks/widget-only.ipynb", [cell], metadata)
+
+    analysis = read_and_validate_notebook(path, tmp_path)
+
+    assert "WIDGET_STATE_MISSING" not in codes(analysis)
+    assert "WIDGET_UNSUPPORTED" in codes(analysis)
+    assert "UNSUPPORTED_MIME" in codes(analysis)
+    assert analysis.strict_blocked
+    assert analysis.notebook.cells[0].outputs[0].data == output.data
+
+
+def test_widget_javascript_is_not_accepted_as_static_fallback(tmp_path: Path) -> None:
+    output = display_data(
+        {
+            "application/vnd.jupyter.widget-view+json": {"model_id": "widget-id"},
+            "application/javascript": "window.alert('active')",
+        }
+    )
+    cell = nbformat.v4.new_code_cell("widget", execution_count=1, outputs=[output])
+    path = write_notebook(tmp_path / "notebooks/widget-script.ipynb", [cell])
+
+    analysis = read_and_validate_notebook(path, tmp_path)
+
+    finding = next(item for item in analysis.findings if item.code == "WIDGET_UNSUPPORTED")
+    assert finding.severity is Severity.ERROR
+    assert finding.strict_blocker
+    assert analysis.notebook.cells[0].outputs[0].data == output.data
+
+
+@pytest.mark.parametrize(
+    "html",
+    [
+        "<script>window.renderWidget()</script>",
+        '<button onclick="window.renderWidget()">Render</button>',
+        "<div></div>",
+    ],
+)
+def test_widget_html_fallback_must_be_visible_and_static(tmp_path: Path, html: str) -> None:
+    output = display_data(
+        {
+            "application/vnd.jupyter.widget-view+json": {"model_id": "widget-id"},
+            "text/html": html,
+        }
+    )
+    cell = nbformat.v4.new_code_cell("widget", execution_count=1, outputs=[output])
+    path = write_notebook(tmp_path / "notebooks/widget-html.ipynb", [cell])
+
+    analysis = read_and_validate_notebook(path, tmp_path)
+
+    finding = next(item for item in analysis.findings if item.code == "WIDGET_UNSUPPORTED")
+    assert finding.severity is Severity.ERROR
+    assert finding.strict_blocker
+    assert analysis.strict_blocked
 
 
 def test_present_local_markdown_image_is_allowed(tmp_path: Path) -> None:
@@ -367,6 +451,21 @@ def test_plotly_external_layout_image_is_runtime_resource(tmp_path: Path) -> Non
     analysis = read_and_validate_notebook(path, tmp_path)
 
     assert "EXTERNAL_RUNTIME_RESOURCE" in codes(analysis)
+    assert analysis.strict_blocked
+
+
+def test_plotly_missing_local_layout_image_is_structured_finding(tmp_path: Path) -> None:
+    plotly = {
+        "data": [],
+        "layout": {"images": [{"source": "images/missing-watermark.png"}]},
+    }
+    output = display_data({"application/vnd.plotly.v1+json": plotly})
+    cell = nbformat.v4.new_code_cell("figure", execution_count=1, outputs=[output])
+    path = write_notebook(tmp_path / "notebooks/image.ipynb", [cell])
+
+    analysis = read_and_validate_notebook(path, tmp_path)
+
+    assert "MISSING_LOCAL_ASSET" in codes(analysis)
     assert analysis.strict_blocked
 
 

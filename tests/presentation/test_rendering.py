@@ -1,4 +1,5 @@
 import copy
+import html
 import os
 import subprocess
 from datetime import UTC, datetime
@@ -89,6 +90,8 @@ def _presentation_resources(toc: tuple[object, ...]) -> dict[str, object]:
     return {
         "title": "Unfallatlas Analyse",
         "status": "ready",
+        "warning_count": 1,
+        "execution_complete": False,
         "source_path": "notebooks/example.ipynb",
         "snapshot_sha256": "a" * 64,
         "toc": toc,
@@ -312,6 +315,9 @@ def test_custom_template_renders_semantic_controls_metadata_and_outputs() -> Non
     assert "2 Markdown" in metadata_text
     assert "1 Code" in metadata_text
     assert "1 Fehlerausgabe" in metadata_text
+    assert "Status ready" in metadata_text
+    assert "Warnungen 1" in metadata_text
+    assert "Ausführungsstand Unvollständig" in metadata_text
     assert "Große Ausgabe" in soup.get_text(" ", strip=True)
 
 
@@ -485,7 +491,12 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
     monkeypatch.setattr(NotebookClient, "execute", _fail_if_called)
     monkeypatch.setattr(ExecutePreprocessor, "preprocess", _fail_if_called)
 
-    result = render_notebook(analysis, _renderer_metadata(), output_root)
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        output_root,
+        repo_root=tmp_path,
+    )
 
     assert result.error is None
     assert result.destination == output_root / "notebooks" / "renderer-integration.html"
@@ -508,6 +519,12 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
     assert soup.title.get_text(strip=True) == "Renderer Integration"
     assert "2026-07-15T10:30:00+02:00" in soup.get_text(" ", strip=True)
     assert "abc123def456" in soup.get_text(" ", strip=True)
+    header_text = soup.select_one(".presentation-header").get_text(" ", strip=True)
+    assert "notebooks/renderer-integration.ipynb" in header_text
+    assert str(tmp_path) not in header_text
+    assert "Status ready" in header_text
+    assert "Warnungen 0" in header_text
+    assert "Ausführungsstand Vollständig" in header_text
     assert "Gespeicherter Text" in soup.get_text(" ", strip=True)
     assert "Gespeicherte Tabelle" in soup.get_text(" ", strip=True)
     plotly = soup.select_one(".plotly-output[data-payload-key][data-asset]")
@@ -705,12 +722,15 @@ def test_render_notebook_rejects_published_asset_reference_that_traverses_assets
     assert not result.destination.exists()
 
 
-def test_render_notebook_does_not_publish_or_rewrite_sandbox_srcdoc_resources(
+def test_render_notebook_publishes_and_rewrites_sandbox_srcdoc_resources(
     tmp_path: Path,
 ) -> None:
     from unfallatlas.presentation.rendering import render_notebook
 
     analysis = _renderer_analysis(tmp_path)
+    local_image = tmp_path / "notebooks" / "inside-sandbox.png"
+    local_image.parent.mkdir(parents=True, exist_ok=True)
+    local_image.write_bytes(b"sandbox-image")
     analysis.notebook.cells[1].outputs.append(
         nbformat.v4.new_output(
             "display_data",
@@ -718,13 +738,65 @@ def test_render_notebook_does_not_publish_or_rewrite_sandbox_srcdoc_resources(
         )
     )
 
-    result = render_notebook(analysis, _renderer_metadata(), tmp_path / "site")
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path,
+    )
 
     assert result.error is None
     rendered = BeautifulSoup(result.destination.read_text(encoding="utf-8"), "html.parser")
     srcdoc = rendered.select_one("iframe.sandboxed-output")["srcdoc"]
-    assert 'src="inside-sandbox.png"' in srcdoc
-    assert not [asset for asset in result.assets if asset.kind == "local-resource"]
+    local_asset = next(asset for asset in result.assets if asset.kind == "local-resource")
+    assert f'src="../{local_asset.relative_path.as_posix()}"' in srcdoc
+    assert "inside-sandbox.png" not in srcdoc
+    assert (tmp_path / "site" / local_asset.relative_path).read_bytes() == b"sandbox-image"
+
+
+@pytest.mark.parametrize("base_href", ["nested/", "https://assets.example.org/"])
+def test_render_notebook_removes_base_from_nested_srcdoc_before_rewriting_assets(
+    tmp_path: Path,
+    base_href: str,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    outer_image = tmp_path / "notebooks" / "outer# image.png"
+    nested_image = tmp_path / "notebooks" / "nested# image.png"
+    outer_image.parent.mkdir(parents=True, exist_ok=True)
+    outer_image.write_bytes(b"outer")
+    nested_image.write_bytes(b"nested")
+    nested_srcdoc = (
+        '<base href="https://nested.example.org/"><img alt="Nested" src="nested%23%20image.png">'
+    )
+    active_html = (
+        f'<base href="{base_href}">'
+        '<img alt="Outer" src="outer%23%20image.png">'
+        f'<iframe srcdoc="{html.escape(nested_srcdoc, quote=True)}"></iframe>'
+    )
+    analysis.notebook.cells[1].outputs.append(
+        nbformat.v4.new_output("display_data", data={"text/html": active_html})
+    )
+
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path,
+    )
+
+    assert result.error is None
+    rendered = BeautifulSoup(result.destination.read_text(encoding="utf-8"), "html.parser")
+    outer_srcdoc = rendered.select_one("iframe.sandboxed-output")["srcdoc"]
+    outer = BeautifulSoup(outer_srcdoc, "html.parser")
+    assert outer.find("base") is None
+    assert "%23%20" in outer.find("img", alt="Outer")["src"]
+    nested_srcdoc_rendered = outer.find("iframe")["srcdoc"]
+    nested = BeautifulSoup(nested_srcdoc_rendered, "html.parser")
+    assert nested.find("base") is None
+    assert "%23%20" in nested.find("img", alt="Nested")["src"]
+    assert "example.org" not in outer_srcdoc
 
 
 @pytest.mark.parametrize("reference", ["missing.png", "../../outside.png"])

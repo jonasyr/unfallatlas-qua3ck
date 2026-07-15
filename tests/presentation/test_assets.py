@@ -162,6 +162,106 @@ def test_plotly_is_externalized_without_mutating_source_notebook(tmp_path: Path)
     assert metadata["size_bytes"] == record.size_bytes
 
 
+def test_widget_mime_is_replaced_by_static_fallback_only_on_render_copy(tmp_path: Path) -> None:
+    widget_mime = "application/vnd.jupyter.widget-view+json"
+    output = nbformat.v4.new_output(
+        "display_data",
+        data={
+            widget_mime: {"model_id": "widget-id"},
+            "text/plain": "static fallback",
+        },
+    )
+    analysis = _analysis(tmp_path, [output])
+    original = copy.deepcopy(analysis.notebook)
+
+    prepared = prepare_notebook_assets(analysis, AssetStore(tmp_path / "site"))
+
+    assert analysis.notebook == original
+    assert prepared.notebook.cells[0].outputs[0].data == {"text/plain": "static fallback"}
+
+
+def test_plotly_local_layout_image_is_published_and_rewritten(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    image = repository / "notebooks" / "images" / "badge.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(b"local-plotly-image")
+    plotly = {
+        "data": [{"type": "bar", "x": ["A"], "y": [3]}],
+        "layout": {"images": [{"source": "images/badge.png?variant=print#crop"}]},
+    }
+    output = nbformat.v4.new_output(
+        "display_data",
+        data={"application/vnd.plotly.v1+json": plotly, "text/plain": "Figure"},
+    )
+    analysis = _analysis(repository, [output])
+    original = copy.deepcopy(plotly)
+
+    prepared = prepare_notebook_assets(
+        analysis,
+        AssetStore(tmp_path / "site"),
+        repo_root=repository,
+    )
+
+    local_asset = next(asset for asset in prepared.assets if asset.kind == "local-resource")
+    assert (tmp_path / "site" / local_asset.relative_path).read_bytes() == b"local-plotly-image"
+    plotly_asset = next(asset for asset in prepared.assets if asset.kind == "plotly")
+    payload = (tmp_path / "site" / plotly_asset.relative_path).read_text(encoding="utf-8")
+    expected_source = f"../{local_asset.relative_path.as_posix()}?variant=print#crop"
+    assert f'"source":"{expected_source}"' in payload
+    assert "images/badge.png" not in payload
+    assert analysis.notebook.cells[0].outputs[0].data["application/vnd.plotly.v1+json"] == original
+
+
+def test_plotly_local_layout_image_href_encodes_reserved_filename_characters(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    image = repository / "notebooks" / "images" / "badge# 100%.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(b"reserved-name")
+    plotly = {
+        "data": [],
+        "layout": {"images": [{"source": "images/badge%23%20100%25.png?variant=print#crop"}]},
+    }
+    output = nbformat.v4.new_output(
+        "display_data",
+        data={"application/vnd.plotly.v1+json": plotly},
+    )
+
+    prepared = prepare_notebook_assets(
+        _analysis(repository, [output]),
+        AssetStore(tmp_path / "site"),
+        repo_root=repository,
+    )
+
+    plotly_asset = next(asset for asset in prepared.assets if asset.kind == "plotly")
+    payload = (tmp_path / "site" / plotly_asset.relative_path).read_text(encoding="utf-8")
+    assert "resource-badge%23%20100%25-" in payload
+    assert "?variant=print#crop" in payload
+    assert "resource-badge# 100%-" not in payload
+
+
+def test_plotly_layout_image_cannot_escape_repository(tmp_path: Path) -> None:
+    repository = tmp_path / "repository"
+    outside = tmp_path / "secret.png"
+    outside.write_bytes(b"secret")
+    plotly = {
+        "data": [],
+        "layout": {"images": [{"source": "../../secret.png"}]},
+    }
+    output = nbformat.v4.new_output(
+        "display_data",
+        data={"application/vnd.plotly.v1+json": plotly},
+    )
+
+    with pytest.raises(ValueError, match="escapes repository"):
+        prepare_notebook_assets(
+            _analysis(repository, [output]),
+            AssetStore(tmp_path / "site"),
+            repo_root=repository,
+        )
+
+
 def test_equal_plotly_bundles_share_asset_but_keep_distinct_chart_ids(tmp_path: Path) -> None:
     bundle = {"data": [{"x": [1], "y": [2]}], "layout": {}}
     outputs = [

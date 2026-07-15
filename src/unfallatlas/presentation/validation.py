@@ -24,7 +24,7 @@ LARGE_OUTPUT_BYTES = 5 * 1024 * 1024
 VERY_LARGE_NOTEBOOK_OUTPUT_BYTES = 100 * 1024 * 1024
 
 _PLOTLY_MIME = "application/vnd.plotly.v1+json"
-_WIDGET_VIEW_MIME = "application/vnd.jupyter.widget-view+json"
+WIDGET_VIEW_MIME = "application/vnd.jupyter.widget-view+json"
 _WIDGET_STATE_MIME = "application/vnd.jupyter.widget-state+json"
 _DATA_WRANGLER_MIMES = {
     "application/vnd.dataresource+json",
@@ -32,7 +32,6 @@ _DATA_WRANGLER_MIMES = {
 }
 _SUPPORTED_MIME_PRIORITY = (
     _PLOTLY_MIME,
-    _WIDGET_VIEW_MIME,
     "text/html",
     "image/svg+xml",
     "image/png",
@@ -42,6 +41,15 @@ _SUPPORTED_MIME_PRIORITY = (
     "application/javascript",
     "text/javascript",
 )
+_WIDGET_STATIC_FALLBACK_PRIORITY = (
+    "text/html",
+    "image/svg+xml",
+    "image/png",
+    "image/jpeg",
+    "text/latex",
+    "text/plain",
+)
+_ACTIVE_HTML_TAGS = ("script", "iframe", "object", "embed", "canvas")
 _RESOURCE_ATTRIBUTES = (
     ("img", "src"),
     ("script", "src"),
@@ -188,20 +196,47 @@ def _widget_state(nb: NotebookNode) -> dict[str, Any]:
     return state if isinstance(state, dict) else {}
 
 
-def _selected_mime(data: dict[str, Any], nb: NotebookNode) -> str | None:
+def _selected_mime(data: dict[str, Any]) -> str | None:
     for mime in _SUPPORTED_MIME_PRIORITY:
+        if mime in data:
+            return mime
+    return None
+
+
+def _static_html_is_visible(value: Any) -> bool:
+    if isinstance(value, list):
+        value = "".join(str(item) for item in value)
+    if not isinstance(value, str) or not value.strip():
+        return False
+
+    soup = BeautifulSoup(value, "html.parser")
+    if soup.find(_ACTIVE_HTML_TAGS) is not None:
+        return False
+    for tag in soup.find_all(True):
+        for attribute, raw_value in tag.attrs.items():
+            if attribute.casefold().startswith("on"):
+                return False
+            values = raw_value if isinstance(raw_value, list) else [raw_value]
+            if any("javascript:" in str(item).casefold() for item in values):
+                return False
+
+    for hidden in soup.find_all(("style", "template", "noscript")):
+        hidden.decompose()
+    if soup.get_text(" ", strip=True):
+        return True
+    if any(tag.get("src") for tag in soup.find_all(("img", "video", "audio"))):
+        return True
+    if soup.find("hr") is not None:
+        return True
+    return any(svg.contents for svg in soup.find_all("svg"))
+
+
+def select_widget_static_fallback(data: dict[str, Any]) -> str | None:
+    for mime in _WIDGET_STATIC_FALLBACK_PRIORITY:
         if mime not in data:
             continue
-        if mime == _WIDGET_VIEW_MIME:
-            view = data[mime]
-            model_id = view.get("model_id") if isinstance(view, dict) else None
-            if (not model_id or model_id not in _widget_state(nb)) and any(
-                fallback in data
-                for fallback in _SUPPORTED_MIME_PRIORITY[
-                    _SUPPORTED_MIME_PRIORITY.index(_WIDGET_VIEW_MIME) + 1 :
-                ]
-            ):
-                continue
+        if mime == "text/html" and not _static_html_is_visible(data[mime]):
+            continue
         return mime
     return None
 
@@ -279,33 +314,50 @@ def _output_findings(
     if not isinstance(data, dict):
         return ()
 
-    selected = _selected_mime(data, nb)
+    has_widget = WIDGET_VIEW_MIME in data
+    selected = select_widget_static_fallback(data) if has_widget else _selected_mime(data)
+    findings: list[Finding] = []
+    if has_widget:
+        has_fallback = selected is not None
+        findings.append(
+            _finding(
+                "WIDGET_UNSUPPORTED",
+                Severity.WARNING if has_fallback else Severity.ERROR,
+                (
+                    "Interactive widget output is unsupported; using a stored static fallback."
+                    if has_fallback
+                    else "Interactive widget output is unsupported and has no static fallback."
+                ),
+                cell_index,
+                strict=not has_fallback,
+            )
+        )
+        view = data[WIDGET_VIEW_MIME]
+        model_id = view.get("model_id") if isinstance(view, dict) else None
+        if (not model_id or model_id not in _widget_state(nb)) and not has_fallback:
+            findings.append(
+                _finding(
+                    "WIDGET_STATE_MISSING",
+                    Severity.ERROR,
+                    "Widget output has no matching embedded notebook state or static fallback.",
+                    cell_index,
+                    strict=True,
+                )
+            )
+
     if selected is None:
-        return (
+        findings.append(
             _finding(
                 "UNSUPPORTED_MIME",
                 Severity.ERROR,
                 f"Output has no supported MIME representation: {', '.join(sorted(data)) or 'none'}",
                 cell_index,
                 strict=True,
-            ),
-        )
-
-    findings: list[Finding] = []
-    if selected == _WIDGET_VIEW_MIME:
-        view = data[selected]
-        model_id = view.get("model_id") if isinstance(view, dict) else None
-        if not model_id or model_id not in _widget_state(nb):
-            findings.append(
-                _finding(
-                    "WIDGET_STATE_MISSING",
-                    Severity.ERROR,
-                    "Widget output has no matching embedded notebook state.",
-                    cell_index,
-                    strict=True,
-                )
             )
-    elif selected == "text/html" and isinstance(data[selected], str):
+        )
+        return tuple(findings)
+
+    if selected == "text/html" and isinstance(data[selected], str):
         findings.extend(
             scan_runtime_references(data[selected], notebook_dir, repo_root, cell_index)
         )
@@ -338,6 +390,8 @@ def _read_notebook(source: Path) -> NotebookNode:
 def read_and_validate_notebook(source: Path, repo_root: Path) -> NotebookAnalysis:
     """Read a notebook without executing it and validate its stored presentation snapshot."""
     notebook = _read_notebook(source)
+    snapshot_digest = snapshot_sha256(notebook)
+    source_digest = source_sha256(notebook)
     status = classify_notebook_status(notebook)
     findings: list[Finding] = []
     markdown_count = 0
@@ -485,7 +539,7 @@ def read_and_validate_notebook(source: Path, repo_root: Path) -> NotebookAnalysi
             error_outputs=error_output_count,
         ),
         findings=tuple(findings),
-        snapshot_sha256=snapshot_sha256(notebook),
-        source_sha256=source_sha256(notebook),
+        snapshot_sha256=snapshot_digest,
+        source_sha256=source_digest,
         output_bytes=output_bytes,
     )

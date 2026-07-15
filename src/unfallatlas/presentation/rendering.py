@@ -14,6 +14,7 @@ from nbconvert import HTMLExporter
 
 from unfallatlas.presentation.assets import (
     AssetStore,
+    asset_href,
     copy_shared_assets,
     prepare_notebook_assets,
 )
@@ -44,7 +45,7 @@ class PresentationHTMLExporter(HTMLExporter):
 
 
 def _href(record: AssetRecord, href_prefix: Path = Path("..")) -> str:
-    return f"{href_prefix.as_posix()}/{record.relative_path.as_posix()}"
+    return asset_href(record.relative_path, href_prefix)
 
 
 def _record_by_kind(records: tuple[AssetRecord, ...], kind: str) -> AssetRecord:
@@ -191,6 +192,8 @@ def _publish_local_resources(
     href_prefix: Path = Path(".."),
 ) -> tuple[str, tuple[AssetRecord, ...], dict[str, str]]:
     soup = BeautifulSoup(html, "html.parser")
+    for base in soup.find_all("base"):
+        base.decompose()
     records: dict[Path, AssetRecord] = {}
     rewrites = known_rewrites if known_rewrites is not None else {}
 
@@ -245,6 +248,20 @@ def _publish_local_resources(
         tag.string = rewrite_css(tag.get_text())
     for tag in soup.find_all(style=True):
         tag["style"] = rewrite_css(str(tag["style"]))
+    for iframe in soup.find_all("iframe", srcdoc=True):
+        rewritten_srcdoc, nested_records, _ = _publish_local_resources(
+            str(iframe["srcdoc"]),
+            analysis=analysis,
+            repo_root=repo_root,
+            output_root=output_root,
+            store=store,
+            known_rewrites=rewrites,
+            allow_writes=allow_writes,
+            href_prefix=href_prefix,
+        )
+        iframe["srcdoc"] = rewritten_srcdoc
+        for record in nested_records:
+            records.setdefault(record.relative_path, record)
     return str(soup), tuple(records.values()), rewrites
 
 
@@ -254,8 +271,24 @@ def _presentation_resources(
     notebook_assets: tuple[AssetRecord, ...],
     shared_assets: tuple[AssetRecord, ...],
     href_prefix: Path = Path(".."),
+    repo_root: Path | None = None,
 ) -> dict[str, object]:
     all_assets = (*shared_assets, *notebook_assets)
+    source = analysis.source.resolve(strict=False)
+    try:
+        root = _repo_root_for(analysis.source, repo_root)
+    except ValueError:
+        source_path = source.name
+    else:
+        source_path = (
+            source.relative_to(root).as_posix() if source.is_relative_to(root) else source.name
+        )
+    warning_count = sum(finding.severity.value == "warning" for finding in analysis.findings)
+    execution_complete = (
+        analysis.status.value == "ready"
+        and analysis.counts.unexecuted_code == 0
+        and analysis.counts.error_outputs == 0
+    )
     return {
         "title": analysis.title,
         "status": analysis.status.value,
@@ -264,7 +297,9 @@ def _presentation_resources(
         "toc": build_toc(analysis.notebook),
         "metadata": asdict(metadata),
         "snapshot_sha256": analysis.snapshot_sha256,
-        "source_path": analysis.source.as_posix(),
+        "source_path": source_path,
+        "warning_count": warning_count,
+        "execution_complete": execution_complete,
         "style_href": _href(_record_by_kind(shared_assets, "ui-style"), href_prefix),
         "script_href": _href(_record_by_kind(shared_assets, "ui-script"), href_prefix),
         "plotly_runtime_href": _href(_record_by_kind(shared_assets, "plotly-runtime"), href_prefix),
@@ -301,7 +336,12 @@ def render_notebook(
 
         anchored_notebook = add_stable_heading_anchors(analysis.notebook)
         anchored_analysis = replace(analysis, notebook=anchored_notebook)
-        prepared = prepare_notebook_assets(anchored_analysis, store, href_prefix=href_prefix)
+        prepared = prepare_notebook_assets(
+            anchored_analysis,
+            store,
+            href_prefix=href_prefix,
+            repo_root=repo_root,
+        )
         assets.extend(prepared.assets)
 
         exporter = PresentationHTMLExporter(
@@ -317,6 +357,7 @@ def render_notebook(
             prepared.assets,
             shared_assets,
             href_prefix,
+            repo_root,
         )
         with warnings.catch_warnings():
             warnings.filterwarnings(
@@ -343,6 +384,7 @@ def render_notebook(
                 (*prepared.assets, *local_assets),
                 shared_assets,
                 href_prefix,
+                repo_root,
             )
             html, _ = exporter.from_notebook_node(
                 prepared.notebook,

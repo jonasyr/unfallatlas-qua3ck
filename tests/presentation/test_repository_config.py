@@ -76,10 +76,10 @@ def test_pages_workflow_deploys_committed_lfs_artifact() -> None:
 
     assert "actions/checkout@v6" in workflow
     assert "          lfs: true" in workflow
-    assert "actions/configure-pages@v5" in workflow
-    assert "actions/upload-pages-artifact@v4" in workflow
+    assert "actions/configure-pages@v6" in workflow
+    assert "actions/upload-pages-artifact@v5" in workflow
     assert "          path: reports/presentation" in workflow
-    assert "actions/deploy-pages@v4" in workflow
+    assert "actions/deploy-pages@v5" in workflow
 
 
 def test_pages_workflow_validates_complete_artifact_below_one_gibibyte() -> None:

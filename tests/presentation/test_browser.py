@@ -35,6 +35,13 @@ def gallery_html(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
     assert result.error is None
     assert result.destination.is_file()
+    html = result.destination.read_text(encoding="utf-8")
+    formula = (
+        '<p class="math-fixture" aria-label="Gespeicherte Formel">'
+        r"\[F_1 = 2 \cdot \frac{precision \cdot recall}{precision + recall}\]"
+        "</p>"
+    )
+    result.destination.write_text(html.replace("</main>", f"{formula}</main>", 1), encoding="utf-8")
     return result.destination
 
 
@@ -115,6 +122,7 @@ def test_gallery_fixture_exports_saved_outputs_without_execution(gallery_html: P
     assert "Breite Ergebnistabelle mit 200 Zeilen" in html
     assert "synthetic-validation-warning" in GALLERY_NOTEBOOK.read_text(encoding="utf-8")
     assert "Code cell was executed and legitimately stored no output." in html
+    assert r"\[F_1 = 2 \cdot \frac{precision \cdot recall}{precision + recall}\]" in html
 
 
 @pytest.mark.parametrize(
@@ -411,6 +419,43 @@ def test_plotly_lazy_loads_from_local_assets_without_runtime_errors(
         _assert_clean_runtime(requests, console_errors, page_errors)
     finally:
         context.close()
+
+
+@pytest.mark.browser
+def test_mathjax_renders_local_tex_offline_and_keeps_no_javascript_fallback(
+    chromium_browser: Any, gallery_html: Path
+) -> None:
+    context, page, requests, console_errors, page_errors = _open_gallery(
+        chromium_browser, gallery_html, width=1366, height=768
+    )
+    try:
+        runtime = page.locator("body").get_attribute("data-mathjax-runtime")
+        assert runtime
+        page.wait_for_function(
+            "runtime => [...document.querySelectorAll('script[src]')]"
+            ".some(script => script.getAttribute('src') === runtime)",
+            arg=runtime,
+            timeout=15_000,
+        )
+        page.wait_for_selector(".math-fixture mjx-container[jax='SVG'] svg", timeout=15_000)
+        assert page.locator(".math-fixture mjx-container svg").is_visible()
+        _assert_clean_runtime(requests, console_errors, page_errors)
+    finally:
+        context.close()
+
+    no_javascript = chromium_browser.new_context(
+        viewport={"width": 1366, "height": 768}, java_script_enabled=False
+    )
+    try:
+        page = no_javascript.new_page()
+        page.goto(gallery_html.resolve().as_uri(), wait_until="load")
+        fallback = page.locator(".math-fixture")
+        assert fallback.is_visible()
+        assert r"\[F_1 = 2 \cdot \frac{precision \cdot recall}{precision + recall}\]" in (
+            fallback.text_content() or ""
+        )
+    finally:
+        no_javascript.close()
 
 
 @pytest.mark.browser

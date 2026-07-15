@@ -4,17 +4,20 @@ import base64
 import copy
 import hashlib
 import json
+import mimetypes
 import os
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 import plotly
 from nbformat import NotebookNode
 
 from unfallatlas.presentation.models import AssetRecord, NotebookAnalysis
+from unfallatlas.presentation.validation import WIDGET_VIEW_MIME, select_widget_static_fallback
 
 PACKAGE_DIR = Path(__file__).parent
 STATIC_DIR = PACKAGE_DIR / "static"
@@ -121,9 +124,84 @@ def _metadata(
     return {
         "kind": kind,
         **extra,
-        "asset_href": f"{href_prefix.as_posix()}/{record.relative_path.as_posix()}",
+        "asset_href": asset_href(record.relative_path, href_prefix),
         "size_bytes": record.size_bytes,
     }
+
+
+def asset_href(relative_path: Path, href_prefix: Path = Path("..")) -> str:
+    """Return a portable URL whose individual filesystem path segments are encoded."""
+    path = href_prefix / relative_path
+    return "/".join(quote(part, safe="-._~") for part in path.parts)
+
+
+def _repository_root(source: Path, explicit_root: Path | None) -> Path:
+    if explicit_root is not None:
+        return explicit_root.resolve(strict=False)
+    source_path = source.resolve(strict=False)
+    for candidate in (source_path.parent, *source_path.parents):
+        if (candidate / "pyproject.toml").is_file() and (candidate / ".git").exists():
+            return candidate
+    raise ValueError(f"cannot determine repository root for local resources in {source}")
+
+
+def _publish_plotly_layout_images(
+    payload: Any,
+    *,
+    analysis: NotebookAnalysis,
+    store: AssetStore,
+    repo_root: Path | None,
+    href_prefix: Path,
+    namespace: str,
+    cell_index: int,
+) -> tuple[AssetRecord, ...]:
+    if not isinstance(payload, dict):
+        return ()
+    layout = payload.get("layout")
+    if not isinstance(layout, dict) or not isinstance(layout.get("images"), list):
+        return ()
+
+    records: dict[Path, AssetRecord] = {}
+    for image in layout["images"]:
+        if not isinstance(image, dict) or not isinstance(image.get("source"), str):
+            continue
+        reference = image["source"].strip()
+        parsed = urlsplit(reference)
+        if (
+            not reference
+            or reference.startswith("#")
+            or reference.startswith("//")
+            or parsed.scheme
+            or not parsed.path
+        ):
+            continue
+        root = _repository_root(analysis.source, repo_root)
+        source = (analysis.source.parent / unquote(parsed.path)).resolve(strict=False)
+        if not source.is_relative_to(root):
+            raise ValueError(f"local resource escapes repository: {reference}")
+        if not source.is_file():
+            raise FileNotFoundError(f"local resource does not exist: {reference}")
+        media_type = mimetypes.guess_type(source.name)[0] or "application/octet-stream"
+        record = store.put_bytes(
+            namespace=f"{namespace}/local",
+            stem=f"resource-{source.stem}",
+            suffix=source.suffix,
+            data=source.read_bytes(),
+            media_type=media_type,
+            kind="local-resource",
+            cell_index=cell_index,
+        )
+        records.setdefault(record.relative_path, record)
+        image["source"] = urlunsplit(
+            (
+                "",
+                "",
+                asset_href(record.relative_path, href_prefix),
+                parsed.query,
+                parsed.fragment,
+            )
+        )
+    return tuple(records.values())
 
 
 def prepare_notebook_assets(
@@ -131,6 +209,7 @@ def prepare_notebook_assets(
     store: AssetStore,
     *,
     href_prefix: Path = Path(".."),
+    repo_root: Path | None = None,
 ) -> PreparedNotebook:
     notebook = copy.deepcopy(analysis.notebook)
     notebook_key = analysis.source.stem
@@ -145,7 +224,25 @@ def prepare_notebook_assets(
             output_metadata = output.setdefault("metadata", {})
             chart_id = f"{notebook_key}-cell-{cell_index}-output-{output_index}"
 
+            if WIDGET_VIEW_MIME in data:
+                fallback = select_widget_static_fallback(data)
+                fallback_value = data.get(fallback) if fallback is not None else None
+                data.clear()
+                if fallback is not None:
+                    data[fallback] = fallback_value
+
             if PLOTLY_MIME in data:
+                local_records = _publish_plotly_layout_images(
+                    data[PLOTLY_MIME],
+                    analysis=analysis,
+                    store=store,
+                    repo_root=repo_root,
+                    href_prefix=href_prefix,
+                    namespace=namespace,
+                    cell_index=cell_index,
+                )
+                for local_record in local_records:
+                    assets_by_path.setdefault(local_record.relative_path, local_record)
                 plotly_json = _compact_json_bytes(data[PLOTLY_MIME])
                 payload_digest = hashlib.sha256(plotly_json).hexdigest()
                 payload_key = f"plotly-{payload_digest}"

@@ -27,6 +27,9 @@
       <div><dt>Commit</dt><dd><code>{{ resources.presentation.metadata.git.short_commit | e }}</code></dd></div>
       <div><dt>Branch</dt><dd>{{ resources.presentation.metadata.git.branch | e }}</dd></div>
       <div><dt>Repository</dt><dd>{% if resources.presentation.metadata.git.dirty %}Arbeitsbaum geändert{% else %}Arbeitsbaum sauber{% endif %}</dd></div>
+      <div><dt>Status</dt><dd>{{ resources.presentation.status | e }}</dd></div>
+      <div><dt>Warnungen</dt><dd>{{ resources.presentation.warning_count }}</dd></div>
+      <div><dt>Ausführungsstand</dt><dd>{% if resources.presentation.execution_complete %}Vollständig{% else %}Unvollständig{% endif %}</dd></div>
       <div><dt>Zellen</dt><dd>{{ resources.presentation.counts.markdown }} Markdown, {{ resources.presentation.counts.code }} Code</dd></div>
       <div><dt>Ausgaben</dt><dd>{{ resources.presentation.counts.code_with_output }} mit Ausgabe, {{ resources.presentation.counts.error_outputs }} Fehlerausgabe</dd></div>
     </dl>

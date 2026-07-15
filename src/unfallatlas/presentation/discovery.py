@@ -46,20 +46,34 @@ def resolve_explicit_notebooks(paths: Sequence[Path], notebooks_dir: Path) -> tu
 
 
 def classify_notebook_status(nb: NotebookNode) -> NotebookStatus:
+    nonempty = [cell for cell in nb.cells if cell.get("source", "").strip()]
+    if not nonempty:
+        return NotebookStatus.PLACEHOLDER
+
+    if any(
+        output.get("output_type") == "error"
+        for cell in nb.cells
+        if cell.cell_type == "code"
+        for output in cell.get("outputs", [])
+    ):
+        return NotebookStatus.WIP
+
+    code = [cell for cell in nonempty if cell.cell_type == "code"]
+    has_unexecuted_code = any(cell.get("execution_count") is None for cell in code)
     explicit = nb.metadata.get("presentation", {}).get("status")
     valid_explicit = {
         status.value for status in NotebookStatus if status is not NotebookStatus.INVALID
     }
     if explicit in valid_explicit:
+        if explicit == NotebookStatus.READY.value and has_unexecuted_code:
+            return NotebookStatus.WIP
         return NotebookStatus(explicit)
 
-    nonempty = [cell for cell in nb.cells if cell.get("source", "").strip()]
-    code = [cell for cell in nonempty if cell.cell_type == "code"]
     first_text = "\n".join(cell.source for cell in nonempty[:2])
     marker = re.search(r"(?i)\b(?:TODO|TBD|Platzhalter)\b", first_text)
     if len(nonempty) <= 2 and not code and marker:
         return NotebookStatus.PLACEHOLDER
-    if any(cell.get("execution_count") is None for cell in code):
+    if has_unexecuted_code:
         return NotebookStatus.WIP
     return NotebookStatus.READY
 

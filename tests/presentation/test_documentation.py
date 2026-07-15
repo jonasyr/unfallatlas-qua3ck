@@ -153,6 +153,17 @@ def test_widget_state_finding_is_conditional_on_missing_static_fallback(
         r"mit.*html-, bild- oder text-fallback.*widget-mime.*übersprungen.*ohne diesen befund",
         widgets,
     )
+    assert "`widget_unsupported`" in validation
+    assert re.search(r"widget_unsupported.*statisch.*fallback", validation, flags=re.DOTALL)
+
+
+def test_placeholder_and_wip_section_covers_empty_and_error_notebooks(
+    guide_text: str,
+) -> None:
+    section = " ".join(_section(guide_text, "Platzhalter und WIP").casefold().split())
+
+    assert re.search(r"leere notebook.*placeholder", section)
+    assert re.search(r"error-output.*wip", section)
 
 
 def test_pdf_section_uses_current_print_button_label(guide_text: str) -> None:

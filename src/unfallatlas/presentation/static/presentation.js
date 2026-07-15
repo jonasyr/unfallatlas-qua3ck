@@ -86,6 +86,28 @@ window.UnfallatlasPresentation = (() => {
     }
   }
 
+  function containsTex() {
+    const texPattern = /\\\(|\\\[|\$\$|\\begin\s*\{/;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.parentElement?.closest("code, pre, script, style, textarea")) continue;
+      if (texPattern.test(node.nodeValue || "")) return true;
+    }
+    return false;
+  }
+
+  function initializeMathJax() {
+    const runtime = document.body.dataset.mathjaxRuntime;
+    if (!runtime || !containsTex()) return;
+    loadScript(runtime).catch((error) => {
+      const message = document.createElement("p");
+      message.className = "output-load-error";
+      message.textContent =
+        error instanceof Error ? error.message : "Formeln konnten nicht geladen werden.";
+      document.querySelector(".notebook-main")?.prepend(message);
+    });
+  }
+
   function initialize() {
     const body = document.body;
     const statusRegion = document.querySelector("[data-status-region]");
@@ -237,6 +259,7 @@ window.UnfallatlasPresentation = (() => {
     }
 
     document.querySelectorAll(".toc-link").forEach((link) => link.addEventListener("click", closeToc));
+    initializeMathJax();
     window.addEventListener("beforeprint", () => {
       document.querySelectorAll("details").forEach((details) => {
         details.open = true;

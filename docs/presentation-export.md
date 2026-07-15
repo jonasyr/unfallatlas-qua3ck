@@ -90,6 +90,7 @@ Wichtige Codes und ihre Bedeutung:
 | `UNSAFE_LOCAL_ASSET` | Lokale Referenz verlässt das Repository | ja |
 | `EXTERNAL_RUNTIME_RESOURCE` | HTML benötigt eine externe oder nicht lokale URI | ja |
 | `EXTERNAL_MAP_TILES` | Plotly-Karte benötigt externe Kartenkacheln | ja |
+| `WIDGET_UNSUPPORTED` | Interaktives Widget wird nicht gerendert; statischer Fallback wird verwendet | nur ohne Fallback |
 | `WIDGET_STATE_MISSING` | Widget-Zustand fehlt und es gibt keinen unterstützten statischen Fallback | ja |
 | `UNSUPPORTED_MIME` | MIME-Bundle hat keine unterstützte Darstellung/Fallback | ja |
 | `LARGE_OUTPUT` | Einzelner gespeicherter Output ist größer als 5 MiB | nein |
@@ -177,10 +178,16 @@ Widget-Zustand im Notebook eingebettet ist: Widget-Manager-Laufzeit und Widget-Z
 werden nicht veröffentlicht und stehen daher nicht als ausführbare Präsentations-Assets
 zur Verfügung.
 Wenn der Widget-Zustand fehlt und kein unterstützter statischer Fallback existiert, meldet
-die Validierung `WIDGET_STATE_MISSING`. Mit einem geeigneten HTML-, Bild- oder
-Text-Fallback wird die Widget-MIME-Darstellung übersprungen und der Fallback ohne diesen
-Befund verwendet. Für jedes wichtige Widget-Ergebnis ist daher ein statischer Fallback
-als PNG, SVG, HTML-Tabelle oder Textoutput erforderlich.
+die Validierung `WIDGET_STATE_MISSING`. `WIDGET_UNSUPPORTED` weist unabhängig vom
+gespeicherten Zustand darauf hin, dass die interaktive Darstellung nicht verfügbar ist;
+ohne statischen Fallback blockiert dieser Befund auch Strict. Mit einem geeigneten HTML-,
+Bild- oder Text-Fallback wird die Widget-MIME-Darstellung übersprungen und der Fallback
+ohne diesen Befund (`WIDGET_STATE_MISSING`) verwendet. Für jedes wichtige Widget-Ergebnis
+ist daher ein statischer Fallback als PNG, SVG, HTML-Tabelle oder Textoutput erforderlich.
+Ein HTML-Fallback gilt nur dann als statisch, wenn er nichtleer und sichtbar ist und weder
+Skripte, JavaScript-URIs, Inline-Eventhandler noch aktive Einbettungen enthält. Andernfalls
+wird er nicht als Fallback verwendet und blockiert Strict, sofern keine andere statische
+Darstellung im MIME-Bundle vorliegt.
 
 Aktive HTML-Ausgaben, iframes und damit typische Folium-Ausgaben werden aus
 Sicherheitsgründen in einem restriktiven Sandbox-iframe dargestellt. Skripte sind in
@@ -244,9 +251,13 @@ nicht als fertige Phase. Falls ein Platzhalter bewusst als Vorschau benötigt wi
 uv run python scripts/export_notebooks.py --all --include-placeholders
 ```
 
-Ein WIP-Notebook kann im normalen Modus mit klarer Kennzeichnung exportiert werden, ist
-aber ein Strict-Blocker. Für laufende Trainings- oder unvollständige Modellphasen sollte
-kein veröffentlichter Snapshot als abgeschlossen dargestellt werden.
+Leere Notebooks werden ebenfalls als `placeholder` behandelt und nicht als fertige Phase
+veröffentlicht. Ein Notebook mit nicht ausgeführtem Code oder gespeichertem Error-Output
+wird als `wip` klassifiziert; ein explizites `metadata.presentation.status = "ready"` kann
+diese Sicherheitsregel nicht überstimmen. Ein WIP-Notebook kann im normalen Modus mit
+klarer Kennzeichnung exportiert werden, ist aber ein Strict-Blocker. Für laufende Trainings-
+oder unvollständige Modellphasen sollte kein veröffentlichter Snapshot als abgeschlossen
+dargestellt werden.
 
 ## Zukünftige Notebooks
 

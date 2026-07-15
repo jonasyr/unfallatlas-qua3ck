@@ -88,7 +88,7 @@ def test_resolve_explicit_notebooks_rejects_path_outside_root(tmp_path: Path) ->
         resolve_explicit_notebooks([outside], notebooks)
 
 
-@pytest.mark.parametrize("status", ["ready", "wip", "placeholder"])
+@pytest.mark.parametrize("status", ["wip", "placeholder"])
 def test_explicit_presentation_status_takes_precedence(status: str) -> None:
     nb = new_notebook(
         cells=[new_code_cell("x = 1", execution_count=None)],
@@ -96,6 +96,15 @@ def test_explicit_presentation_status_takes_precedence(status: str) -> None:
     )
 
     assert classify_notebook_status(nb) is NotebookStatus(status)
+
+
+def test_explicit_ready_cannot_override_unexecuted_code() -> None:
+    nb = new_notebook(
+        cells=[new_code_cell("x = 1", execution_count=None)],
+        metadata={"presentation": {"status": "ready"}},
+    )
+
+    assert classify_notebook_status(nb) is NotebookStatus.WIP
 
 
 def test_invalid_explicit_presentation_status_uses_content_rule() -> None:
@@ -110,6 +119,10 @@ def test_invalid_explicit_presentation_status_uses_content_rule() -> None:
 def test_markdown_only_q_is_ready() -> None:
     nb = new_notebook(cells=[new_markdown_cell("# Q phase\nComplete narrative")])
     assert classify_notebook_status(nb) is NotebookStatus.READY
+
+
+def test_empty_notebook_is_placeholder_not_ready() -> None:
+    assert classify_notebook_status(new_notebook()) is NotebookStatus.PLACEHOLDER
 
 
 def test_small_explicit_marker_is_placeholder() -> None:
@@ -128,6 +141,21 @@ def test_many_cells_with_todo_comment_are_not_placeholder() -> None:
 def test_executed_code_is_ready() -> None:
     nb = new_notebook(cells=[new_code_cell("x = 1", execution_count=1)])
     assert classify_notebook_status(nb) is NotebookStatus.READY
+
+
+def test_stored_error_output_forces_wip() -> None:
+    error = {
+        "output_type": "error",
+        "ename": "ValueError",
+        "evalue": "bad",
+        "traceback": [],
+    }
+    nb = new_notebook(
+        cells=[new_code_cell("raise ValueError", execution_count=1, outputs=[error])],
+        metadata={"presentation": {"status": "ready"}},
+    )
+
+    assert classify_notebook_status(nb) is NotebookStatus.WIP
 
 
 def test_title_uses_first_markdown_h1_and_strips_inline_punctuation() -> None:
