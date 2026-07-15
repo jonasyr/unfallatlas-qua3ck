@@ -199,6 +199,20 @@ def test_keyboard_controls_and_code_output_toggles_keep_aria_in_sync(
                 break
         assert expected_actions <= reached
 
+        initially_offscreen_plot = page.locator(".plotly-output")
+        output_details = page.locator("details.output-cell")
+        assert page.locator("details.output-cell:not([open])").count() == 0
+        assert (
+            page.locator("details.output-cell > summary[aria-expanded='true']").count()
+            == output_details.count()
+        )
+        assert initially_offscreen_plot.get_attribute("data-loaded") != "true"
+        page.locator('[data-action="show-all-output"]').click()
+        page.wait_for_function(
+            "() => document.querySelector('.plotly-output').dataset.loaded === 'true'",
+            timeout=15_000,
+        )
+
         first_code = page.locator("details.code-cell").first
         first_output = page.locator("details.output-cell").first
         first_code.locator(":scope > summary").click()
@@ -232,18 +246,6 @@ def test_keyboard_controls_and_code_output_toggles_keep_aria_in_sync(
             == page.locator("details.code-cell").count()
         )
 
-        page.locator('[data-action="show-all-output"]').click()
-        page.wait_for_function(
-            "() => [...document.querySelectorAll('details.output-cell')]"
-            ".every(details => details.open && "
-            "details.querySelector(':scope > summary').getAttribute('aria-expanded') === 'true')"
-        )
-        assert page.locator("details.output-cell:not([open])").count() == 0
-        assert (
-            page.locator("details.output-cell > summary[aria-expanded='true']").count()
-            == page.locator("details.output-cell").count()
-        )
-
         page.locator('[data-action="hide-all-output"]').click()
         page.wait_for_function(
             "() => [...document.querySelectorAll('details.output-cell')]"
@@ -255,6 +257,19 @@ def test_keyboard_controls_and_code_output_toggles_keep_aria_in_sync(
             page.locator("details.output-cell > summary[aria-expanded='false']").count()
             == page.locator("details.output-cell").count()
         )
+
+        page.locator('[data-action="show-all-output"]').click()
+        page.wait_for_function(
+            "() => [...document.querySelectorAll('details.output-cell')]"
+            ".every(details => details.open && "
+            "details.querySelector(':scope > summary').getAttribute('aria-expanded') === 'true')"
+        )
+        assert page.locator("details.output-cell:not([open])").count() == 0
+        assert (
+            page.locator("details.output-cell > summary[aria-expanded='true']").count()
+            == page.locator("details.output-cell").count()
+        )
+        page.wait_for_selector(".plotly-output.js-plotly-plot", timeout=15_000)
         _assert_clean_runtime(requests, console_errors, page_errors)
     finally:
         context.close()
@@ -362,6 +377,16 @@ def test_plotly_lazy_loads_from_local_assets_without_runtime_errors(
     )
     try:
         plot = page.locator(".plotly-output")
+        assert plot.get_attribute("data-loaded") != "true"
+        assert page.locator(".plotly-output.js-plotly-plot").count() == 0
+        dynamic_script_sources = page.locator("script[src]").evaluate_all(
+            "scripts => scripts.map(script => script.getAttribute('src'))"
+        )
+        assert (
+            page.locator("body").get_attribute("data-plotly-runtime") not in dynamic_script_sources
+        )
+        assert plot.get_attribute("data-asset") not in dynamic_script_sources
+
         plot.scroll_into_view_if_needed()
         page.wait_for_selector(".plotly-output.js-plotly-plot", timeout=15_000)
         assert plot.get_attribute("data-loaded") == "true"

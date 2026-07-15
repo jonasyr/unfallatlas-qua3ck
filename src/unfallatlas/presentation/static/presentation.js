@@ -111,20 +111,23 @@ window.UnfallatlasPresentation = (() => {
       const saved = readStorage(storageKey(details, index));
       if (saved !== null) details.open = saved === "open";
       const summary = details.querySelector(":scope > summary");
-      const synchronize = () => {
+      const synchronize = (loadOutput = true) => {
         if (summary) summary.setAttribute("aria-expanded", String(details.open));
         writeStorage(storageKey(details, index), details.open ? "open" : "closed");
-        if (details.open && details.classList.contains("output-cell")) {
+        if (loadOutput && details.open && details.classList.contains("output-cell")) {
           details.querySelectorAll(".plotly-output").forEach(loadPlotly);
         }
       };
-      synchronize();
-      details.addEventListener("toggle", synchronize);
+      synchronize(false);
+      details.addEventListener("toggle", () => synchronize());
     });
 
     function setDetails(selector, open) {
       document.querySelectorAll(selector).forEach((details) => {
         details.open = open;
+        if (open && details.classList.contains("output-cell")) {
+          details.querySelectorAll(".plotly-output").forEach(loadPlotly);
+        }
       });
       announce(open ? "Bereiche geöffnet." : "Bereiche geschlossen.");
     }
