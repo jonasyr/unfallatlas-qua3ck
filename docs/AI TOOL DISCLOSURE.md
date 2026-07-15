@@ -38,6 +38,7 @@ The QUA3CK model is an iterative process for developing ML solutions. It stands 
 | **Phase A³ / Q / U** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Binary KSI reformulation and the corresponding cross-phase scientific documentation | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-14-binary-ksi-reframe.md) |
 | **Phase A³** | Codex (GPT-5.6 Terra), effort: medium; used July 2026 | AI-tool disclosure and prompt-record audit: provenance correction, plan indexing, link normalization, and plan-body de-duplication | [Prompt record](prompts/03_prompts_phase_a3.md); [This disclosure](AI%20TOOL%20DISCLOSURE.md) |
 | **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Course-material-driven review of the A³ phase against SVM/kernel-method coverage; added SVM candidates and a genuine, searched (not assumed) binary KSI champion, with a real end-to-end notebook execution | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-14-svm-algorithm-selection.md) |
+| **Phase A³** | Claude Code (Sonnet 5), effort: medium; used July 2026 | Evidence-grounded investigation of whether the binary macro-F1 could be significantly improved; attempted multi-objective tuning + calibration (correctly not promoted, an honest negative result) and added a binary-target-specific Cramér's V/feature-importance evidence section | [Prompt record](prompts/03_prompts_phase_a3.md); [Implementation plan](superpowers/plans/2026-07-15-binary-ksi-front-refinement.md) |
 
 ---
 
@@ -58,6 +59,7 @@ records link to them by path rather than duplicating their contents.
 | 2026-07-09 | A³ OSM feature integration | Sonnet 5, medium | [2026-07-09-a3-osm-feature-integration.md](superpowers/plans/2026-07-09-a3-osm-feature-integration.md) |
 | 2026-07-14 | Binary KSI reframe | Sonnet 5, medium | [2026-07-14-binary-ksi-reframe.md](superpowers/plans/2026-07-14-binary-ksi-reframe.md) |
 | 2026-07-14 | SVM algorithm selection and genuine binary champion search | Sonnet 5, medium | [2026-07-14-svm-algorithm-selection.md](superpowers/plans/2026-07-14-svm-algorithm-selection.md) |
+| 2026-07-15 | Binary KSI front refinement and evidence | Sonnet 5, medium | [2026-07-15-binary-ksi-front-refinement.md](superpowers/plans/2026-07-15-binary-ksi-front-refinement.md) |
 
 ---
 

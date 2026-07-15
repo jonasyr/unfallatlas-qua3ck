@@ -150,6 +150,56 @@ selected `random_forest` over nine other candidates (including all three
 SVM variants), reaching Test-2024 macro-F1 = 0.6026 and recall(KSI) =
 0.5255, clearing both acceptance gates.
 
+## Binary KSI front refinement and evidence
+
+**Tool:** Claude Code (Sonnet 5)<br>
+**Model release:** June 30, 2026<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)
+**Implementation plan:** [2026-07-15-binary-ksi-front-refinement.md](../superpowers/plans/2026-07-15-binary-ksi-front-refinement.md)
+
+### Recorded prompt
+
+The plan was produced with `superpowers:brainstorming` and
+`superpowers:writing-plans` from this verbatim user message, asking whether
+the 0.60 macro-F1 binary result could be pushed significantly higher:
+
+> One thought, dont get me wrong i am very very happy about the results we
+> got and that we finally after moths broke through the gate but i cant
+> sheke the feeling that its not enough. My friend scores in the 0.9x
+> easyly i barely have 0.6. Isnt there ANY Way maybe even something from
+> the course material that could SIGNIFICANTLY Improve the F1, Recall /
+> Precision. use skills like /brainstorming and ground your ideas in
+> ACTUAL EVIDANCE AND SOURCES SO I DO NOT IMPLEMENT STUFF AGAIN THAT HAS
+> NO EFFECT BE VEEEEERY SURE and tell me why USE ANY SKILLS MCPs you
+> want/need
+
+The brainstorming session grounded its answer entirely in evidence already
+in the repository (`docs/project/Technical_Review_Next_Steps.md`'s
+empirical ceiling analysis, Cramér's V ≤ 0.13 for the strongest 3-class
+feature, and the pre-registered 0.58–0.65 macro-F1 estimate that the actual
+0.6026 result already matches) plus published literature (Santos 2022,
+Pakgohar 2021, Schlößler 2024), establishing that 0.9x is not reachable on
+this feature set — a Bayes-ceiling, not a tooling gap. The user chose to
+both (a) attempt the two remaining untried, literature-backed levers
+(multi-objective Pareto tuning + probability calibration, gated to only
+promote a strict improvement) and (b) add a binary-target-specific evidence
+section, rather than stop or skip straight to documentation.
+
+The plan was implemented with `superpowers:subagent-driven-development`
+across 3 tasks. The live result: the multi-objective/calibration candidate
+was correctly **not promoted** (Val-2023 macro-F1 0.6057 regressed against
+the champion's 0.6072, despite a marginally higher recall_ksi) — an honest
+negative result confirming the ceiling evidence rather than a fixable gap.
+A fresh Cramér's V check computed directly against the binary KSI label
+(rather than inferred from the 3-class analysis) found the strongest
+feature (`UART`, accident type) at 0.1801 — still far below the range
+needed for strong classification signal — corroborating that the existing
+Test-2024 macro-F1 (0.6026) is consistent with, not short of, the published
+state of the art for this problem framing. The final whole-branch review
+came back clean with no Critical or Important findings.
+
 ## AI-tool disclosure and prompt-record audit
 
 **Tool:** Codex (GPT-5.6 Terra)<br>
