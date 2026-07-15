@@ -56,9 +56,9 @@
     {
       "model": "binary_catboost_balanced",
       "family": "catboost",
-      "macro_f1": 0.5647201528170669,
-      "recall_ksi": 0.6856981468204827,
-      "recall_slight": 0.6236060604701842,
+      "macro_f1": 0.564988826165381,
+      "recall_ksi": 0.686067479197897,
+      "recall_slight": 0.623866127998063,
       "n_train": 1554834.0
     },
     {
@@ -111,6 +111,13 @@
   },
   "acceptance_gate": "binary macro-F1 >= 0.55 AND Recall(KSI) >= 0.50",
   "acceptance_gate_passed": true,
+  "multiobjective_refinement": {
+    "attempted": true,
+    "promoted": false,
+    "val_macro_f1": 0.605650747139666,
+    "val_recall_ksi": 0.5186947359273502,
+    "promotion_rule": "promoted iff multiobj Val-2023 macro_f1 >= single-objective champion's Val-2023 macro_f1 AND multiobj Val-2023 recall_ksi >= single-objective champion's Val-2023 recall_ksi (strict non-regression on both axes, Val-to-Val comparison only)"
+  },
   "provenance": {
     "rows_train": 1554834,
     "rows_val": 269048,
@@ -118,7 +125,7 @@
     "optuna_trials": 20,
     "subsample_size_svm_linear_and_boosting_tuning": 500000,
     "subsample_size_svm_rbf": 8000,
-    "run_at_utc": "2026-07-14T22:16:37.841954+00:00",
+    "run_at_utc": "2026-07-15T01:59:37.012839+00:00",
     "random_seed": 42
   }
 }

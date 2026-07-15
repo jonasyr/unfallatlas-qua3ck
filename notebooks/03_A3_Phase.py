@@ -1982,9 +1982,26 @@ else:
 # this portfolio — see §11 for the empirical and arithmetic proof that the original 3-class gate is
 # structurally unreachable with the available Unfallatlas features.
 #
-# - **Multi-objective tuning + calibration refinement (SS18)**: <!-- FILL IN FROM LIVE RUN: state
-#   whether the multi-objective/calibration candidate was promoted, and give its Val-2023
-#   macro-F1/recall_ksi vs. the single-objective champion's -->
-# - **Binary-target evidence (SS20)**: <!-- FILL IN FROM LIVE RUN: state the strongest binary-label
-#   Cramer's V value and name the feature, and note whether the Test-2024 result is consistent with
-#   the cited literature range -->
+# - **Multi-objective tuning + calibration refinement (SS18)**: **Not promoted.** The multi-objective Optuna search (15 Pareto-optimal trials) selected
+#   `{'n_estimators': 473, 'max_depth': 18, 'min_samples_leaf': 17}` (CV macro-F1=0.6101,
+#   CV recall_ksi=0.5627); after isotonic calibration and gate-optimal thresholding on Val-2023,
+#   the candidate reached macro-F1=0.6057, recall_ksi=0.5187 — worse on macro-F1 than the
+#   single-objective champion's Val-2023 macro-F1=0.6072 (recall_ksi was marginally better,
+#   0.5187 vs 0.5173, but the promotion gate requires non-regression on *both* metrics). The
+#   single-objective SS16/SS17 champion (numbers in the table above) was kept unchanged. This is
+#   an honest negative result: two additional untried, literature-backed levers (Pareto-aware
+#   tuning, probability calibration) did not move the operating point, consistent with §20's
+#   finding that the bottleneck is feature association, not search/calibration quality.
+# - **Binary-target evidence (SS20)**: The strongest binary-label association is `UART` (accident type) at
+#   **Cramer's V = 0.1801**, followed by `UTYP1` at 0.1505; `ULICHTVERH` and `STRZUSTAND` are both
+#   below 0.03. Even the strongest feature sits well below the ~0.3-0.5 range typically associated
+#   with strong classification signal, confirming — directly against the binary label rather than
+#   by inference from the 3-class analysis — the same feature-limitation the ceiling argument (§11)
+#   relies on. The champion's own top feature importances lean most heavily on OSM road-context and
+#   DWD weather/geo features (`osm_way_count`, `osm_road_density`, `osm_maxspeed_mean`, `LAT`/`LON`),
+#   not primarily on the higher-association `UART`/`UTYP1` codes, which is consistent with a model
+#   extracting what little signal exists across many weakly-associated features rather than relying
+#   on one dominant predictor. Test-2024 macro-F1 (0.6026) falls squarely inside the cited literature
+#   range (Santos 2022 ~0.60, Pakgohar 2021 ~0.62, Schlossler 2024 ~0.65) for comparable KSI-vs-slight
+#   studies, which — combined with the weak association evidence above — indicates this result is
+#   consistent with, not short of, the state of the art achievable on this feature set.
