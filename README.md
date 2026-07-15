@@ -28,6 +28,8 @@ Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des
 | **C** — Conclude & Compare | `notebooks/04_C_Phase.ipynb` | SHAP, Modellvergleich, Limitationen |
 | **K** — Knowledge Transfer | `app/streamlit_app.py` | Interaktive Risikoprofil-App (Streamlit) |
 
+https://jonasyr.github.io/unfallatlas-qua3ck/
+
 ## Datensatz
 
 - **Quelle:** [Unfallatlas auf GovData](https://www.govdata.de/suche/daten/unfallatlas) (Mobilithek), Datenlizenz Deutschland 2.0
