@@ -1,4 +1,5 @@
 import re
+import shlex
 from pathlib import Path
 
 import pytest
@@ -13,12 +14,29 @@ TEMPLATE = (
 )
 GITATTRIBUTES = REPO_ROOT / ".gitattributes"
 
-DOCUMENTED_COMMANDS = (
-    "uv sync --extra presentation",
-    "uv run python scripts/export_notebooks.py --all",
-    "uv run python scripts/export_notebooks.py notebooks/02_U_Phase.ipynb",
-    "uv run python scripts/export_notebooks.py --all --strict",
-    "uv run python scripts/export_notebooks.py --check",
+INSTALL_COMMAND = "uv sync --extra presentation"
+EXPORT_COMMANDS = (
+    (
+        "uv run python scripts/export_notebooks.py --all",
+        {"all": True, "check": False, "strict": False, "notebooks": []},
+    ),
+    (
+        "uv run python scripts/export_notebooks.py notebooks/02_U_Phase.ipynb",
+        {
+            "all": False,
+            "check": False,
+            "strict": False,
+            "notebooks": ["notebooks/02_U_Phase.ipynb"],
+        },
+    ),
+    (
+        "uv run python scripts/export_notebooks.py --all --strict",
+        {"all": True, "check": False, "strict": True, "notebooks": []},
+    ),
+    (
+        "uv run python scripts/export_notebooks.py --check",
+        {"all": False, "check": True, "strict": False, "notebooks": []},
+    ),
 )
 
 REQUIRED_HEADINGS = (
@@ -66,10 +84,18 @@ def test_readme_links_to_concise_presentation_workflow() -> None:
 
 def test_operator_guide_documents_exact_supported_commands(guide_text: str) -> None:
     assert guide_text, "docs/presentation-export.md must provide the operator guide"
-    parser_help = build_parser().format_help()
+    assert INSTALL_COMMAND in guide_text
 
-    for command in DOCUMENTED_COMMANDS:
+    parser = build_parser()
+    parser_help = parser.format_help()
+
+    for command, expected in EXPORT_COMMANDS:
         assert command in guide_text
+        tokens = shlex.split(command, posix=True)
+        assert tokens[:4] == ["uv", "run", "python", "scripts/export_notebooks.py"]
+        arguments = parser.parse_args(tokens[4:])
+        for name, value in expected.items():
+            assert getattr(arguments, name) == value
     for option in ("--all", "--check", "--strict", "--include-placeholders", "--open"):
         assert option in parser_help
         assert option in guide_text
@@ -107,6 +133,26 @@ def test_widget_and_folium_section_requires_static_fallbacks(guide_text: str) ->
     assert re.search(r"skript.*deaktiviert", normalized, flags=re.DOTALL)
     for fallback in ("png", "svg", "tabelle", "text"):
         assert fallback in normalized
+
+
+def test_widget_state_finding_is_conditional_on_missing_static_fallback(
+    guide_text: str,
+) -> None:
+    validation = _section(guide_text, "Validation").casefold()
+    widget_row = next(
+        line for line in validation.splitlines() if line.startswith("| `widget_state_missing`")
+    )
+    widgets = " ".join(_section(guide_text, "Widgets und Karten").casefold().split())
+
+    assert re.search(r"kein\w* unterstützt\w* statisch\w* fallback", widget_row)
+    assert re.search(
+        r"widget-zustand fehlt.*kein unterstützter statischer fallback.*widget_state_missing",
+        widgets,
+    )
+    assert re.search(
+        r"mit.*html-, bild- oder text-fallback.*widget-mime.*übersprungen.*ohne diesen befund",
+        widgets,
+    )
 
 
 def test_pdf_section_uses_current_print_button_label(guide_text: str) -> None:

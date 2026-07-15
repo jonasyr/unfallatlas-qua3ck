@@ -90,7 +90,7 @@ Wichtige Codes und ihre Bedeutung:
 | `UNSAFE_LOCAL_ASSET` | Lokale Referenz verlässt das Repository | ja |
 | `EXTERNAL_RUNTIME_RESOURCE` | HTML benötigt eine externe oder nicht lokale URI | ja |
 | `EXTERNAL_MAP_TILES` | Plotly-Karte benötigt externe Kartenkacheln | ja |
-| `WIDGET_STATE_MISSING` | Widget besitzt keinen passenden eingebetteten Zustand | ja |
+| `WIDGET_STATE_MISSING` | Widget-Zustand fehlt und es gibt keinen unterstützten statischen Fallback | ja |
 | `UNSUPPORTED_MIME` | MIME-Bundle hat keine unterstützte Darstellung/Fallback | ja |
 | `LARGE_OUTPUT` | Einzelner gespeicherter Output ist größer als 5 MiB | nein |
 | `VERY_LARGE_NOTEBOOK_OUTPUT` | Gespeicherte Outputs überschreiten zusammen 100 MiB | nein |
@@ -176,9 +176,11 @@ Interaktive Jupyter-Widgets werden derzeit nicht unterstützt, auch wenn der pas
 Widget-Zustand im Notebook eingebettet ist: Widget-Manager-Laufzeit und Widget-Zustand
 werden nicht veröffentlicht und stehen daher nicht als ausführbare Präsentations-Assets
 zur Verfügung.
-Fehlt der Zustand, meldet die Validierung zusätzlich `WIDGET_STATE_MISSING`. Für jedes
-wichtige Widget-Ergebnis ist daher ein statischer Fallback als PNG, SVG, HTML-Tabelle oder
-Textoutput erforderlich.
+Wenn der Widget-Zustand fehlt und kein unterstützter statischer Fallback existiert, meldet
+die Validierung `WIDGET_STATE_MISSING`. Mit einem geeigneten HTML-, Bild- oder
+Text-Fallback wird die Widget-MIME-Darstellung übersprungen und der Fallback ohne diesen
+Befund verwendet. Für jedes wichtige Widget-Ergebnis ist daher ein statischer Fallback
+als PNG, SVG, HTML-Tabelle oder Textoutput erforderlich.
 
 Aktive HTML-Ausgaben, iframes und damit typische Folium-Ausgaben werden aus
 Sicherheitsgründen in einem restriktiven Sandbox-iframe dargestellt. Skripte sind in
