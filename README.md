@@ -81,6 +81,20 @@ Voraussetzungen: Python ≥ 3.11 (wird von uv automatisch verwaltet) · git-lfs 
 uv run pre-commit install
 ```
 
+## Notebook-Präsentationen
+
+Bereits ausgeführte Notebooks lassen sich ohne erneute Berechnung als offlinefähige
+HTML-Snapshots unter `reports/presentation/` exportieren:
+
+```bash
+uv sync --extra presentation
+uv run python scripts/export_notebooks.py --all
+```
+
+Der Export verwendet nur gespeicherte Outputs. Installation, Validierung, Strict-Modus,
+Offline-Kopie, PDF und GitHub Pages beschreibt der
+[Leitfaden zum Präsentationsexport](docs/presentation-export.md).
+
 ## Ziele
 
 | Metrik | Zielwert |
