@@ -296,6 +296,7 @@ test  = df[df.UJAHR == 2024]
 - README badges use `style=plastic` with a shared `labelColor=14213D` (navy) and per-badge accent colors — Python `#3776AB`, Jupyter `#F37626`, Coverage/License `#06D6A0` (mint), DeepWiki `#6D5DFC` (indigo); DeepWiki badge switched from an embedded base64 PNG to a shields.io endpoint badge with the `readthedocs` logo (no dedicated DeepWiki glyph in simple-icons)
 - README design-token palette (reserved for the future Streamlit K-phase severity encoding, `app/streamlit_app.py`): navy `#14213D` (badge base) · blue `#3776AB` · orange `#F37626` · mint `#06D6A0` · indigo `#6D5DFC`, plus reserved severity colors red `#E63946` (Getötet) · amber `#F4A261` (Schwerverletzt) · green `#2A9D8F` (Leicht verletzt) — documented as an HTML comment at the top of `README.md`
 - README now has a table of contents (`## Inhalt`) linking all top-level sections, and a `## Tech-Stack` section listing library groups (Daten, ML, Imbalance & Tuning, Explainability, Geospatial, App, Tooling)
+- `presentation/cli.py` fix (commit `301f8ff`): the mutually-exclusive `notebooks` positional in `build_parser()` now sets `default=[]` explicitly — under Python 3.12, argparse's mutually-exclusive-group handling of an unset `nargs="*"` positional broke when `--all`/`--check` was used instead of passing notebooks
 
 <!-- END AUTO-MANAGED -->
 
