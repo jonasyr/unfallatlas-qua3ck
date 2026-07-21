@@ -47,6 +47,7 @@ from unfallatlas.features.preprocessing import (
     load_training_frame,
     split_features_target_binary,
 )
+from unfallatlas.models.c_phase import compute_error_slices
 from unfallatlas.models.evaluate import evaluate_binary_predictions
 from unfallatlas.viz.metrics_viz import plot_confusion_matrix_heatmap, plot_roc_pr_curves
 
@@ -133,3 +134,63 @@ cm_ax = plot_confusion_matrix_heatmap(
 )
 cm_ax.figure.savefig(FIG_DIR / "confusion_matrix_champion.png", dpi=150, bbox_inches="tight")
 plt.show()
+
+# %% [markdown]
+# ## 2 — Fehleranalyse nach Slices
+#
+# False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (`UART`), dominanter OSM-Straßenklasse, Straßenzustand (`STRZUSTAND`) und Lichtverhältnissen (`ULICHTVERH`) — um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.
+
+# %%
+slice_columns = ["UART", "osm_dominant_road_class", "STRZUSTAND", "ULICHTVERH"]
+slice_frame = test_df[slice_columns].reset_index(drop=True)
+
+error_slice_df = compute_error_slices(
+    pd.Series(y_test_bin.values), pd.Series(y_test_pred_champion), slice_frame, slice_columns
+)
+error_slice_df.sort_values("false_negative_rate", ascending=False).head(20)
+
+# %%
+plot_df = error_slice_df[error_slice_df["n"] >= 100].nlargest(15, "false_negative_rate")
+plot_labels = plot_df["slice_column"] + "=" + plot_df["slice_value"].astype(str)
+
+fig, ax = plt.subplots(figsize=(9, 6))
+ax.barh(plot_labels, plot_df["false_negative_rate"])
+ax.set_xlabel("False-Negative-Rate")
+ax.set_title("Höchste False-Negative-Raten nach Slice (n ≥ 100)")
+ax.invert_yaxis()
+fig.tight_layout()
+fig.savefig(FIG_DIR / "error_slices_fn_rate.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %% [markdown]
+# **Beobachtung:** Die höchsten False-Negative-Raten treten bei `UART`-Kategorien auf: `UART=1` (Kollision mit haltendem/parkendem Fahrzeug, 89,0 % FN-Rate, n=14.673), `UART=3` (Seitenkollision, 74,1 %) und `UART=2` (Auffahrunfall, 71,5 %). Auch `STRZUSTAND=2` (Winterglätte, 68,5 %, wenn auch mit kleinerem n=4.731) und `UART=5` (Abbiege-/Einbiegeunfall, der häufigste Unfalltyp, 68,0 %) liegen weit oben. Bemerkenswert: Gerade die von A³ §20 als stärkstes Einzelmerkmal identifizierte Variable `UART` (Cramér's V=0,1801) dominiert auch hier die Fehlerliste — selbst das informativste verfügbare Merkmal reicht nicht aus, um KSI-Fälle innerhalb dieser Unfalltypen zuverlässig zu erkennen. Das deckt sich mit der in §6 aufgegriffenen Feature-Obergrenze: Die Fehler sind nicht zufällig verteilt, sondern konzentrieren sich systematisch dort, wo die verfügbaren Merkmale am wenigsten trennscharf sind.
+
+# %% [markdown]
+# ## 3 — Formale KPI-Validierung: Go/No-Go
+#
+# Explizite Prüfung des Champions gegen die in der Q-Phase festgelegten Akzeptanzkriterien für die binäre KSI-Formulierung, auf Basis der in §0 frisch berechneten Test-2024-Metriken (`sanity_metrics`).
+
+# %%
+champion_val_row = next(
+    r for r in model_card["stage0_1_comparison"] if r["family"] == model_card["champion_family"]
+)
+
+gate_table = pd.DataFrame(
+    [
+        {
+            "Gate": "macro-F1 >= 0.55",
+            "Val-2023": model_card["val_2023_macro_f1"],
+            "Test-2024": sanity_metrics["macro_f1"],
+            "Passed": sanity_metrics["macro_f1"] >= 0.55,
+        },
+        {
+            "Gate": "Recall(KSI) >= 0.50",
+            "Val-2023": champion_val_row["recall_ksi"],
+            "Test-2024": sanity_metrics["recall_ksi"],
+            "Passed": sanity_metrics["recall_ksi"] >= 0.50,
+        },
+    ]
+)
+gate_overall_pass = bool(gate_table["Passed"].all())
+print(f"Overall gate PASSED: {gate_overall_pass}")
+gate_table
