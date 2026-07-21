@@ -49,7 +49,11 @@ from unfallatlas.features.preprocessing import (
     load_training_frame,
     split_features_target_binary,
 )
-from unfallatlas.models.c_phase import build_qualitative_matrix, compute_error_slices
+from unfallatlas.models.c_phase import (
+    build_inference_contract,
+    build_qualitative_matrix,
+    compute_error_slices,
+)
 from unfallatlas.models.evaluate import evaluate_binary_predictions
 from unfallatlas.viz.metrics_viz import plot_confusion_matrix_heatmap, plot_roc_pr_curves
 
@@ -390,3 +394,45 @@ shap_importance.head(15)
 # - **Geografische/zeitliche Abdeckung:** Trainingsdaten 2016–2022, Validierung 2023, Test 2024 — Verallgemeinerung auf zukünftige Jahre oder auf Regionen mit strukturell anderer Infrastruktur ist nicht geprüft.
 # - **Schwellenwert-Sensitivität:** Der gate-optimale Schwellenwert (0,4986) wurde auf Val-2023 gewählt; siehe §3 für die Gate-Ergebnisse bei diesem Schwellenwert — eine Verschiebung würde den Recall(KSI)/macro-F1-Tradeoff entlang der in §1 gezeigten Kurven verändern.
 # - **Restliches Klassenungleichgewicht:** Trotz Klassengewichtung und Threshold-Moving verfehlt der Champion Recall(KSI) gegenüber den Runner-ups (§1/§4) — ein bewusster Tradeoff zugunsten von macro-F1 (§4/§8), nicht ein ungelöstes technisches Problem.
+
+# %% [markdown]
+# ## 8 — Finale Modellentscheidung
+#
+# **Synthese:** Der formale Gate-Check (§3) ist für beide Kriterien **bestanden** (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50). Die qualitative Bewertungsmatrix (§4) bestätigt `random_forest` als Champion mit dem höchsten gewichteten Score (0,700 vs. 0,518 für xgboost und 0,500 für lightgbm), trotz niedrigerer Recall(KSI) als beide Runner-ups (§1) — der Tradeoff zugunsten von macro-F1 ist durch die 30 %/30 %-Gewichtung explizit gemacht, nicht implizit angenommen. SHAP (§5) und der Literaturabgleich (§6) zeigen ein Modell, das auf breit verteilten, schwach assoziierten Features (OSM-Straßenkontext, Fahrzeugtyp-Flags, Unfalltyp) basiert statt auf einem einzelnen dominanten Prädiktor — konsistent mit der in A³ §11/§20 belegten Feature-Obergrenze (stärkste binäre Assoziation `UART`=0,1801, weit unter dem Bereich starken Klassifikationssignals). Die Fehleranalyse (§2) zeigt, dass die verbleibenden Fehler systematisch dort auftreten, wo die verfügbaren Merkmale am wenigsten trennscharf sind — kein Hinweis auf eine behebbare, aber übersehene Schwäche des Champions.
+#
+# **Entscheidung:** `random_forest` (Schwellenwert 0,4986) bleibt der bestätigte Champion für die K-Phase.
+
+# %% [markdown]
+# ## 9 — Übergabe an die K-Phase
+#
+# Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (`a3_binary_best_model.joblib`), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp auflistet — damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.
+
+# %%
+feature_columns = X_train_bin.columns.tolist()
+dtypes = {col: str(dtype) for col, dtype in X_train_bin.dtypes.items()}
+
+inference_contract = build_inference_contract(feature_columns, dtypes, model_card)
+with open(PROCESSED_DIR / "c_phase_inference_contract.json", "w") as f:
+    json.dump(inference_contract, f, indent=2)
+
+print(f"Inference contract written: {PROCESSED_DIR / 'c_phase_inference_contract.json'}")
+print(f"Required columns: {len(inference_contract['required_columns'])}")
+print(f"Model artifact: {inference_contract['model_path']} (unchanged — re-confirmed present)")
+assert (PROCESSED_DIR / "a3_binary_best_model.joblib").exists()
+
+# %% [markdown]
+# ## Zusammenfassung der C-Phase
+#
+# **Was erreicht wurde:**
+# - Systematischer Vergleich aller 10 Kandidaten aus dem A³-Suchlauf mit ROC/PR/Konfusionsmatrix für den Champion (§1).
+# - Fehleranalyse nach Slices: höchste False-Negative-Raten bei `UART=1` (89,0 %), `UART=3` (74,1 %) und `UART=2` (71,5 %) — Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen (§2).
+# - Formale Gate-Validierung: **bestanden** gegen beide Q-Phase-Kriterien (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50) (§3).
+# - Gewichtete qualitative Bewertungsmatrix, die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet (§4).
+# - SHAP-Erklärbarkeit (global + 4 Fallbeispiele), konsistent mit der A³-Feature-Evidenz (§5).
+# - Literaturabgleich: Test-2024 macro-F1 im zitierten Literaturbereich (Santos 2022, Pakgohar 2021, Schlößler 2024) (§6).
+# - Ehrliche Limitationsdiskussion (§7).
+# - Vollständiges K-Phase-Artefaktpaket: Pipeline, Schwellenwert, Inference-Contract mit 30 erforderlichen Eingabespalten (§9).
+#
+# **Ausblick:** Die K-Phase implementiert die Streamlit-App (`app/streamlit_app.py`) gegen `data/processed/c_phase_inference_contract.json` und `data/processed/a3_binary_best_model.joblib`.
+#
+# **Limitationen (siehe §7):** Selektionsbias, fehlende physische Determinanten, Korrelation ≠ Kausalität, nicht-versionierte OSM-Features, begrenzte geografische/zeitliche Abdeckung, Schwellenwert-Sensitivität, bewusster Recall/macro-F1-Tradeoff.
