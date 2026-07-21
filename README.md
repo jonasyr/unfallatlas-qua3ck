@@ -7,7 +7,6 @@
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebooks-F37626?style=plastic&logo=jupyter&logoColor=white&labelColor=14213D)](notebooks/)
 [![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=14213D)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=14213D)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=14213D)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=14213D)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-06D6A0?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=14213D)](LICENSE)
 [![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-6D5DFC?style=plastic&logo=readthedocs&logoColor=white&labelColor=14213D)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
