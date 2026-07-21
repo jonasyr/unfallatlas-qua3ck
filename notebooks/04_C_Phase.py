@@ -361,3 +361,32 @@ for name, idx in case_indices.items():
 
 # %% [markdown]
 # **Fallbeispiele:** Bei der **True-Positive-KSI** (korrekt erkannter KSI-Fall) treibt `IstKrad` (Motorradbeteiligung) den Score am stärksten Richtung KSI (SHAP=+0,13) — mit Abstand der größte Einzelbeitrag unter allen vier Fällen, konsistent mit dem bekannten hohen Verletzungsrisiko für Motorradfahrer. Bei der **False-Negative-KSI** (übersehener KSI-Fall) sind die Beiträge insgesamt deutlich schwächer (größter Betrag nur 0,036 für `UKREIS_target_enc`, und dieser zeigt sogar in die falsche Richtung) — genau das Muster, das die niedrige Recall(KSI) erklärt: Es fehlt nicht an einem falsch gewichteten Feature, sondern schlicht an einem hinreichend starken Signal in den verfügbaren Merkmalen für diesen Fall. Beim **False-Positive-Slight** (fälschlich als KSI eingestuft) ziehen `UTYP1_1` (Fahrunfall), `osm_road_density` und `osm_way_count` gemeinsam Richtung KSI (SHAP zwischen +0,05 und +0,06 je Feature) — ein Muster aus mehreren mittelstarken OSM-/Unfalltyp-Signalen, das in diesem Fall in die falsche Richtung zeigt. Bei der **True Negative** dominiert `UART_2` (Auffahrunfall) mit SHAP=-0,14 klar Richtung "leicht" — der stärkste Einzelbeitrag unter den korrekten Klassifikationen. Alle vier Fälle stützen sich auf dieselbe Merkmalsfamilie wie die globale Rangfolge oben (`osm_way_count`, `IstKrad`, `UTYP1_1`, `osm_road_density`, `UART_2` sind die fünf global wichtigsten Features) — es gibt kein verborgenes, in den Einzelfällen dominierendes Merkmal, das in der globalen Sicht fehlen würde.
+
+# %% [markdown]
+# ## 6 — Abgleich mit der Literatur
+#
+# A³ §20 hat Cramér's V direkt gegen das **binäre** KSI-Label neu berechnet (nicht gegen das ursprüngliche 3-Klassen-`UKATGEORIE`, für das `docs/project/Technical_Review_Next_Steps.md` bereits eine Assoziationsobergrenze von ≤0,13 dokumentiert hatte): `UART` (Unfallart) ist mit **0,1801** das stärkste Einzelmerkmal für die binäre Klassifikation, gefolgt von `UTYP1` mit 0,1505; `ULICHTVERH` und `STRZUSTAND` liegen beide unter 0,03. Selbst das stärkste binäre Merkmal bleibt damit deutlich unter dem für starkes Klassifikationssignal üblichen Bereich von ~0,3–0,5 — die binäre Reformulierung erhöht zwar die erreichbare Vorhersagegüte gegenüber der 3-Klassen-Formulierung (A³ §11), löst aber nicht das zugrundeliegende Problem schwacher Merkmalsassoziation.
+#
+# Diese SHAP-Analyse ergänzt eine dritte, unabhängige Sicht auf dieselbe Frage — die mittleren absoluten SHAP-Werte über die 5.000er-Stichprobe:
+
+# %%
+shap_importance = pd.Series(
+    np.abs(shap_values_ksi).mean(axis=0), index=shap_sample_X.columns
+).sort_values(ascending=False)
+shap_importance.head(15)
+
+# %% [markdown]
+# Die global wichtigsten SHAP-Features sind `osm_way_count`, `IstKrad`, `UTYP1_1`, `osm_road_density`, `UART_2`, `IstPKW`, `UKREIS_target_enc`, `osm_maxspeed_mean` — eine Mischung aus OSM-Straßenkontext, Fahrzeugtyp-Flags und Unfalltyp-Kategorien, nicht eine einzelne dominante Variable. Das deckt sich mit A³ §20/§21: Der Champion stützt sich stärker auf OSM-Straßenkontext- und Geo-Features als primär auf die assoziationsstärksten `UART`/`UTYP1`-Codes — ein Modell, das schwaches Signal über viele Merkmale hinweg extrahiert, statt sich auf ein dominantes Prädiktor zu verlassen.
+#
+# Das erreichte Test-2024 macro-F1 (0,6039 in dieser Neuberechnung; 0,6026 im A³-Rekord) liegt im von der Q-Phase zitierten Literaturbereich für vergleichbare KSI-vs.-leicht-Klassifikation (Santos 2022 ≈ 0,60, Pakgohar 2021 ≈ 0,62, Schlößler 2024 ≈ 0,65) — konsistent mit, nicht unterhalb des Stands der Technik auf diesem Feature-Set.
+
+# %% [markdown]
+# ## 7 — Limitationen
+#
+# - **Selektionsbias:** Der Unfallatlas erfasst nur polizeilich gemeldete Unfälle — leichte Unfälle ohne Polizeibeteiligung fehlen systematisch, was die tatsächliche Grundgesamtheit verzerrt.
+# - **Fehlende physische Determinanten:** Aufprallgeschwindigkeit, Gurtnutzung, Insassenalter und Fahrzeugmasse — die stärksten bekannten Prädiktoren für Verletzungsschwere in der Literatur — liegen nicht im öffentlichen Unfallatlas vor, sondern in zugriffsbeschränkten Destatis-Personen-/Fahrzeugmikrodaten (siehe A³ §11/§19 `gate_reformulation_reason`).
+# - **Korrelation ≠ Kausalität:** SHAP-Werte und Feature-Importances zeigen Assoziationen, keine kausalen Effekte — z. B. sagt eine hohe SHAP-Bedeutung von OSM-Straßenkontext-Features nichts darüber aus, ob bauliche Eingriffe die KSI-Rate kausal senken würden.
+# - **OSM-Features sind zeitlich nicht versioniert:** Die OSM-Straßenkontext-Features spiegeln das heutige Straßennetz wider und werden einheitlich auf alle Unfalljahre (2016–2024) angewendet — eine dokumentierte, akzeptierte Näherung (U-Phase §8.8, siehe Glossar), keine Leckage-Quelle, aber eine Einschränkung der historischen Genauigkeit.
+# - **Geografische/zeitliche Abdeckung:** Trainingsdaten 2016–2022, Validierung 2023, Test 2024 — Verallgemeinerung auf zukünftige Jahre oder auf Regionen mit strukturell anderer Infrastruktur ist nicht geprüft.
+# - **Schwellenwert-Sensitivität:** Der gate-optimale Schwellenwert (0,4986) wurde auf Val-2023 gewählt; siehe §3 für die Gate-Ergebnisse bei diesem Schwellenwert — eine Verschiebung würde den Recall(KSI)/macro-F1-Tradeoff entlang der in §1 gezeigten Kurven verändern.
+# - **Restliches Klassenungleichgewicht:** Trotz Klassengewichtung und Threshold-Moving verfehlt der Champion Recall(KSI) gegenüber den Runner-ups (§1/§4) — ein bewusster Tradeoff zugunsten von macro-F1 (§4/§8), nicht ein ungelöstes technisches Problem.
