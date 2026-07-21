@@ -1,23 +1,39 @@
-# Unfallatlas Deutschland — QUA³CK ML-Portfolio
+# 🚦 Unfallatlas Deutschland — QUA³CK ML-Portfolio
 
-[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=1a1b26)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=for-the-badge&logo=codecov&logoColor=white&label=Coverage&labelColor=1a1b26)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![License: MIT](https://img.shields.io/badge/License-MIT-3DA639?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=1a1b26)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white&labelColor=1a1b26)](pyproject.toml)
+<!-- Design tokens (reused for the Streamlit K-Phase app): navy #1D3557 · red #E63946 · teal #2A9D8F · blue #457B9D · light-blue #A8DADC · cream #F1FAEE -->
 
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=for-the-badge&labelColor=1a1b26)](https://github.com/astral-sh/ruff)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=for-the-badge&labelColor=1a1b26)](https://github.com/astral-sh/uv)
-[![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-8A5CF6?style=for-the-badge&logo=readthedocs&logoColor=white&labelColor=1a1b26)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
-<!-- DeepWiki badge: simple-icons has no dedicated DeepWiki logo, so readthedocs (closest "docs" glyph) stands in -->
+[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=1D3557)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=1D3557)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2A9D8F?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=1D3557)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=plastic&logo=python&logoColor=white&labelColor=1D3557)](pyproject.toml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=1D3557)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=1D3557)](https://github.com/astral-sh/uv)
+[![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-457B9D?style=plastic&logo=readthedocs&logoColor=white&labelColor=1D3557)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
+<!-- DeepWiki: simple-icons has no dedicated DeepWiki glyph, so readthedocs (closest "docs" icon) stands in -->
 
 <!-- TODO(visual): add a hero image once a result is worth leading with --
      e.g. SHAP summary plot or geo accident-density map from A³/C phase,
      exported as static PNG/SVG to reports/figures/ (not the interactive
      .html exports, those can't be embedded). Drop it here below the badges. -->
 
-Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024.
+Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen Unfallatlas (GovData / Mobilithek), 2016–2024. Universitäts-Portfolioprojekt nach dem **QUA³CK**-Prozessmodell (Question → Understanding → Algorithm/Adapt/Adjust → Conclude & Compare → Knowledge Transfer).
 
 > **Forschungsfrage:** Welche raumzeitlichen, infrastrukturellen und meteorologischen Faktoren bestimmen die Schwere eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten zuverlässig vorhersagen?
+
+**📊 Live-Report:** [jonasyr.github.io/unfallatlas-qua3ck](https://jonasyr.github.io/unfallatlas-qua3ck/) — exportierte Notebook-Ergebnisse ohne lokales Setup.
+
+## Inhalt
+
+- [QUA³CK-Phasen](#qua³ck-phasen)
+- [Datensatz](#datensatz)
+- [Ziele](#ziele)
+- [Projektstruktur](#projektstruktur)
+- [Setup](#setup)
+- [Tests & Qualitätssicherung](#tests--qualitätssicherung)
+- [Notebook-Präsentationen](#notebook-präsentationen)
+- [Tech-Stack](#tech-stack)
+- [Dokumentation](#dokumentation)
+- [Lizenz & Datenquellen](#lizenz--datenquellen)
 
 ## QUA³CK-Phasen
 
@@ -29,17 +45,41 @@ Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des
 | **C** — Conclude & Compare | `notebooks/04_C_Phase.ipynb` | SHAP, Modellvergleich, Limitationen |
 | **K** — Knowledge Transfer | `app/streamlit_app.py` | Interaktive Risikoprofil-App (Streamlit) |
 
-https://jonasyr.github.io/unfallatlas-qua3ck/
-
 ## Datensatz
 
 - **Quelle:** [Unfallatlas auf GovData](https://www.govdata.de/suche/daten/unfallatlas) (Mobilithek), Datenlizenz Deutschland 2.0
 - **Zeitraum:** 2016–2024 (9 Jahrgänge)
 - **Umfang:** ~2,09 Mio. polizeilich aufgenommene Unfälle mit Personenschaden
-- **Zielvariable:** `UKATGEORIE` — 1 = Getötet (1%), 2 = Schwer verletzt (18%), 3 = Leicht verletzt (81%)
-- **Format:** Parquet (`data/accidents.parquet`, ~65 MB) — konsolidiert aus den district-level CSV-Dateien, gespeichert via **Git LFS**
+- **Zielvariable:** `UKATGEORIE` — 1 = Getötet (1 %), 2 = Schwer verletzt (18 %), 3 = Leicht verletzt (81 %)
+- **Format:** Parquet (`data/accidents.parquet`, ~65 MB) — konsolidiert aus den district-level CSV-Dateien, verwaltet via **Git LFS**
+
+## Ziele
+
+| Metrik | Zielwert |
+|--------|----------|
+| macro-F1 (Held-Out 2024) | ≥ 0.55 |
+| Recall Klasse 1 (Getötete) | ≥ 0.50 |
+| Basis-Baseline macro-F1 | ~0.30 (Majority Class) |
+
+**Test-Strategie:** Chronologischer Split — Train 2016–2022 · Val 2023 · Test 2024 (keine Zufalls-Splits, da zeitreihenähnliche Daten).
+
+## Projektstruktur
+
+```
+unfallatlas-qua3ck/
+├── notebooks/          # QUA³CK-Phasennotebooks (Source of Truth)
+├── src/unfallatlas/    # Wiederverwendbare Bibliothek (data/, features/, models/, viz/, presentation/)
+├── app/                # Streamlit-Demo (K-Phase)
+├── data/                # accidents.parquet (Git LFS) + interim/processed Artefakte
+├── tests/               # pytest-Suite
+├── docs/                # Disclosure, Glossar, Datensatzbeschreibung, Prozessdokumentation
+├── reports/             # Generierte Figures + Notebook-Präsentationen
+└── pyproject.toml       # Projektkonfiguration (hatchling, ruff, pytest, jupytext)
+```
 
 ## Setup
+
+Für die lokale Einrichtung auf einem neuen Rechner (z. B. zur Begutachtung) in vier Schritten:
 
 ### 1 — Git LFS installieren
 
@@ -53,10 +93,10 @@ https://jonasyr.github.io/unfallatlas-qua3ck/
 | Windows (winget) | `winget install GitHub.GitLFS` |
 
 ```bash
-# LFS einmalig in deinem Git-Profil registrieren
+# LFS einmalig im Git-Profil registrieren
 git lfs install
 
-# Datei herunterladen (nach dem Klonen oder wenn data/ nur Pointer enthält)
+# Datei herunterladen (nach dem Klonen oder wenn data/ nur einen Pointer enthält)
 git lfs pull
 ```
 
@@ -72,19 +112,30 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv sync --all-extras
 ```
 
+Voraussetzung: Python ≥ 3.11 (wird von `uv` automatisch verwaltet).
+
 ### 4 — Notebooks starten
 
 ```bash
 uv run jupyter lab
 ```
 
-Voraussetzungen: Python ≥ 3.11 (wird von uv automatisch verwaltet) · git-lfs (siehe Schritt 1)
-
-### Pre-commit Hooks
+### Pre-commit Hooks (optional, für Contributor)
 
 ```bash
 uv run pre-commit install
 ```
+
+## Tests & Qualitätssicherung
+
+```bash
+uv run pytest              # Testsuite inkl. Coverage-Report (siehe pyproject.toml)
+uv run ruff check .        # Linting
+uv run ruff format .       # Formatierung
+pre-commit run --all-files # Alle Hooks (Ruff, nbstripout, Commitizen, u. a.)
+```
+
+CI führt dieselben Schritte auf jedem Push/PR über GitHub Actions aus (Badge oben).
 
 ## Notebook-Präsentationen
 
@@ -100,15 +151,17 @@ Der Export verwendet nur gespeicherte Outputs. Installation, Validierung, Strict
 Offline-Kopie, PDF und GitHub Pages beschreibt der
 [Leitfaden zum Präsentationsexport](docs/presentation-export.md).
 
-## Ziele
+## Tech-Stack
 
-| Metrik | Zielwert |
-|--------|----------|
-| macro-F1 (Held-Out 2024) | ≥ 0.55 |
-| Recall Klasse 1 (Getötete) | ≥ 0.50 |
-| Basis-Baseline macro-F1 | ~0.30 (Majority Class) |
-
-**Test-Strategie:** Chronologischer Split — Train 2016–2022 · Val 2023 · Test 2024.
+| Bereich | Bibliotheken |
+|---------|--------------|
+| Daten | pandas, polars, duckdb, pyarrow |
+| ML | scikit-learn, xgboost, lightgbm, catboost |
+| Imbalance & Tuning | imbalanced-learn, optuna |
+| Explainability | shap |
+| Geospatial | folium, streamlit-folium (optional: geopandas, h3, osmnx) |
+| App | streamlit |
+| Tooling | uv, ruff, pytest, jupytext, pre-commit |
 
 ## Dokumentation
 
@@ -119,6 +172,13 @@ Offline-Kopie, PDF und GitHub Pages beschreibt der
 - [docs/course-material/](docs/course-material/) — Kursunterlagen als KI-Kontext
 - [docs/project/](docs/project/) — Repo-/Prozessdokumentation (Conventional Commits, Projektplan)
 
-## Lizenz
+## Lizenz & Datenquellen
 
-Code: [MIT](LICENSE). Daten: [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0). Quellenangabe: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland.
+- **Code:** [MIT](LICENSE)
+- **Unfalldaten:** [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0) · Quelle: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland
+- **Wetterdaten:** Deutscher Wetterdienst (DWD), CDC Open Data
+- **Straßennetz:** © OpenStreetMap-Mitwirkende, ODbL
+
+---
+
+Autor: [@jonasyr](https://github.com/jonasyr) · Universitäts-Portfolioprojekt (Data Analytics / Big Data)

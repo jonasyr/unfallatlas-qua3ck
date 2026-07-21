@@ -22,9 +22,10 @@ Always run both commands together after any notebook change before committing.
 
 ```bash
 uv run ruff check src/ --fix               # Lint + auto-fix
-uv run ruff format src/                    # Format (preferred over black)
-uv run black src/                          # Alternative formatter
-uv run pytest                              # Run tests
+uv run ruff format src/                    # Format (primary formatter; black is vestigial)
+uv run pytest                              # Run tests (browser-marked tests excluded by default)
+uv run pytest -m browser                   # Run opt-in Playwright checks against exported HTML
+pre-commit install                         # One-time: activate git hooks for this clone
 pre-commit run --all-files                 # Run all pre-commit hooks
 ```
 
@@ -32,6 +33,16 @@ pre-commit run --all-files                 # Run all pre-commit hooks
 
 ```bash
 bash data/download_raw.sh                  # Download raw CSVs from BASt
+```
+
+## Presentation export
+
+```bash
+uv sync --extra presentation                          # Install nbconvert/beautifulsoup4 export deps
+uv run python scripts/export_notebooks.py --all        # Export all discovered notebooks to reports/presentation/
+uv run python scripts/export_notebooks.py NOTEBOOK.ipynb  # Export a single notebook
+uv run python scripts/export_notebooks.py --all --strict  # Fail on blocker findings (unexecuted cells, errors, etc.)
+uv run python scripts/export_notebooks.py --check       # Check freshness of existing exports without rendering
 ```
 
 ## Package management

@@ -2,10 +2,10 @@
 
 ## Formatting & linting
 
-- Line length: **100** (both ruff and black)
+- Line length: **100** (ruff; `[tool.black]` config still present in pyproject.toml but black is vestigial)
 - Ruff rules: `E`, `F`, `I` (isort), `UP` (pyupgrade); `E501` ignored
 - Target: Python 3.11
-- Run `ruff check --fix` then `ruff format`; black is secondary
+- Run `ruff check --fix` then `ruff format` — `ruff format` is the formatter actually enforced by pre-commit/CI
 
 ## Code style
 
@@ -32,3 +32,10 @@
 - Primary metric: **macro-F1** (class imbalance 1%/18%/81%)
 - Always **stratified** splits; **chronological** split preferred (train≤2022, val=2023, test=2024)
 - Never use random train/test splits on this time-series-adjacent data
+
+## Testing
+
+- `pytest` marker `browser`: opt-in Playwright checks against exported presentation HTML
+  (`tests/presentation/test_browser.py`); excluded by default via `-m "not browser"` in
+  `pyproject.toml` addopts — run explicitly with `uv run pytest -m browser` (requires
+  `presentation-test` extra installed)
