@@ -115,7 +115,7 @@ unfallatlas-qua3ck/
 ├── scripts/                 # export_notebooks.py (CLI), check_notebook_mirrors.py (pre-commit hook)
 ├── docs/                    # Disclosure + glossary (hard requirements) and supporting docs
 │   ├── prompts/             # AI prompts used per QUA³CK phase (01_/02_/03_..., referenced by AI TOOL DISCLOSURE.md)
-│   ├── course-material/     # Lecture notes used as AI context (Einheit 1–6, Data Analytics und Big Data, ChatGPT best-practice notes)
+│   ├── course-material/     # Lecture notes used as AI context (001_Overview_Data_Analytics_and_Big_Data.md ... 007_Support_Vector_Machines.md, ChatGPT best-practice notes)
 │   ├── dataset/             # Unfallatlas + DWD dataset descriptions (.md/.pdf), used for citing + coded-label lookups
 │   ├── project/             # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md, Technical_Review_Next_Steps.md)
 │   ├── osm-feature-retrospective.md   # Standalone retrospective on the OSM road-context feature build

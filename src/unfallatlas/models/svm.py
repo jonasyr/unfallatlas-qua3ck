@@ -1,8 +1,8 @@
 """SVM candidate models for the A³ binary-KSI algorithm-selection comparison.
 
-Course reference: docs/course-material/Einheit 6 – Support Vector Machines.md.
-SVMs require scaled features (Einheit 6 §5, §19 "Häufige Fehler") - always
-pass a preprocessor built with build_preprocessor(scale_for_linear=True),
+Course reference: docs/course-material/007_Support_Vector_Machines.md.
+SVMs require scaled features (§8 "Feature scaling", §21 "Common mistakes") -
+always pass a preprocessor built with build_preprocessor(scale_for_linear=True),
 never the default tree-oriented build_preprocessor().
 """
 
@@ -21,9 +21,9 @@ def build_linear_svm_binary_pipeline(
 ) -> Pipeline:
     """Linear SVM via LinearSVC (liblinear, squared-hinge loss by default).
 
-    O(m x n) - scales to the full training set (Einheit 6 §10 complexity
-    table). No kernel-trick support; this is the "fast baseline" SVM
-    candidate, the one Einheit 6 §9's rule of thumb says to try first.
+    O(m x n) - scales to the full training set (§19 complexity table). No
+    kernel-trick support; this is the "fast baseline" SVM candidate, the
+    one §9's tip says to try first.
     """
     return Pipeline(
         steps=[
@@ -49,9 +49,9 @@ def build_sgd_hinge_binary_pipeline(
 ) -> Pipeline:
     """Linear SVM approximation via SGDClassifier(loss="hinge").
 
-    O(m x n), incremental/out-of-core capable (Einheit 6 §10) - the only SVM
-    variant that comfortably trains on the full 1.55M-row training set in
-    this project without subsampling.
+    O(m x n), incremental/out-of-core capable (§19 complexity table) - the
+    only SVM variant that comfortably trains on the full 1.55M-row training
+    set in this project without subsampling.
     """
     return Pipeline(
         steps=[
@@ -80,9 +80,9 @@ def build_rbf_svm_binary_pipeline(
 ) -> Pipeline:
     """Kernel SVM via SVC(kernel="rbf") - the gaussian RBF kernel.
 
-    O(m^2) to O(m^3) in fit time (Einheit 6 §9/§10 complexity table) - only
-    feasible on a small stratified subsample (thousands, not millions, of
-    rows). Callers are responsible for subsampling before calling .fit().
+    O(m^2) to O(m^3) in fit time (§19 complexity table) - only feasible on a
+    small stratified subsample (thousands, not millions, of rows). Callers
+    are responsible for subsampling before calling .fit().
     """
     return Pipeline(
         steps=[

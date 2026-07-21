@@ -1254,8 +1254,7 @@ else:
 # Unlike an earlier pass at this reframing, this section runs a genuine **champion search** on the
 # binary target (SS13-SS15) instead of assuming the 3-class champion family (LightGBM) transfers
 # unchanged - mirroring the same Stage 0/Stage 1/gate-aware-selection discipline SS3-SS5 already use
-# for the 3-class problem, with Support Vector Machines (`docs/course-material/Einheit 6 - Support
-# Vector Machines.md`) included as first-class candidate families from the start.
+# for the 3-class problem, with Support Vector Machines (`docs/course-material/007_Support_Vector_Machines.md`) included as first-class candidate families from the start.
 #
 # **Scope note:** the imbalance-strategy layer from SS6 (SMOTE/ADASYN/threshold-moving/ordinal per
 # candidate family) is intentionally not repeated here. Binary KSI's positive rate (~17-20%) is far
@@ -1350,8 +1349,7 @@ _log_progress("Binary Stage 0 complete.")
 #
 # Mirrors SS4's role for the 3-class problem: every tree-ensemble family (Random Forest, XGBoost,
 # LightGBM, CatBoost), class-weighted/balanced, trained on the full 2016-2022 training set - plus,
-# new to this project, three SVM variants (`docs/course-material/Einheit 6 - Support Vector
-# Machines.md`): `LinearSVC` and hinge-loss `SGDClassifier` (both linear, scaled features), and
+# new to this project, three SVM variants (`docs/course-material/007_Support_Vector_Machines.md`): `LinearSVC` and hinge-loss `SGDClassifier` (both linear, scaled features), and
 # `SVC(kernel="rbf")` (the actual kernel trick). SVC's O(m^2)-O(m^3) fit complexity makes the full
 # 1,554,834-row training set infeasible, so it trains on a further 8,000-row stratified subsample;
 # LinearSVC uses the same 500,000-row stratified subsample as the tree families' Optuna tuning in
@@ -1388,7 +1386,7 @@ else:
 groups_sub = train_sub["UJAHR"].values
 X_sub, y_sub_bin = split_features_target_binary(train_sub)
 
-# Further stratified subsample for the RBF kernel (Einheit 6 SS9/SS10: O(m^2)-O(m^3)).
+# Further stratified subsample for the RBF kernel (007_Support_Vector_Machines.md SS19: O(m^2)-O(m^3)).
 train_svc_sub, _ = train_test_split(
     train_sub, train_size=8_000, random_state=SEED, stratify=train_sub["UKATGEORIE"]
 )
@@ -1412,7 +1410,7 @@ BINARY_BUILDERS = {
 }
 
 # (X, y) each family's Stage-1 fit uses - full train for everything except
-# the two subsampled SVM variants (Einheit 6 SS10 complexity table).
+# the two subsampled SVM variants (007_Support_Vector_Machines.md SS19 complexity table).
 BINARY_STAGE1_DATA = {
     "random_forest": (X_train_bin, y_train_bin),
     "xgboost": (X_train_bin, y_train_bin),
