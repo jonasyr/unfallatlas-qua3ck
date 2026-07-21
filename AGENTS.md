@@ -11,6 +11,8 @@ This file provides guidance to AI coding agents when working with code in this r
 - Process model: **QUA³CK** (Frage → Untersuchung → Analyse → Auswertung → Kommunikation)
 - Class imbalance: ~1% / 18% / 81% — primary metric is macro-F1
 - Chronological split: Train 2016–2022, Val 2023, Test 2024 (no random splits)
+- Phase status: Q/U/A³ notebooks done; `notebooks/04_C_Phase.ipynb` (C phase) and `app/streamlit_app.py` / `src/unfallatlas/viz/streamlit_app.py` (K phase) are still empty stubs — SHAP/comparison and the Streamlit demo are not yet implemented
+- Includes a self-contained notebook-presentation exporter (`src/unfallatlas/presentation/`) that publishes executed notebooks as static HTML to GitHub Pages via `.github/workflows/pages.yml`
 
 <!-- END AUTO-MANAGED -->
 
@@ -21,17 +23,33 @@ This file provides guidance to AI coding agents when working with code in this r
 # Install all dependencies (including dev and geo extras)
 uv sync --all-extras
 
+# Install exactly what CI installs (dev + geo + presentation, no presentation-test/Playwright)
+uv sync --extra dev --extra geo --extra presentation
+
 # Install only geo extras (geopandas, h3, osmnx) without dev tools
 uv sync --extra geo
 
-# Run tests (coverage report auto-generated via pyproject.toml addopts)
+# Run tests (coverage report auto-generated via pyproject.toml addopts; opt-in
+# Playwright "browser" tests in tests/presentation/test_browser.py are skipped
+# by default via -m "not browser")
 uv run pytest
 
-# Lint
+# Run the opt-in Playwright browser checks for exported presentation HTML
+uv sync --extra presentation-test
+uv run pytest -m browser
+
+# Lint (also what CI runs)
 uv run ruff check .
 
-# Format
-uv run black .
+# Format (pre-commit's actual formatter is ruff-format, not black — black is
+# still a pinned dev dependency but not invoked by CI or pre-commit)
+uv run ruff format .
+
+# Install and run pre-commit hooks (ruff, ruff-format, nbstripout, nbqa-ruff,
+# pyproject-fmt, commitizen commit-msg, detect-private-key,
+# check-added-large-files --maxkb=5120, local check-notebook-mirrors)
+uv run pre-commit install
+uv run pre-commit run --all-files
 
 # Sync Jupytext notebook mirrors (after editing .ipynb files)
 uv run jupytext --sync notebooks/*.ipynb
@@ -39,11 +57,17 @@ uv run jupytext --sync notebooks/*.ipynb
 # Re-index Serena after notebook sync
 serena project index
 
-# Launch Streamlit demo
+# Launch Streamlit demo (K phase — app/streamlit_app.py is currently an empty
+# stub, so this command does not yet produce a working app)
 uv run streamlit run app/streamlit_app.py
 
 # Install package in editable mode
 uv pip install -e .
+
+# Export executed notebooks as offline HTML snapshots (uses saved outputs only)
+uv sync --extra presentation
+uv run python scripts/export_notebooks.py --all
+# → reports/presentation/; full guide: docs/presentation-export.md
 ```
 
 <!-- END AUTO-MANAGED -->
@@ -53,40 +77,72 @@ uv pip install -e .
 
 ```
 unfallatlas-qua3ck/
-├── notebooks/              # QUA³CK phase notebooks (source of truth)
+├── notebooks/              # QUA³CK phase notebooks (source of truth) + Jupytext .py mirrors
 │   ├── 01_Q_Phase.ipynb    # Research question & hypotheses (done)
-│   ├── 02_U_Phase.ipynb    # EDA & feature engineering (in progress)
-│   ├── 03_A3_Phase.ipynb   # Modelling & tuning (done)
-│   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO)
+│   ├── 02_U_Phase.ipynb    # EDA & feature engineering (done)
+│   ├── 03_A3_Phase.ipynb   # Modelling & tuning, incl. binary-KSI champion search (done)
+│   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO — empty stub)
 ├── src/unfallatlas/        # Reusable production library
-│   ├── data/               # download.py, dwd.py (weather), osm.py (road network)
-│   ├── features/           # enrich.py, spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
-│   ├── models/             # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py
-│   └── viz/                # geo.py, shap_plots.py, streamlit_app.py, metrics_viz.py
-├── app/                    # Streamlit demo entry point
+│   ├── data/               # download.py (stub, empty), dwd.py (weather), osm.py (road network)
+│   ├── features/           # enrich.py (stub, empty), spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
+│   ├── models/              # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py, svm.py (linear/SGD-hinge/RBF SVM)
+│   ├── viz/                # geo.py (stub, empty), shap_plots.py (stub, empty), streamlit_app.py (stub, empty), metrics_viz.py
+│   └── presentation/       # Notebook → static-HTML exporter subsystem (~2.5k LOC)
+│       ├── assets.py       # Copies/hashes shared JS/CSS/vendor assets into reports/presentation/assets/
+│       ├── cli.py          # `scripts/export_notebooks.py` entry point (argparse)
+│       ├── discovery.py    # Finds executed notebooks + their saved outputs
+│       ├── manifest.py     # Builds/validates reports/presentation/manifest.json
+│       ├── metadata.py     # Per-notebook title/phase metadata extraction
+│       ├── models.py       # Dataclasses for notebook/export records
+│       ├── rendering.py    # nbconvert-based HTML rendering (no cell execution)
+│       ├── validation.py   # Structural checks on exported notebooks/output tree
+│       ├── static/         # presentation.css / presentation.js (shared UI chrome)
+│       ├── templates/      # Jinja2 templates (notebook/index.html.j2, site_index.html.j2)
+│       └── vendor/         # Vendored MathJax (offline rendering, no CDN)
+├── app/                    # Streamlit demo entry point (stub, empty — K phase not implemented)
 ├── data/
 │   ├── accidents.parquet   # Main dataset (Git LFS)
-│   └── raw/                # Local-only raw CSVs (not committed)
-├── tests/                  # pytest test suite (test_evaluate.py, test_metrics_viz.py, test_models_boosting.py, test_preprocessing.py)
-├── scripts/                # Utility scripts
-├── docs/                   # Disclosure + glossary (hard requirements) and supporting docs
-│   ├── prompts/            # AI prompts used per QUA³CK phase (01_..., 02_..., referenced by AI TOOL DISCLOSURE.md)
-│   ├── course-material/    # Lecture notes used as AI context (Einheit 1/2, Data Analytics und Big Data, ChatGPT best-practice notes)
-│   ├── dataset/            # Unfallatlas dataset description (DSB_Unfallatlas.md/.pdf), used for citing + coded-label lookups
-│   ├── project/            # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md)
-│   └── superpowers/plans/  # Implementation plans (local dev artefact, not committed)
-├── reports/figures/        # Generated output figures
-└── pyproject.toml          # Project config (hatchling, ruff, black, jupytext, pytest-cov)
+│   ├── interim/            # Enriched intermediate parquet caches (weather, weather+spatial; Git LFS)
+│   ├── processed/          # Model artefacts + model cards (joblib/json/csv, committed)
+│   └── raw/                # Local-only raw CSVs and OSM tile cache (not committed)
+├── tests/                  # pytest suite: test_evaluate.py, test_models_boosting.py, test_models_svm.py,
+│   │                       # test_models_baseline.py, test_models_ordinal.py, test_imbalance.py,
+│   │                       # test_preprocessing.py, test_metrics_viz.py, test_spatial.py, test_temporal.py,
+│   │                       # test_osm.py, test_dwd.py, test_features.py (empty placeholder)
+│   └── presentation/       # Test suite for the presentation exporter (assets, cli, discovery, manifest,
+│                           # metadata, models, rendering, validation, repository_config, documentation,
+│                           # test_browser.py — opt-in Playwright checks, `-m browser`)
+├── scripts/                 # export_notebooks.py (CLI), check_notebook_mirrors.py (pre-commit hook)
+├── docs/                    # Disclosure + glossary (hard requirements) and supporting docs
+│   ├── prompts/             # AI prompts used per QUA³CK phase (01_/02_/03_..., referenced by AI TOOL DISCLOSURE.md)
+│   ├── course-material/     # Lecture notes used as AI context (Einheit 1–6, Data Analytics und Big Data, ChatGPT best-practice notes)
+│   ├── dataset/             # Unfallatlas + DWD dataset descriptions (.md/.pdf), used for citing + coded-label lookups
+│   ├── project/             # Repo/process docs (ConventionalCommitsGuide.md, PROJEKTPLAN_SETUP.md, Technical_Review_Next_Steps.md)
+│   ├── osm-feature-retrospective.md   # Standalone retrospective on the OSM road-context feature build
+│   ├── presentation-export.md         # User guide for the notebook-presentation exporter
+│   └── superpowers/plans/, specs/     # Implementation plans/design docs (local dev artefact, not committed — see .gitignore)
+├── reports/
+│   ├── figures/             # Generated output figures (PNG)
+│   ├── final_report.md      # Stub, empty — final write-up not yet produced
+│   └── presentation/        # Built output of the notebook exporter (index.html, manifest.json, per-notebook
+│                            # HTML, assets/) — committed and deployed to GitHub Pages by .github/workflows/pages.yml
+├── .github/workflows/       # ci.yml (lint+test on push/PR to main), pages.yml (deploy reports/presentation/ on push)
+├── .pre-commit-config.yaml  # ruff, ruff-format, nbstripout, nbqa-ruff, pyproject-fmt, commitizen, local hooks
+├── .serena/memories/        # Serena project memory notes (conventions, core, tech_stack, etc.)
+└── pyproject.toml           # Project config (hatchling, ruff, black, jupytext, pytest-cov)
 ```
 
 ### Optional dependency groups
 
-- `dev`: pytest, pytest-cov, ruff, black, jupytext, jupyter, ipywidgets
+- `dev`: pytest, pytest-cov, ruff, black, jupytext, jupyter, jupyterlab, ipywidgets, nbstripout
 - `geo`: geopandas, h3, osmnx — required for OSM road network features; install with `uv sync --extra geo`
+- `presentation`: beautifulsoup4, nbconvert — required to run `scripts/export_notebooks.py`; install with `uv sync --extra presentation`
+- `presentation-test`: playwright — required only for the opt-in `tests/presentation/test_browser.py` checks (`pytest -m browser`)
+- `[dependency-groups].dev` (uv-native, distinct from `optional-dependencies.dev`): jupytext
 
 ### Test coverage
 
-Configured via `[tool.pytest.ini_options]` in `pyproject.toml` (`--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing`); runs automatically with `uv run pytest`.
+Configured via `[tool.pytest.ini_options]` in `pyproject.toml` (`--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing -m "not browser"`); runs automatically with `uv run pytest`.
 
 **Notebook → library boundary**: Reusable logic moves from notebook cells into `src/unfallatlas/` and is imported back into the notebook.
 
@@ -96,9 +152,11 @@ Configured via `[tool.pytest.ini_options]` in `pyproject.toml` (`--cov=src/unfal
 ## Code Conventions
 
 **Formatting**
-- Formatter: `ruff` + `black`, line-length 100
-- Python target: 3.11+
-- Ruff rules: E, F, I (isort), UP (pyupgrade); E501 ignored
+- Formatter: `ruff format` (via pre-commit) — `black` is still pinned as a dev dependency and configured in `pyproject.toml` but is not invoked by CI or the pre-commit hooks
+- Line-length: 100 (both `[tool.black]` and `[tool.ruff]`)
+- Python target: 3.11+ (`py311` in ruff/black config; CI/README badge also lists 3.12)
+- Ruff rules: E, F, I (isort, `known-first-party = ["unfallatlas"]`), UP (pyupgrade); E501 ignored
+- `pytest` marker `browser` (`tests/presentation/test_browser.py`) is opt-in only — default `addopts` excludes it via `-m "not browser"`; requires `uv sync --extra presentation-test` (Playwright) to run
 
 **Coding rules**
 - No `print()` in modules — use `logging`
@@ -166,18 +224,22 @@ test  = df[df.UJAHR == 2024]
 - `assign_h3_cell(lat, lon, resolution=8)`: returns stable H3 cell string ID
 - `ROAD_CLASS_RANK`: dict ranking highway types (motorway > primary > residential > …)
 
-**Binary KSI reformulation** (branch `feature/binary_classifaction`)
+**Binary KSI reformulation** (merged to `main`; originated on `feature/binary_classifaction`)
 
 - 3-class gate (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50) is a **Bayes ceiling**: empirical max macro-F1 = 0.424 over 19 configs; Cramér's V ≤ 0.13 for strongest features; ~90× odds-lift required for class-1 precision at 0.94% base rate
 - Binary target: `y = (UKATGEORIE <= 2).astype(int)` — 1=KSI ({1,2}), 0=slight ({3}); KSI share ≈ 16.4%
 - Revised gate: **binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50**
+- **Current binary champion is `random_forest`** (`winning_strategy: binary_random_forest_balanced` in `data/processed/a3_binary_model_card.json`), selected via a genuine Stage 0/1 comparison across random_guess, majority_class, logistic_regression, random_forest, xgboost, lightgbm, catboost, svm_linear, svm_sgd, svm_rbf — LightGBM is no longer the binary champion (superseded; earlier docs describing it as champion are stale)
+- SVM candidate families (`models/svm.py`, added per `docs/superpowers/plans/2026-07-14-svm-algorithm-selection.md`): `build_linear_svm_binary_pipeline`, `build_sgd_hinge_binary_pipeline` (scalable SVM approximation via `SGDClassifier(loss="hinge")`), `build_rbf_svm_binary_pipeline` (`SVC(kernel="rbf")`, only trained on a small stratified subsample — O(m²)–O(m³)); all require `build_preprocessor(scale_for_linear=True)`, never the tree-oriented default preprocessor
 - Implemented library functions:
   - `find_gate_optimal_offsets(y_true, y_proba, classes, recall_gate_class=1, recall_gate=0.50, n_steps_o1=13, n_steps_o2=11) -> tuple[tuple[float, float] | None, float]` in `imbalance.py` — 2D additive log-prob offset sweep over two minority classes; `minority2_idx = next(i for i, c in enumerate(classes) if i != gate_idx and c != max(classes))` (assumes max(classes) is majority class); returns `(None, best_unconstrained_f1)` when recall gate infeasible
   - `split_features_target_binary(df) -> tuple[pd.DataFrame, pd.Series]` in `preprocessing.py` — binary y = (UKATGEORIE <= 2).astype(int)
   - `build_lightgbm_binary_pipeline(preprocessor, class_weight="balanced", use_gpu=None) -> Pipeline` in `boosting.py` — identical regularisation to multiclass LightGBM; OpenCL GPU detection (not auto from nvidia-smi)
+  - `find_best_binary_threshold(y_true, scores, recall_gate=BINARY_RECALL_KSI_THRESHOLD, n_steps=81) -> tuple[float, dict]` in `evaluate.py` — sweeps a threshold over any monotonic score array (`predict_proba[:, 1]` or `decision_function`, range derived from `scores.min()/max()`, not assumed `[0, 1]`); returns the recall-gate-satisfying threshold with highest `macro_f1`, or best unconstrained `macro_f1` if none clear the gate
+  - `select_best_candidate(..., recall_col: str = "recall_class_1")` in `evaluate.py` — generalized to accept `recall_col` so the same gate-aware selector serves both the 3-class call site (default `recall_class_1`) and binary (`recall_col="recall_ksi"`) without duplicating logic
   - `evaluate_binary_predictions(y_true, y_pred) -> dict` + `meets_binary_acceptance_criteria(metrics) -> bool` in `evaluate.py`; constants `BINARY_MACRO_F1_THRESHOLD=0.55`, `BINARY_RECALL_KSI_THRESHOLD=0.50`; dict keys: `{macro_f1, recall_ksi, recall_slight, confusion_matrix}`
-  - `plot_f1_recall_front(comparison_df, ax=None, gate_f1=0.55, gate_recall=0.50, label_col="model") -> Axes` in `viz/metrics_viz.py` — scatter macro-F1 vs. Recall(class 1); draws gate lines; shades feasible quadrant
-- Output artefacts: `data/processed/a3_binary_best_model.joblib`, `data/processed/a3_binary_model_card.json`, `reports/figures/a3_f1_recall_front.png`
+  - `plot_f1_recall_front(comparison_df, ax=None, gate_f1=0.55, gate_recall=0.50, label_col="model") -> Axes` (3-class) and `plot_binary_f1_recall_front(...)` (binary) in `viz/metrics_viz.py` — both factored out of a shared private `_plot_pareto_front()` helper; scatter macro-F1 vs. recall, draw gate lines, shade feasible quadrant
+- Output artefacts: `data/processed/a3_binary_best_model.joblib`, `data/processed/a3_binary_model_card.json`, `data/processed/a3_binary_model_comparison.csv`, `reports/figures/a3_f1_recall_front.png`
 
 **A³-phase modelling pipeline** (`notebooks/03_A3_Phase.ipynb`, `src/unfallatlas/models/`)
 
@@ -217,16 +279,21 @@ test  = df[df.UJAHR == 2024]
 - Serena MCP + Jupytext workflow configured for symbolic notebook inspection
 - Notebook `.py` mirrors regenerated and committed alongside `.ipynb` changes
 - Notebook outputs stripped pre-commit via `nbstripout` hook
-- `docs/superpowers/` excluded from version control (local dev artefact)
+- `docs/superpowers/` (plans/specs) is tracked in git — the `.gitignore` entry excluding it is commented out (see git-insights note below); it is a local dev artefact by convention, not by enforcement
 - Raw CSV data is local-only; `data/accidents.parquet` tracked via Git LFS
 - AI prompts per QUA³CK phase live at `docs/prompts/` (corrected from earlier `docs/docs/prompts/` typo)
 - U-Phase plotting conventions documented in `docs/prompts/02_prompts_phase_u.md`: human-readable label dicts (`FEATURE_LABELS`, `UKATGEORIE_LABELS`, `COL_CODE_LABELS`, etc.) + helpers (`feature_label()`, `severity_label()`, `apply_code_labels()`) sourced from `docs/dataset/DSB_Unfallatlas.md`; consistent `sns.set_theme(style="whitegrid", palette="colorblind")` styling
 - `docs/` reorganized into `prompts/`, `course-material/`, `dataset/`, `project/`; `GLOSSARY.md` and `AI TOOL DISCLOSURE.md` stay at `docs/` top level (hard requirements)
-- CI (`.github/workflows/ci.yml`): GitHub Actions on ubuntu-latest; installs `uv sync --extra dev --extra geo`, runs `ruff check .` then `uv run pytest`; uploads `coverage.xml` to Codecov via `codecov-action@v5` authenticated with `secrets.CODECOV_TOKEN`
+- CI (`.github/workflows/ci.yml`): GitHub Actions on ubuntu-latest, triggers on push/PR to `main`; installs `uv sync --extra dev --extra geo --extra presentation`, runs `ruff check .` then `uv run pytest`; uploads `coverage.xml` to Codecov via `codecov-action@v5` authenticated with `secrets.CODECOV_TOKEN` (does not install `presentation-test`/Playwright, so `-m browser` tests never run in CI)
+- Pages deploy (`.github/workflows/pages.yml`): triggers on push to `main` when `reports/presentation/**` or the workflow itself changes; validates `index.html`/`manifest.json` exist and the built artifact is under 1024 MB, then deploys `reports/presentation/` via `actions/deploy-pages@v5`
+- Pre-commit (`.pre-commit-config.yaml`, not yet wired into CI as a separate job): ruff (`--fix`) + ruff-format, nbstripout on `*.ipynb` (excluding `tests/presentation/fixtures/`), nbqa-ruff, pyproject-fmt, commitizen (commit-msg stage), detect-private-key, check-added-large-files (`--maxkb=5120`), local `check-notebook-mirrors` hook (blocks direct edits to Jupytext `.py` mirrors)
 - A³-phase CatBoost fix (commits e7cf9ec/4677517): `class_weights` removed from `build_catboost_pipeline()` constructor to fix `clone()` incompatibility; balanced weighting now applied via `sample_weight` at fit time through `cross_validate(params=...)`
 - A³-phase checkpoint pattern: fitted pipelines cached under `data/processed/a3_checkpoints/<git-sha>/` (joblib); Optuna study persisted alongside at `optuna_study.db`; committed hyperparameter changes automatically land in a fresh, empty directory
 - A³-phase §6 filter (commit 22d84a3): §2 GroupKFold cell is a standalone sanity check only — §7 Optuna builds its own `GroupKFold` from subsample years; `_build_pipeline_for()` raises `NotImplementedError` for SMOTE/ADASYN/ordinal/threshold strategies so only `{family}_balanced` configs enter Optuna; full comparison table persisted to `data/processed/a3_model_comparison.csv`
-- Binary KSI reframe (`feature/binary_classifaction`): library layer complete — `find_gate_optimal_offsets` (imbalance.py), `split_features_target_binary` (preprocessing.py), `build_lightgbm_binary_pipeline` (boosting.py), `evaluate_binary_predictions`/`meets_binary_acceptance_criteria` (evaluate.py), `plot_f1_recall_front` (viz/metrics_viz.py); full test coverage in `tests/test_evaluate.py`, `tests/test_metrics_viz.py`, `tests/test_models_boosting.py`, `tests/test_preprocessing.py`; plan at `docs/superpowers/plans/2026-07-14-binary-ksi-reframe.md` (`docs/superpowers/` excluded from version control)
+- Binary KSI reframe (merged to `main` from `feature/binary_classifaction`): library layer complete — `find_gate_optimal_offsets` (imbalance.py), `split_features_target_binary` (preprocessing.py), `build_lightgbm_binary_pipeline` (boosting.py), `evaluate_binary_predictions`/`meets_binary_acceptance_criteria` (evaluate.py), `plot_f1_recall_front` (viz/metrics_viz.py); full test coverage in `tests/test_evaluate.py`, `tests/test_metrics_viz.py`, `tests/test_models_boosting.py`, `tests/test_preprocessing.py`; plan at `docs/superpowers/plans/2026-07-14-binary-ksi-reframe.md`
+- SVM algorithm-selection + binary champion search (commits `c906665`, `eb0d474`, `aa464f2`): added `models/svm.py` (three SVM candidate families), `find_best_binary_threshold` + generalized `select_best_candidate(recall_col=...)` (evaluate.py), `plot_binary_f1_recall_front` (viz/metrics_viz.py); replaced the binary section's single-family LightGBM baseline with a genuine Stage 0/1 multi-family comparison — **binary champion changed from LightGBM to `random_forest`**; plan at `docs/superpowers/plans/2026-07-14-svm-algorithm-selection.md`
+- Notebook presentation exporter (commits incl. `4d712b8`, `164cba3`, `28481d6`, `dac93fb`): `src/unfallatlas/presentation/` package renders already-executed notebooks to static HTML (no cell execution) under `reports/presentation/`, deployed via `.github/workflows/pages.yml`; opt-in Playwright browser verification lives in `tests/presentation/test_browser.py` behind the `browser` pytest marker; design doc at `docs/superpowers/specs/2026-07-14-notebook-presentation-export-design.md`
+- README design-token palette (reserved for the future Streamlit K-phase app, `app/streamlit_app.py`): navy `#1D3557` · red `#E63946` · teal `#2A9D8F` · blue `#457B9D` · light-blue `#A8DADC` · cream `#F1FAEE` (documented as an HTML comment at the top of `README.md`)
 
 <!-- END AUTO-MANAGED -->
 
