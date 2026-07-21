@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.19.3
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: unfallatlas-qua3ck
 #     language: python
 #     name: python3
 # ---
@@ -288,6 +288,13 @@ shap_sample_X = pd.DataFrame(
     preprocessor.transform(shap_sample_X_raw),
     columns=preprocessor.get_feature_names_out(),
 )
+# ColumnTransformer stacks heterogeneous encoders (OneHotEncoder returns
+# bool, passthrough returns int8, target/cyclic encoders return float) into
+# a single object-dtype array. That silently breaks SHAP's colour-by-
+# feature-value coding in the beeswarm plot below (all points render gray
+# instead of the usual low->high gradient) even though every value is
+# numeric. Cast to float64 explicitly - verified safe (0 NaNs introduced).
+shap_sample_X = shap_sample_X.astype(float)
 
 explainer = shap.TreeExplainer(classifier)
 # approximate=True (Saabas algorithm): the exact TreeExplainer algorithm is
