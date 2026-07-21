@@ -69,14 +69,76 @@ def test_build_inference_contract_shape():
         "optimal_threshold_val_2023": 0.4986,
         "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
     }
+    feature_frame = pd.DataFrame({"LAT": [50.1, 52.3], "LON": [7.2, 13.4]})
     contract = build_inference_contract(
         feature_columns=["LAT", "LON"],
         dtypes={"LAT": "float64", "LON": "float64"},
         model_card=model_card,
+        feature_frame=feature_frame,
     )
     assert contract["threshold"] == 0.4986
     assert contract["required_columns"] == [
-        {"name": "LAT", "dtype": "float64"},
-        {"name": "LON", "dtype": "float64"},
+        {
+            "name": "LAT",
+            "dtype": "float64",
+            "source": "Unfallatlas raw/engineered (U-phase)",
+            "min": 50.1,
+            "max": 52.3,
+        },
+        {
+            "name": "LON",
+            "dtype": "float64",
+            "source": "Unfallatlas raw/engineered (U-phase)",
+            "min": 7.2,
+            "max": 13.4,
+        },
     ]
     assert "generated_at_utc" in contract
+
+
+def test_build_inference_contract_source_and_categories():
+    model_card = {
+        "optimal_threshold_val_2023": 0.4986,
+        "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
+    }
+    feature_frame = pd.DataFrame(
+        {
+            "osm_road_density": [1.0, 2.0, 3.0],
+            "dwd_precip_mm": [0.0, 1.0, 2.0],
+            "STRZUSTAND": ["0", "1", "2"],
+            "IstRad": [True, False, True],
+        }
+    )
+    contract = build_inference_contract(
+        feature_columns=["osm_road_density", "dwd_precip_mm", "STRZUSTAND", "IstRad"],
+        dtypes={
+            "osm_road_density": "float64",
+            "dwd_precip_mm": "float64",
+            "STRZUSTAND": "object",
+            "IstRad": "bool",
+        },
+        model_card=model_card,
+        feature_frame=feature_frame,
+    )
+    by_name = {c["name"]: c for c in contract["required_columns"]}
+    assert by_name["osm_road_density"]["source"] == "OSM road-context enrichment (U-phase)"
+    assert by_name["dwd_precip_mm"]["source"] == "DWD weather enrichment (U-phase)"
+    assert by_name["STRZUSTAND"]["categories"] == ["0", "1", "2"]
+    assert by_name["IstRad"]["categories"] == [True, False]
+
+
+def test_build_inference_contract_high_cardinality_column_gets_a_note():
+    model_card = {
+        "optimal_threshold_val_2023": 0.4986,
+        "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
+    }
+    feature_frame = pd.DataFrame({"UKREIS": [str(i) for i in range(60)]})
+    contract = build_inference_contract(
+        feature_columns=["UKREIS"],
+        dtypes={"UKREIS": "object"},
+        model_card=model_card,
+        feature_frame=feature_frame,
+    )
+    entry = contract["required_columns"][0]
+    assert "categories" not in entry
+    assert "60 unique values" in entry["note"]

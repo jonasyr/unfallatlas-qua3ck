@@ -90,16 +90,63 @@ def build_qualitative_matrix(rows: list[dict]) -> pd.DataFrame:
     return df.reset_index().sort_values("weighted_score", ascending=False).reset_index(drop=True)
 
 
+def _infer_source(col: str) -> str:
+    """Best-effort provenance tag for a feature column.
+
+    Based on the U-phase naming convention documented in docs/GLOSSARY.md
+    (osm_*/h3_cell = OSM road-context enrichment, dwd_*/_precip_bucket = DWD
+    weather enrichment) - not an assumption, a lookup against the same
+    prefixes those enrichment steps actually use.
+    """
+    if col.startswith("dwd_") or col == "_precip_bucket":
+        return "DWD weather enrichment (U-phase)"
+    if col.startswith("osm_") or col == "h3_cell":
+        return "OSM road-context enrichment (U-phase)"
+    return "Unfallatlas raw/engineered (U-phase)"
+
+
+def _infer_range(series: pd.Series) -> dict:
+    """Valid range (numeric) or category list (categorical), from real data.
+
+    Never assumed: derived from the actual observed column values so the
+    K-phase implementer gets real validation bounds, not guesses. High-
+    cardinality columns (e.g. district codes, station IDs) get an explicit
+    note instead of an unusably long category list.
+    """
+    if pd.api.types.is_bool_dtype(series):
+        return {"categories": [True, False]}
+    if pd.api.types.is_numeric_dtype(series):
+        return {"min": float(series.min()), "max": float(series.max())}
+    n_unique = int(series.nunique(dropna=True))
+    if n_unique <= 50:
+        return {"categories": sorted(str(v) for v in series.dropna().unique())}
+    return {"note": f"high-cardinality ({n_unique} unique values), no fixed category list"}
+
+
 def build_inference_contract(
     feature_columns: list[str],
     dtypes: dict[str, str],
     model_card: dict,
+    feature_frame: pd.DataFrame,
 ) -> dict:
-    """JSON-serializable contract describing the champion model's input schema."""
+    """JSON-serializable contract describing the champion model's input schema.
+
+    `feature_frame` supplies the real observed range/categories per column
+    (e.g. the training split) so the K-phase implementer never has to
+    re-derive validation bounds or provenance from the notebooks.
+    """
+    required_columns = []
+    for col in feature_columns:
+        entry = {
+            "name": col,
+            "dtype": dtypes.get(col, "unknown"),
+            "source": _infer_source(col),
+        }
+        entry.update(_infer_range(feature_frame[col]))
+        required_columns.append(entry)
+
     return {
-        "required_columns": [
-            {"name": col, "dtype": dtypes.get(col, "unknown")} for col in feature_columns
-        ],
+        "required_columns": required_columns,
         "threshold": model_card["optimal_threshold_val_2023"],
         "target_encoding": model_card["target_encoding"],
         "model_path": "data/processed/a3_binary_best_model.joblib",

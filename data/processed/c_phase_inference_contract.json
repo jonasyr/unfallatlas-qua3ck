@@ -2,127 +2,252 @@
   "required_columns": [
     {
       "name": "UREGBEZ",
-      "dtype": "str"
+      "dtype": "str",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "9"
+      ]
     },
     {
       "name": "UKREIS",
-      "dtype": "str"
+      "dtype": "str",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "note": "high-cardinality (87 unique values), no fixed category list"
     },
     {
       "name": "UMONAT",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 1.0,
+      "max": 12.0
     },
     {
       "name": "USTUNDE",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 0.0,
+      "max": 23.0
     },
     {
       "name": "UWOCHENTAG",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 1.0,
+      "max": 7.0
     },
     {
       "name": "UART",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 0.0,
+      "max": 9.0
     },
     {
       "name": "UTYP1",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 1.0,
+      "max": 7.0
     },
     {
       "name": "ULICHTVERH",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 0.0,
+      "max": 2.0
     },
     {
       "name": "STRZUSTAND",
-      "dtype": "int8"
+      "dtype": "int8",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 0.0,
+      "max": 2.0
     },
     {
       "name": "IstRad",
-      "dtype": "bool"
+      "dtype": "bool",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        true,
+        false
+      ]
     },
     {
       "name": "IstPKW",
-      "dtype": "bool"
+      "dtype": "bool",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        true,
+        false
+      ]
     },
     {
       "name": "IstFuss",
-      "dtype": "bool"
+      "dtype": "bool",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        true,
+        false
+      ]
     },
     {
       "name": "IstKrad",
-      "dtype": "bool"
+      "dtype": "bool",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        true,
+        false
+      ]
     },
     {
       "name": "IstGkfz",
-      "dtype": "object"
+      "dtype": "object",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        "False",
+        "True"
+      ]
     },
     {
       "name": "IstSonstig",
-      "dtype": "bool"
+      "dtype": "bool",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "categories": [
+        true,
+        false
+      ]
     },
     {
       "name": "LON",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 5.867262086,
+      "max": 15.028682904
     },
     {
       "name": "LAT",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "Unfallatlas raw/engineered (U-phase)",
+      "min": 47.315547649,
+      "max": 55.03693181
     },
     {
       "name": "dwd_station_id",
-      "dtype": "str"
+      "dtype": "str",
+      "source": "DWD weather enrichment (U-phase)",
+      "note": "high-cardinality (528 unique values), no fixed category list"
     },
     {
       "name": "dwd_station_dist_km",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "DWD weather enrichment (U-phase)",
+      "min": 0.02249633953698642,
+      "max": 63.84034317746703
     },
     {
       "name": "dwd_temp_air_2m",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "DWD weather enrichment (U-phase)",
+      "min": -12.441935483870967,
+      "max": 29.967741935483872
     },
     {
       "name": "dwd_precip_mm",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "DWD weather enrichment (U-phase)",
+      "min": 0.0,
+      "max": 4.5
     },
     {
       "name": "dwd_visibility_m",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "DWD weather enrichment (U-phase)",
+      "min": 90.0,
+      "max": 80000.0
     },
     {
       "name": "dwd_wind_speed_ms",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "DWD weather enrichment (U-phase)",
+      "min": 0.4483870967741936,
+      "max": 18.0
     },
     {
       "name": "_precip_bucket",
-      "dtype": "category"
+      "dtype": "category",
+      "source": "DWD weather enrichment (U-phase)",
+      "categories": [
+        "dry (0 mm)",
+        "light (0\u20135 mm)"
+      ]
     },
     {
       "name": "h3_cell",
-      "dtype": "str"
+      "dtype": "str",
+      "source": "OSM road-context enrichment (U-phase)",
+      "note": "high-cardinality (200656 unique values), no fixed category list"
     },
     {
       "name": "osm_dominant_road_class",
-      "dtype": "str"
+      "dtype": "str",
+      "source": "OSM road-context enrichment (U-phase)",
+      "categories": [
+        "living_street",
+        "motorway",
+        "motorway_link",
+        "primary",
+        "primary_link",
+        "residential",
+        "secondary",
+        "secondary_link",
+        "service",
+        "tertiary",
+        "tertiary_link",
+        "track",
+        "trunk",
+        "trunk_link",
+        "unclassified"
+      ]
     },
     {
       "name": "osm_maxspeed_mean",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "OSM road-context enrichment (U-phase)",
+      "min": 5.0,
+      "max": 130.0
     },
     {
       "name": "osm_maxspeed_max",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "OSM road-context enrichment (U-phase)",
+      "min": 5.0,
+      "max": 140.0
     },
     {
       "name": "osm_road_density",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "OSM road-context enrichment (U-phase)",
+      "min": 2.0,
+      "max": 6980.0
     },
     {
       "name": "osm_way_count",
-      "dtype": "float64"
+      "dtype": "float64",
+      "source": "OSM road-context enrichment (U-phase)",
+      "min": 2.0,
+      "max": 2790.0
     }
   ],
   "threshold": 0.49860217036273086,
   "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
   "model_path": "data/processed/a3_binary_best_model.joblib",
-  "generated_at_utc": "2026-07-21T18:24:13.622165+00:00"
+  "generated_at_utc": "2026-07-21T23:20:54.017090+00:00"
 }

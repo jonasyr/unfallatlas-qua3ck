@@ -144,10 +144,17 @@ plt.show()
 # %% [markdown]
 # ## 2 — Fehleranalyse nach Slices
 #
-# False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (`UART`), dominanter OSM-Straßenklasse, Straßenzustand (`STRZUSTAND`) und Lichtverhältnissen (`ULICHTVERH`) — um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.
+# False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (`UART`), dominanter OSM-Straßenklasse, Straßenzustand (`STRZUSTAND`), Lichtverhältnissen (`ULICHTVERH`), Niederschlagskategorie (`_precip_bucket`, aus `dwd_precip_mm` abgeleitet) und Tageszeit (`USTUNDE`, Unfallstunde 0–23) — um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.
 
 # %%
-slice_columns = ["UART", "osm_dominant_road_class", "STRZUSTAND", "ULICHTVERH"]
+slice_columns = [
+    "UART",
+    "osm_dominant_road_class",
+    "STRZUSTAND",
+    "ULICHTVERH",
+    "_precip_bucket",
+    "USTUNDE",
+]
 slice_frame = test_df[slice_columns].reset_index(drop=True)
 
 error_slice_df = compute_error_slices(
@@ -170,6 +177,8 @@ plt.show()
 
 # %% [markdown]
 # **Beobachtung:** Die höchsten False-Negative-Raten treten bei `UART`-Kategorien auf: `UART=1` (Kollision mit haltendem/parkendem Fahrzeug, 89,0 % FN-Rate, n=14.673), `UART=3` (Seitenkollision, 74,1 %) und `UART=2` (Auffahrunfall, 71,5 %). Auch `STRZUSTAND=2` (Winterglätte, 68,5 %, wenn auch mit kleinerem n=4.731) und `UART=5` (Abbiege-/Einbiegeunfall, der häufigste Unfalltyp, 68,0 %) liegen weit oben. Bemerkenswert: Gerade die von A³ §20 als stärkstes Einzelmerkmal identifizierte Variable `UART` (Cramér's V=0,1801) dominiert auch hier die Fehlerliste — selbst das informativste verfügbare Merkmal reicht nicht aus, um KSI-Fälle innerhalb dieser Unfalltypen zuverlässig zu erkennen. Das deckt sich mit der in §6 aufgegriffenen Feature-Obergrenze: Die Fehler sind nicht zufällig verteilt, sondern konzentrieren sich systematisch dort, wo die verfügbaren Merkmale am wenigsten trennscharf sind.
+#
+# Die beiden neuen Dimensionen zeigen ein deutlich schwächeres, aber nicht triviales Muster: Nach Tageszeit (`USTUNDE`) liegt die FN-Rate im morgendlichen Berufsverkehr (7–9 Uhr) mit 56,7–60,7 % spürbar über dem Durchschnitt und fällt danach kontinuierlich ab (10 Uhr: 50,8 %) — ein Hinweis, dass der Champion KSI-Fälle im dichten Frühverkehr etwas häufiger übersieht als in verkehrsärmeren Stunden. Nach Niederschlagskategorie (`_precip_bucket`) zeigt sich dagegen praktisch kein Unterschied (dry: 47,2 % vs. light 0–5 mm: 48,7 % FN-Rate) — in Test-2024 kommen ohnehin nur diese zwei Kategorien vor (moderate/heavy: n=0), sodass Niederschlag hier keine systematische Fehlerquelle ist, anders als Unfalltyp, Straßenzustand oder Tageszeit.
 
 # %% [markdown]
 # ## 3 — Formale KPI-Validierung: Go/No-Go
@@ -216,6 +225,35 @@ _champion_latency_ms_per_1k = (time.perf_counter() - _start) * 1000
 print(f"Champion latency: {_champion_latency_ms_per_1k:.1f} ms per 1,000 rows")
 
 # %%
+# Robustness check: all three families share the exact same ColumnTransformer
+# preprocessing (build_preprocessor() is passed in externally to every
+# build_*_pipeline() in src/unfallatlas/models/*.py), so their handling of
+# missing OSM/DWD input is identical, not a per-family trait. Verify this
+# empirically instead of asserting it: null every OSM/DWD column on a small
+# batch and confirm the champion pipeline still predicts without raising
+# (numeric OSM/DWD columns are median-imputed, the one OSM categorical
+# column is constant-imputed to "unknown" - see build_preprocessor()).
+_osm_dwd_cols = [
+    c for c in X_test_bin.columns if c.startswith(("osm_", "dwd_")) or c == "_precip_bucket"
+]
+_robustness_probe = X_test_bin.iloc[:50].copy()
+for _col in _osm_dwd_cols:
+    _robustness_probe[_col] = np.nan if _robustness_probe[_col].dtype.kind in "fc" else None
+try:
+    champion_pipeline.predict_proba(_robustness_probe)
+    ROBUSTNESS_OK = True
+except Exception as exc:
+    ROBUSTNESS_OK = False
+    print(f"Robustness probe FAILED: {exc}")
+# Identical across families since it is a preprocessing-pipeline property,
+# not a classifier property.
+ROBUSTNESS_SCORE = 0.8 if ROBUSTNESS_OK else 0.2
+print(
+    f"Pipeline tolerates fully-missing OSM/DWD input ({len(_osm_dwd_cols)} columns nulled): "
+    f"{ROBUSTNESS_OK} -> robustness_score={ROBUSTNESS_SCORE} for all three families"
+)
+
+# %%
 champion_row = binary_comparison_df[
     binary_comparison_df["family"] == model_card["champion_family"]
 ].iloc[0]
@@ -228,6 +266,9 @@ lightgbm_row = binary_comparison_df[binary_comparison_df["family"] == "lightgbm"
 # trees correct previous residuals rather than voting independently, making
 # per-prediction path tracing less direct without SHAP). Scored 0-1, champion
 # favoured for its direct TreeExplainer compatibility used in §5.
+# Robustness: ROBUSTNESS_SCORE (computed above) is identical for all three -
+# it reflects the shared ColumnTransformer preprocessing, not a per-family
+# difference.
 # Training cost: Optuna trial count from the shared A³ search budget
 # (provenance.optuna_trials applies to the whole binary Stage-1 search, so
 # it is identical across families here — a genuine shared-cost fact, not an
@@ -239,7 +280,7 @@ qualitative_rows = [
         "recall_ksi": champion_row["recall_ksi"],
         "latency_ms_per_1k": _champion_latency_ms_per_1k,
         "interpretability_score": 0.8,
-        "robustness_score": 0.8,
+        "robustness_score": ROBUSTNESS_SCORE,
         "training_cost_score": model_card["provenance"]["optuna_trials"],
     },
     {
@@ -248,7 +289,7 @@ qualitative_rows = [
         "recall_ksi": xgboost_row["recall_ksi"],
         "latency_ms_per_1k": _champion_latency_ms_per_1k,
         "interpretability_score": 0.6,
-        "robustness_score": 0.7,
+        "robustness_score": ROBUSTNESS_SCORE,
         "training_cost_score": model_card["provenance"]["optuna_trials"],
     },
     {
@@ -257,7 +298,7 @@ qualitative_rows = [
         "recall_ksi": lightgbm_row["recall_ksi"],
         "latency_ms_per_1k": _champion_latency_ms_per_1k,
         "interpretability_score": 0.6,
-        "robustness_score": 0.7,
+        "robustness_score": ROBUSTNESS_SCORE,
         "training_cost_score": model_card["provenance"]["optuna_trials"],
     },
 ]
@@ -265,7 +306,7 @@ qualitative_matrix_df = build_qualitative_matrix(qualitative_rows)
 qualitative_matrix_df
 
 # %% [markdown]
-# **Hinweis zur Latenz und den Trainingskosten:** Nur die Champion-Pipeline ist als Artefakt gespeichert (`a3_binary_best_model.joblib`); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden — der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Trainingskosten-Score (`optuna_trials`) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher für alle drei Familien identisch — auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Beide Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit/Robustheit.
+# **Hinweis zur Latenz, Robustheit und den Trainingskosten:** Nur die Champion-Pipeline ist als Artefakt gespeichert (`a3_binary_best_model.joblib`); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden — der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Robustheits-Score ist für alle drei Familien identisch (`ROBUSTNESS_SCORE`, oben empirisch geprüft): Alle drei teilen sich dieselbe `ColumnTransformer`-Preprocessing-Pipeline, daher ist die Behandlung fehlender OSM/DWD-Werte eine Eigenschaft der Pipeline, nicht des Klassifikators. Der Trainingskosten-Score (`optuna_trials`) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher ebenfalls für alle drei Familien identisch — auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Alle drei Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit.
 
 # %% [markdown]
 # ## 5 — SHAP-Erklärbarkeit
@@ -405,20 +446,20 @@ shap_importance.head(15)
 # %% [markdown]
 # ## 8 — Finale Modellentscheidung
 #
-# **Synthese:** Der formale Gate-Check (§3) ist für beide Kriterien **bestanden** (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50). Die qualitative Bewertungsmatrix (§4) bestätigt `random_forest` als Champion mit dem höchsten gewichteten Score (0,700 vs. 0,518 für xgboost und 0,500 für lightgbm), trotz niedrigerer Recall(KSI) als beide Runner-ups (§1) — der Tradeoff zugunsten von macro-F1 ist durch die 30 %/30 %-Gewichtung explizit gemacht, nicht implizit angenommen. SHAP (§5) und der Literaturabgleich (§6) zeigen ein Modell, das auf breit verteilten, schwach assoziierten Features (OSM-Straßenkontext, Fahrzeugtyp-Flags, Unfalltyp) basiert statt auf einem einzelnen dominanten Prädiktor — konsistent mit der in A³ §11/§20 belegten Feature-Obergrenze (stärkste binäre Assoziation `UART`=0,1801, weit unter dem Bereich starken Klassifikationssignals). Die Fehleranalyse (§2) zeigt, dass die verbleibenden Fehler systematisch dort auftreten, wo die verfügbaren Merkmale am wenigsten trennscharf sind — kein Hinweis auf eine behebbare, aber übersehene Schwäche des Champions.
+# **Synthese:** Der formale Gate-Check (§3) ist für beide Kriterien **bestanden** (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50). Die qualitative Bewertungsmatrix (§4) bestätigt `random_forest` als Champion mit dem höchsten gewichteten Score (0,600 vs. 0,518 für xgboost und 0,500 für lightgbm), trotz niedrigerer Recall(KSI) als beide Runner-ups (§1) — der Tradeoff zugunsten von macro-F1 ist durch die 30 %/30 %-Gewichtung explizit gemacht, nicht implizit angenommen. Latenz, Robustheit gegenüber fehlenden OSM/DWD-Features und Trainingskosten sind für alle drei Familien identisch (§4) und tragen daher nicht zur Rangfolge bei; die Entscheidung stützt sich primär auf macro-F1, Recall(KSI) und Interpretierbarkeit. SHAP (§5) und der Literaturabgleich (§6) zeigen ein Modell, das auf breit verteilten, schwach assoziierten Features (OSM-Straßenkontext, Fahrzeugtyp-Flags, Unfalltyp) basiert statt auf einem einzelnen dominanten Prädiktor — konsistent mit der in A³ §11/§20 belegten Feature-Obergrenze (stärkste binäre Assoziation `UART`=0,1801, weit unter dem Bereich starken Klassifikationssignals). Die Fehleranalyse (§2) zeigt, dass die verbleibenden Fehler systematisch dort auftreten, wo die verfügbaren Merkmale am wenigsten trennscharf sind (Unfalltyp, Straßenzustand, morgendlicher Berufsverkehr) — kein Hinweis auf eine behebbare, aber übersehene Schwäche des Champions.
 #
 # **Entscheidung:** `random_forest` (Schwellenwert 0,4986) bleibt der bestätigte Champion für die K-Phase.
 
 # %% [markdown]
 # ## 9 — Übergabe an die K-Phase
 #
-# Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (`a3_binary_best_model.joblib`), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp auflistet — damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.
+# Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (`a3_binary_best_model.joblib`), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp, gültigem Wertebereich bzw. Kategorienliste (aus den echten Trainingsdaten abgeleitet, nicht angenommen) und Herkunft (Unfallatlas roh/abgeleitet, DWD-Wetteranreicherung oder OSM-Straßenkontext-Anreicherung, jeweils aus der U-Phase) auflistet — damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.
 
 # %%
 feature_columns = X_train_bin.columns.tolist()
 dtypes = {col: str(dtype) for col, dtype in X_train_bin.dtypes.items()}
 
-inference_contract = build_inference_contract(feature_columns, dtypes, model_card)
+inference_contract = build_inference_contract(feature_columns, dtypes, model_card, X_train_bin)
 with open(PROCESSED_DIR / "c_phase_inference_contract.json", "w") as f:
     json.dump(inference_contract, f, indent=2)
 
@@ -432,13 +473,13 @@ assert (PROCESSED_DIR / "a3_binary_best_model.joblib").exists()
 #
 # **Was erreicht wurde:**
 # - Systematischer Vergleich aller 10 Kandidaten aus dem A³-Suchlauf mit ROC/PR/Konfusionsmatrix für den Champion (§1).
-# - Fehleranalyse nach Slices: höchste False-Negative-Raten bei `UART=1` (89,0 %), `UART=3` (74,1 %) und `UART=2` (71,5 %) — Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen (§2).
+# - Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei `UART=1` (89,0 %), `UART=3` (74,1 %) und `UART=2` (71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %) — Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).
 # - Formale Gate-Validierung: **bestanden** gegen beide Q-Phase-Kriterien (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50) (§3).
-# - Gewichtete qualitative Bewertungsmatrix, die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet (§4).
+# - Gewichtete qualitative Bewertungsmatrix (macro-F1 0,600 vs. 0,518 vs. 0,500), die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet — inklusive eines empirisch geprüften, für alle drei Familien identischen Robustheits-Scores gegenüber fehlenden OSM/DWD-Features (§4).
 # - SHAP-Erklärbarkeit (global + 4 Fallbeispiele), konsistent mit der A³-Feature-Evidenz (§5).
 # - Literaturabgleich: Test-2024 macro-F1 im zitierten Literaturbereich (Santos 2022, Pakgohar 2021, Schlößler 2024) (§6).
 # - Ehrliche Limitationsdiskussion (§7).
-# - Vollständiges K-Phase-Artefaktpaket: Pipeline, Schwellenwert, Inference-Contract mit 30 erforderlichen Eingabespalten (§9).
+# - Vollständiges K-Phase-Artefaktpaket: Pipeline, Schwellenwert, Inference-Contract mit 30 erforderlichen Eingabespalten inklusive Wertebereich/Kategorien und Herkunft je Spalte (§9).
 #
 # **Ausblick:** Die K-Phase implementiert die Streamlit-App (`app/streamlit_app.py`) gegen `data/processed/c_phase_inference_contract.json` und `data/processed/a3_binary_best_model.joblib`.
 #
