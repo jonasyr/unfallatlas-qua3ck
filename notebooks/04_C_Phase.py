@@ -41,6 +41,7 @@ import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import shap
 from sklearn.metrics import confusion_matrix
 
 from unfallatlas.features.preprocessing import (
@@ -261,3 +262,102 @@ qualitative_matrix_df
 
 # %% [markdown]
 # **Hinweis zur Latenz und den Trainingskosten:** Nur die Champion-Pipeline ist als Artefakt gespeichert (`a3_binary_best_model.joblib`); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden — der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Trainingskosten-Score (`optuna_trials`) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher für alle drei Familien identisch — auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Beide Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit/Robustheit.
+
+# %% [markdown]
+# ## 5 — SHAP-Erklärbarkeit
+#
+# `TreeExplainer` auf einer stratifizierten Stichprobe von 5.000 Zeilen aus Test-2024 (2.500 pro Klasse) — die vollen ~223.000 Test-2024-Zeilen sind für SHAP nicht praktikabel. Zusätzlich wird `approximate=True` (Saabas-Algorithmus) verwendet: Der Champion hat 180 Bäume mit exakt Tiefe 23 und im Schnitt ~41.355 Blättern pro Baum (insgesamt ~7,4 Mio. Blätter) — für Bäume dieser Größe ist die exakte SHAP-Berechnung (Komplexität ~O(Blätter·Tiefe²)) empirisch bestätigt unpraktikabel (ein Testlauf mit 50 Zeilen ohne `approximate=True` lief über 10 Minuten, ohne zu terminieren; mit `approximate=True` dauerten 500 Zeilen 0,11 Sekunden). Diese Stichprobengröße und die Approximation sind bewusste, hier dokumentierte Entscheidungen, keine stillschweigenden Kürzungen. Zunächst die globale Sicht (Summary/Beeswarm + mittlere absolute SHAP-Werte), danach vier konkrete Fallbeispiele.
+
+# %%
+sample_idx = (
+    pd.Series(y_test_bin.values)
+    .groupby(y_test_bin.values)
+    .sample(n=2500, random_state=42)  # 2,500 per class = 5,000 total, stratified
+    .index
+)
+shap_sample_X_raw = X_test_bin.iloc[sample_idx].reset_index(drop=True)
+shap_sample_y = y_test_bin.iloc[sample_idx].reset_index(drop=True)
+
+preprocessor = champion_pipeline[:-1]
+classifier = champion_pipeline[-1]
+shap_sample_X = pd.DataFrame(
+    preprocessor.transform(shap_sample_X_raw),
+    columns=preprocessor.get_feature_names_out(),
+)
+
+explainer = shap.TreeExplainer(classifier)
+# approximate=True (Saabas algorithm): the exact TreeExplainer algorithm is
+# impractical for this champion's tree size (180 trees, depth 23, ~7.4M
+# leaves total) — see the markdown above for the empirical timing that
+# motivated this choice. check_additivity=False because the approximate
+# algorithm does not guarantee exact additivity to the model's raw output.
+shap_values = explainer.shap_values(shap_sample_X, approximate=True, check_additivity=False)
+# For binary sklearn classifiers, shap_values may be a list [class0, class1]
+# or a single 2D array depending on the shap version pinned — handle both.
+shap_values_ksi = shap_values[1] if isinstance(shap_values, list) else shap_values
+if shap_values_ksi.ndim == 3:
+    # shap>=0.45 TreeExplainer on binary classifiers can return shape
+    # (n_samples, n_features, n_classes) instead of a list — select class 1.
+    shap_values_ksi = shap_values_ksi[:, :, 1]
+print(f"shap_values_ksi shape: {shap_values_ksi.shape}, shap_sample_X shape: {shap_sample_X.shape}")
+
+# %%
+shap.summary_plot(shap_values_ksi, shap_sample_X, show=False)
+plt.tight_layout()
+plt.savefig(FIG_DIR / "shap_summary_beeswarm.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %%
+shap.summary_plot(shap_values_ksi, shap_sample_X, plot_type="bar", show=False)
+plt.tight_layout()
+plt.savefig(FIG_DIR / "shap_importance_bar.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %%
+shap_sample_pred_proba = champion_pipeline.predict_proba(shap_sample_X_raw)[:, 1]
+shap_sample_pred = (shap_sample_pred_proba >= CHAMPION_THRESHOLD).astype(int)
+
+is_tp = (shap_sample_y.values == 1) & (shap_sample_pred == 1)
+is_fn = (shap_sample_y.values == 1) & (shap_sample_pred == 0)
+is_fp = (shap_sample_y.values == 0) & (shap_sample_pred == 1)
+is_tn = (shap_sample_y.values == 0) & (shap_sample_pred == 0)
+
+case_indices = {}
+for name, mask in [
+    ("true_positive_ksi", is_tp),
+    ("false_negative_ksi", is_fn),
+    ("false_positive_slight", is_fp),
+    ("true_negative", is_tn),
+]:
+    matches = np.where(mask)[0]
+    if len(matches) == 0:
+        print(f"WARNING: no examples found for {name} in this sample — skipping")
+        continue
+    case_indices[name] = matches[0]
+print(case_indices)
+
+# %%
+expected_value = explainer.expected_value
+expected_value_ksi = (
+    expected_value[1]
+    if isinstance(expected_value, (list, np.ndarray)) and len(np.atleast_1d(expected_value)) > 1
+    else expected_value
+)
+
+for name, idx in case_indices.items():
+    fig = plt.figure()
+    shap.plots.waterfall(
+        shap.Explanation(
+            values=shap_values_ksi[idx],
+            base_values=expected_value_ksi,
+            data=shap_sample_X.iloc[idx],
+            feature_names=shap_sample_X.columns.tolist(),
+        ),
+        show=False,
+    )
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / f"shap_waterfall_{name}.png", dpi=150, bbox_inches="tight")
+    plt.show()
+
+# %% [markdown]
+# **Fallbeispiele:** Bei der **True-Positive-KSI** (korrekt erkannter KSI-Fall) treibt `IstKrad` (Motorradbeteiligung) den Score am stärksten Richtung KSI (SHAP=+0,13) — mit Abstand der größte Einzelbeitrag unter allen vier Fällen, konsistent mit dem bekannten hohen Verletzungsrisiko für Motorradfahrer. Bei der **False-Negative-KSI** (übersehener KSI-Fall) sind die Beiträge insgesamt deutlich schwächer (größter Betrag nur 0,036 für `UKREIS_target_enc`, und dieser zeigt sogar in die falsche Richtung) — genau das Muster, das die niedrige Recall(KSI) erklärt: Es fehlt nicht an einem falsch gewichteten Feature, sondern schlicht an einem hinreichend starken Signal in den verfügbaren Merkmalen für diesen Fall. Beim **False-Positive-Slight** (fälschlich als KSI eingestuft) ziehen `UTYP1_1` (Fahrunfall), `osm_road_density` und `osm_way_count` gemeinsam Richtung KSI (SHAP zwischen +0,05 und +0,06 je Feature) — ein Muster aus mehreren mittelstarken OSM-/Unfalltyp-Signalen, das in diesem Fall in die falsche Richtung zeigt. Bei der **True Negative** dominiert `UART_2` (Auffahrunfall) mit SHAP=-0,14 klar Richtung "leicht" — der stärkste Einzelbeitrag unter den korrekten Klassifikationen. Alle vier Fälle stützen sich auf dieselbe Merkmalsfamilie wie die globale Rangfolge oben (`osm_way_count`, `IstKrad`, `UTYP1_1`, `osm_road_density`, `UART_2` sind die fünf global wichtigsten Features) — es gibt kein verborgenes, in den Einzelfällen dominierendes Merkmal, das in der globalen Sicht fehlen würde.
