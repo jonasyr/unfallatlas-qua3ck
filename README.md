@@ -2,14 +2,14 @@
 
 <!-- Design tokens (reused for the Streamlit K-Phase app): navy #1D3557 · red #E63946 · teal #2A9D8F · blue #457B9D · light-blue #A8DADC · cream #F1FAEE -->
 
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=plastic&logo=python&logoColor=white&labelColor=1D3557)](pyproject.toml)
 [![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=1D3557)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=1D3557)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![License: MIT](https://img.shields.io/badge/License-MIT-2A9D8F?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=1D3557)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=plastic&logo=python&logoColor=white&labelColor=1D3557)](pyproject.toml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=1D3557)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=1D3557)](https://github.com/astral-sh/uv)
 [![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-457B9D?style=plastic&logo=readthedocs&logoColor=white&labelColor=1D3557)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
 <!-- DeepWiki: simple-icons has no dedicated DeepWiki glyph, so readthedocs (closest "docs" icon) stands in -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-2A9D8F?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=1D3557)](LICENSE)
 
 <!-- TODO(visual): add a hero image once a result is worth leading with --
      e.g. SHAP summary plot or geo accident-density map from A³/C phase,
