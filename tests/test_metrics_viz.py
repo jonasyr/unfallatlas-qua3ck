@@ -3,9 +3,15 @@ import pandas as pd
 
 matplotlib.use("Agg")  # headless backend for CI
 import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np
 import pytest
 
-from unfallatlas.viz.metrics_viz import plot_binary_f1_recall_front, plot_f1_recall_front
+from unfallatlas.viz.metrics_viz import (
+    plot_binary_f1_recall_front,
+    plot_confusion_matrix_heatmap,
+    plot_f1_recall_front,
+    plot_roc_pr_curves,
+)
 
 
 @pytest.fixture()
@@ -123,4 +129,38 @@ def test_plot_f1_recall_front_legend_label_unchanged_by_refactor(comparison_df):
     ax = plot_f1_recall_front(comparison_df, gate_recall=0.50)
     legend_labels = [line.get_label() for line in ax.lines]
     assert "Gate: Recall(1) ≥ 0.5" in legend_labels
+    plt.close("all")
+
+
+def test_plot_roc_pr_curves_returns_two_axes():
+    rng = np.random.default_rng(42)
+    y_true = rng.integers(0, 2, size=200)
+    models = {
+        "champion": (y_true, rng.random(200)),
+        "runner_up": (y_true, rng.random(200)),
+    }
+    ax_roc, ax_pr = plot_roc_pr_curves(models, title_prefix="Test")
+    assert isinstance(ax_roc, plt.Axes)
+    assert isinstance(ax_pr, plt.Axes)
+    assert len(ax_roc.lines) >= 2  # 2 model curves (+ optional chance line)
+    assert len(ax_pr.lines) >= 2
+    plt.close("all")
+
+
+def test_plot_roc_pr_curves_accepts_external_axes():
+    rng = np.random.default_rng(42)
+    y_true = rng.integers(0, 2, size=100)
+    models = {"champion": (y_true, rng.random(100))}
+    _, (ax_roc_in, ax_pr_in) = plt.subplots(1, 2)
+    ax_roc, ax_pr = plot_roc_pr_curves(models, ax_roc=ax_roc_in, ax_pr=ax_pr_in)
+    assert ax_roc is ax_roc_in
+    assert ax_pr is ax_pr_in
+    plt.close("all")
+
+
+def test_plot_confusion_matrix_heatmap_returns_axes():
+    cm = np.array([[23228, 20970], [53506, 170815]])
+    ax = plot_confusion_matrix_heatmap(cm, labels=["KSI", "slight"], title="Test CM")
+    assert isinstance(ax, plt.Axes)
+    assert ax.get_title() == "Test CM"
     plt.close("all")

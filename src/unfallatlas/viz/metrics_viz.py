@@ -140,3 +140,83 @@ def plot_binary_f1_recall_front(
         gate_recall=gate_recall,
         label_col=label_col,
     )
+
+
+def plot_roc_pr_curves(
+    models: dict[str, tuple],
+    ax_roc: plt.Axes | None = None,
+    ax_pr: plt.Axes | None = None,
+    title_prefix: str = "",
+) -> tuple[plt.Axes, plt.Axes]:
+    """Overlay ROC and PR curves for multiple (y_true, y_score) pairs.
+
+    Args:
+        models: maps a display name to a (y_true, y_score) tuple, where
+            y_score is the predicted probability / decision score for the
+            positive (KSI) class.
+        ax_roc: Optional existing Axes for the ROC curve; created if None.
+        ax_pr: Optional existing Axes for the PR curve; created if None.
+        title_prefix: Prepended to both plot titles.
+
+    Returns:
+        (ax_roc, ax_pr) — the populated Axes objects.
+    """
+    from sklearn.metrics import auc, precision_recall_curve, roc_curve
+
+    if ax_roc is None:
+        _, ax_roc = plt.subplots()
+    if ax_pr is None:
+        _, ax_pr = plt.subplots()
+
+    for name, (y_true, y_score) in models.items():
+        fpr, tpr, _ = roc_curve(y_true, y_score)
+        roc_auc = auc(fpr, tpr)
+        ax_roc.plot(fpr, tpr, label=f"{name} (AUC={roc_auc:.3f})")
+
+        precision, recall, _ = precision_recall_curve(y_true, y_score)
+        pr_auc = auc(recall, precision)
+        ax_pr.plot(recall, precision, label=f"{name} (AUC={pr_auc:.3f})")
+
+    ax_roc.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Chance")
+    ax_roc.set_xlabel("False Positive Rate")
+    ax_roc.set_ylabel("True Positive Rate")
+    ax_roc.set_title(f"{title_prefix} ROC Curve".strip())
+    ax_roc.legend()
+
+    ax_pr.set_xlabel("Recall")
+    ax_pr.set_ylabel("Precision")
+    ax_pr.set_title(f"{title_prefix} Precision-Recall Curve".strip())
+    ax_pr.legend()
+
+    return ax_roc, ax_pr
+
+
+def plot_confusion_matrix_heatmap(
+    cm,
+    labels: list[str],
+    ax: plt.Axes | None = None,
+    title: str = "",
+) -> plt.Axes:
+    """Annotated confusion-matrix heatmap for a binary classifier."""
+    import numpy as np
+
+    if ax is None:
+        _, ax = plt.subplots()
+
+    cm = np.asarray(cm)
+    im = ax.imshow(cm, cmap="Blues")
+    ax.figure.colorbar(im, ax=ax)
+
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels([f"Pred {label}" for label in labels])
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels([f"True {label}" for label in labels])
+
+    cm_max = cm.max()
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            color = "white" if cm[i, j] > cm_max / 2 else "black"
+            ax.text(j, i, f"{cm[i, j]:,}", ha="center", va="center", color=color)
+
+    ax.set_title(title)
+    return ax
