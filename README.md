@@ -1,15 +1,17 @@
 # 🚦 Unfallatlas Deutschland — QUA³CK ML-Portfolio
 
-<!-- Design tokens (reused for the Streamlit K-Phase app): navy #1D3557 · red #E63946 · teal #2A9D8F · blue #457B9D · light-blue #A8DADC · cream #F1FAEE -->
+<!-- Design tokens: navy #14213D (badge base) · blue #3776AB · orange #F37626 · mint #06D6A0 · indigo #6D5DFC.
+     Reserved for Streamlit K-Phase severity encoding: red #E63946 (Getötet) · amber #F4A261 (Schwerverletzt) · green #2A9D8F (Leicht verletzt) -->
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=plastic&logo=python&logoColor=white&labelColor=1D3557)](pyproject.toml)
-[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=1D3557)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=1D3557)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=1D3557)](https://github.com/astral-sh/ruff)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=1D3557)](https://github.com/astral-sh/uv)
-[![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-457B9D?style=plastic&logo=readthedocs&logoColor=white&labelColor=1D3557)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=plastic&logo=python&logoColor=white&labelColor=14213D)](pyproject.toml)
+[![Jupyter](https://img.shields.io/badge/Jupyter-Notebooks-F37626?style=plastic&logo=jupyter&logoColor=white&labelColor=14213D)](notebooks/)
+[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=14213D)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=14213D)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=14213D)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=14213D)](https://github.com/astral-sh/uv)
+[![License: MIT](https://img.shields.io/badge/License-MIT-06D6A0?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=14213D)](LICENSE)
+[![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-6D5DFC?style=plastic&logo=readthedocs&logoColor=white&labelColor=14213D)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
 <!-- DeepWiki: simple-icons has no dedicated DeepWiki glyph, so readthedocs (closest "docs" icon) stands in -->
-[![License: MIT](https://img.shields.io/badge/License-MIT-2A9D8F?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=1D3557)](LICENSE)
 
 <!-- TODO(visual): add a hero image once a result is worth leading with --
      e.g. SHAP summary plot or geo accident-density map from A³/C phase,
@@ -20,7 +22,7 @@ Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des
 
 > **Forschungsfrage:** Welche raumzeitlichen, infrastrukturellen und meteorologischen Faktoren bestimmen die Schwere eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten zuverlässig vorhersagen?
 
-**📊 Live-Report:** [jonasyr.github.io/unfallatlas-qua3ck](https://jonasyr.github.io/unfallatlas-qua3ck/) — exportierte Notebook-Ergebnisse ohne lokales Setup.
+**📊 Live-Report:** [jonasyr.github.io/unfallatlas-qua3ck](https://jonasyr.github.io/unfallatlas-qua3ck/) — alle Notebooks vollständig gerendert (Code + Outputs) als statisches HTML, ohne lokales Setup.
 
 ## Inhalt
 
