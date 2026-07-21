@@ -520,9 +520,150 @@
       "source_sha256": "6ad13e432334b63f2643f51109bdefdbb3db4e3aaa0752985bbbf1029678d943",
       "status": "ready",
       "title": "Unfallatlas Deutschland A³ Phase"
+    },
+    {
+      "assets": [
+        {
+          "cell_index": null,
+          "kind": "plotly-runtime",
+          "media_type": "text/javascript",
+          "relative_path": "assets/vendor/plotly-6.7.0.min.js",
+          "sha256": "7c76cd2cff869485cdf9e7db41e73bf1491e994cf7349a7b5267c6c42d6d371b",
+          "size_bytes": 4842553
+        },
+        {
+          "cell_index": null,
+          "kind": "mathjax-runtime",
+          "media_type": "text/javascript",
+          "relative_path": "assets/vendor/mathjax-3.2.2-tex-svg-full.js",
+          "sha256": "a4354ff94fd868aea0cc6eaaa79a57fda0588646fc46ee3700a349ee0a11cbe6",
+          "size_bytes": 2275113
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-style",
+          "media_type": "text/css",
+          "relative_path": "assets/ui/presentation-83e6909e0af834ab.css",
+          "sha256": "83e6909e0af834abd40a8cf1c98711c2251fa27c9b2114b0127063931981649b",
+          "size_bytes": 8004
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-script",
+          "media_type": "text/javascript",
+          "relative_path": "assets/ui/presentation-e441c0f491aa8ad4.js",
+          "sha256": "e441c0f491aa8ad4c6edc7a543fee35a42ef5e801924a9a76944c91b106574cb",
+          "size_bytes": 10281
+        },
+        {
+          "cell_index": 5,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-ff2bb74a7940b75b.png",
+          "sha256": "ff2bb74a7940b75b46de98b0bbf4dd1960f7df130d62c48950fd694269d8061a",
+          "size_bytes": 37783
+        },
+        {
+          "cell_index": 5,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-d5ee049d59f4dbcb.png",
+          "sha256": "d5ee049d59f4dbcb94f6a7f1b6fc569119af3dbd9af5cdc6d589eef9d0808c48",
+          "size_bytes": 25522
+        },
+        {
+          "cell_index": 6,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-032f1513a5439395.png",
+          "sha256": "032f1513a54393951837e319a23f8f03281d481bd9e57dfbade0436f301d78f8",
+          "size_bytes": 26227
+        },
+        {
+          "cell_index": 9,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-2fd2d57c5640aa1d.png",
+          "sha256": "2fd2d57c5640aa1df5d7ea3bd7e3fdc6c7a13cb151a6b70640b9203fcd99ffde",
+          "size_bytes": 45944
+        },
+        {
+          "cell_index": 20,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-b9380d0781778f88.png",
+          "sha256": "b9380d0781778f882051498e65935c59f4fa7e60d223cf5974cf509f69ea4ae5",
+          "size_bytes": 124892
+        },
+        {
+          "cell_index": 21,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-54437b2e288c6d75.png",
+          "sha256": "54437b2e288c6d75a2b3d5d8863439a3d1420ea5d266d7556c0f66944d8f1a94",
+          "size_bytes": 57807
+        },
+        {
+          "cell_index": 23,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-baa7752395182752.png",
+          "sha256": "baa775239518275235aaca83fff0d8430c47b10423c66f8a079dde8b0ab8c06d",
+          "size_bytes": 64605
+        },
+        {
+          "cell_index": 23,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-0e04f11c38b938af.png",
+          "sha256": "0e04f11c38b938afff67a0df479c2e26b22677c5fad7c7c4bc91d7a5bc081841",
+          "size_bytes": 57648
+        },
+        {
+          "cell_index": 23,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-faac9e3e2ebe447b.png",
+          "sha256": "faac9e3e2ebe447b3e1a17e21cf65826dc97702113eb0028ea839fde24935b0a",
+          "size_bytes": 58466
+        },
+        {
+          "cell_index": 23,
+          "kind": "image",
+          "media_type": "image/png",
+          "relative_path": "assets/notebooks/04_C_Phase/image-3d1ee64ffe1a7b18.png",
+          "sha256": "3d1ee64ffe1a7b18b096a27fb9bacc15097007bcad46e87cf617aefc07f96103",
+          "size_bytes": 55861
+        }
+      ],
+      "cell_counts": {
+        "code": 18,
+        "code_with_output": 18,
+        "error_outputs": 0,
+        "executed_without_output": 0,
+        "markdown": 15,
+        "raw": 0,
+        "unexecuted_code": 0
+      },
+      "exported_at": "2026-07-21T23:28:33+00:00",
+      "exported_at_local": "2026-07-22T01:28:33+02:00",
+      "findings": [],
+      "git": {
+        "branch": "main",
+        "commit": "84a7603a2917e4f852ffd520175fd9cafb12273c",
+        "dirty": true,
+        "short_commit": "84a7603a2917"
+      },
+      "output": "notebooks/04_C_Phase.html",
+      "size_bytes": 117301,
+      "snapshot_sha256": "9bdf7328bcab0fccc866dce0bf398144dd7f8e11bf3f0b90dea3472f2d311597",
+      "source": "notebooks/04_C_Phase.ipynb",
+      "source_sha256": "0aacda541d4ec120f91434dd055837fbc3c45da30bdad24e6391b2966df81d2b",
+      "status": "ready",
+      "title": "Unfallatlas Deutschland C Phase"
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-15T16:50:06+00:00",
+  "generated_at": "2026-07-21T23:28:33+00:00",
   "schema_version": 1
 }

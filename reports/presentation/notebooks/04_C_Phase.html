@@ -83,7 +83,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .vm { color: #19177C } /* Name.Variable.Magic */
 .highlight .il { color: #666 } /* Literal.Number.Integer.Long */</style>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="85513a9a3389a485c67e2a2b99ac43f375ceab38ff447a6de93557043c1d752c">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="9bdf7328bcab0fccc866dce0bf398144dd7f8e11bf3f0b90dea3472f2d311597">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
@@ -91,15 +91,15 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h1>Unfallatlas Deutschland C Phase</h1>
 <p class="source-path">notebooks/04_C_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>2026-07-22T01:11:10+02:00</dd></div>
-<div><dt>Commit</dt><dd><code>4636d852ac02</code></dd></div>
+<div><dt>Export</dt><dd>2026-07-22T01:28:33+02:00</dd></div>
+<div><dt>Commit</dt><dd><code>84a7603a2917</code></dd></div>
 <div><dt>Branch</dt><dd>main</dd></div>
 <div><dt>Repository</dt><dd>Arbeitsbaum geändert</dd></div>
 <div><dt>Status</dt><dd>ready</dd></div>
 <div><dt>Warnungen</dt><dd>0</dd></div>
 <div><dt>Ausführungsstand</dt><dd>Vollständig</dd></div>
-<div><dt>Zellen</dt><dd>15 Markdown, 17 Code</dd></div>
-<div><dt>Ausgaben</dt><dd>17 mit Ausgabe, 0 Fehlerausgabe</dd></div>
+<div><dt>Zellen</dt><dd>15 Markdown, 18 Code</dd></div>
+<div><dt>Ausgaben</dt><dd>18 mit Ausgabe, 0 Fehlerausgabe</dd></div>
 </dl>
 </div>
 </header>
@@ -519,7 +519,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="2--fehleranalyse-nach-slices"></span></p>
-<h2 id="2-%E2%80%94-Fehleranalyse-nach-Slices">2 — Fehleranalyse nach Slices<a class="anchor-link" href="#2-%E2%80%94-Fehleranalyse-nach-Slices">¶</a></h2><p>False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (<code>UART</code>), dominanter OSM-Straßenklasse, Straßenzustand (<code>STRZUSTAND</code>) und Lichtverhältnissen (<code>ULICHTVERH</code>) — um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.</p>
+<h2 id="2-%E2%80%94-Fehleranalyse-nach-Slices">2 — Fehleranalyse nach Slices<a class="anchor-link" href="#2-%E2%80%94-Fehleranalyse-nach-Slices">¶</a></h2><p>False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (<code>UART</code>), dominanter OSM-Straßenklasse, Straßenzustand (<code>STRZUSTAND</code>), Lichtverhältnissen (<code>ULICHTVERH</code>), Niederschlagskategorie (<code>_precip_bucket</code>, aus <code>dwd_precip_mm</code> abgeleitet) und Tageszeit (<code>USTUNDE</code>, Unfallstunde 0–23) — um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=8">
@@ -528,7 +528,14 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="code-content"><div class="input">
 <div class="inner_cell">
 <div class="input_area">
-<div class="highlight hl-ipython3"><pre><span></span><span class="n">slice_columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"UART"</span><span class="p">,</span> <span class="s2">"osm_dominant_road_class"</span><span class="p">,</span> <span class="s2">"STRZUSTAND"</span><span class="p">,</span> <span class="s2">"ULICHTVERH"</span><span class="p">]</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="n">slice_columns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"UART"</span><span class="p">,</span>
+    <span class="s2">"osm_dominant_road_class"</span><span class="p">,</span>
+    <span class="s2">"STRZUSTAND"</span><span class="p">,</span>
+    <span class="s2">"ULICHTVERH"</span><span class="p">,</span>
+    <span class="s2">"_precip_bucket"</span><span class="p">,</span>
+    <span class="s2">"USTUNDE"</span><span class="p">,</span>
+<span class="p">]</span>
 <span class="n">slice_frame</span> <span class="o">=</span> <span class="n">test_df</span><span class="p">[</span><span class="n">slice_columns</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="n">error_slice_df</span> <span class="o">=</span> <span class="n">compute_error_slices</span><span class="p">(</span>
@@ -646,6 +653,36 @@ Test-2024 macro-F1 (A³ record): 0.6026
 &lt;td&gt;0.132664&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
+&lt;th&gt;40&lt;/th&gt;
+&lt;td&gt;USTUNDE&lt;/td&gt;
+&lt;td&gt;8&lt;/td&gt;
+&lt;td&gt;11642&lt;/td&gt;
+&lt;td&gt;908&lt;/td&gt;
+&lt;td&gt;1541&lt;/td&gt;
+&lt;td&gt;0.606952&lt;/td&gt;
+&lt;td&gt;0.151883&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;39&lt;/th&gt;
+&lt;td&gt;USTUNDE&lt;/td&gt;
+&lt;td&gt;7&lt;/td&gt;
+&lt;td&gt;16153&lt;/td&gt;
+&lt;td&gt;1209&lt;/td&gt;
+&lt;td&gt;2252&lt;/td&gt;
+&lt;td&gt;0.602392&lt;/td&gt;
+&lt;td&gt;0.159197&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;41&lt;/th&gt;
+&lt;td&gt;USTUNDE&lt;/td&gt;
+&lt;td&gt;9&lt;/td&gt;
+&lt;td&gt;11099&lt;/td&gt;
+&lt;td&gt;979&lt;/td&gt;
+&lt;td&gt;1766&lt;/td&gt;
+&lt;td&gt;0.567207&lt;/td&gt;
+&lt;td&gt;0.188414&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
 &lt;th&gt;15&lt;/th&gt;
 &lt;td&gt;osm_dominant_road_class&lt;/td&gt;
 &lt;td&gt;residential&lt;/td&gt;
@@ -696,6 +733,26 @@ Test-2024 macro-F1 (A³ record): 0.6026
 &lt;td&gt;0.285022&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
+&lt;th&gt;38&lt;/th&gt;
+&lt;td&gt;USTUNDE&lt;/td&gt;
+&lt;td&gt;6&lt;/td&gt;
+&lt;td&gt;7283&lt;/td&gt;
+&lt;td&gt;627&lt;/td&gt;
+&lt;td&gt;1308&lt;/td&gt;
+&lt;td&gt;0.529114&lt;/td&gt;
+&lt;td&gt;0.214497&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;th&gt;37&lt;/th&gt;
+&lt;td&gt;USTUNDE&lt;/td&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;td&gt;3865&lt;/td&gt;
+&lt;td&gt;362&lt;/td&gt;
+&lt;td&gt;736&lt;/td&gt;
+&lt;td&gt;0.521614&lt;/td&gt;
+&lt;td&gt;0.232103&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
 &lt;th&gt;28&lt;/th&gt;
 &lt;td&gt;ULICHTVERH&lt;/td&gt;
 &lt;td&gt;1&lt;/td&gt;
@@ -716,64 +773,14 @@ Test-2024 macro-F1 (A³ record): 0.6026
 &lt;td&gt;0.201520&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;th&gt;17&lt;/th&gt;
-&lt;td&gt;osm_dominant_road_class&lt;/td&gt;
-&lt;td&gt;secondary_link&lt;/td&gt;
-&lt;td&gt;58&lt;/td&gt;
-&lt;td&gt;6&lt;/td&gt;
-&lt;td&gt;9&lt;/td&gt;
-&lt;td&gt;0.500000&lt;/td&gt;
-&lt;td&gt;0.195652&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;14&lt;/th&gt;
-&lt;td&gt;osm_dominant_road_class&lt;/td&gt;
-&lt;td&gt;primary_link&lt;/td&gt;
-&lt;td&gt;244&lt;/td&gt;
-&lt;td&gt;23&lt;/td&gt;
-&lt;td&gt;55&lt;/td&gt;
-&lt;td&gt;0.489362&lt;/td&gt;
-&lt;td&gt;0.279188&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;27&lt;/th&gt;
-&lt;td&gt;ULICHTVERH&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;202157&lt;/td&gt;
-&lt;td&gt;15816&lt;/td&gt;
-&lt;td&gt;37933&lt;/td&gt;
-&lt;td&gt;0.486871&lt;/td&gt;
-&lt;td&gt;0.223567&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;16&lt;/th&gt;
-&lt;td&gt;osm_dominant_road_class&lt;/td&gt;
-&lt;td&gt;secondary&lt;/td&gt;
-&lt;td&gt;93943&lt;/td&gt;
-&lt;td&gt;7367&lt;/td&gt;
-&lt;td&gt;19070&lt;/td&gt;
-&lt;td&gt;0.472547&lt;/td&gt;
-&lt;td&gt;0.243386&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;29&lt;/th&gt;
-&lt;td&gt;ULICHTVERH&lt;/td&gt;
-&lt;td&gt;2&lt;/td&gt;
-&lt;td&gt;51765&lt;/td&gt;
-&lt;td&gt;4433&lt;/td&gt;
-&lt;td&gt;11487&lt;/td&gt;
-&lt;td&gt;0.469399&lt;/td&gt;
-&lt;td&gt;0.271426&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;th&gt;24&lt;/th&gt;
-&lt;td&gt;STRZUSTAND&lt;/td&gt;
-&lt;td&gt;0&lt;/td&gt;
-&lt;td&gt;199986&lt;/td&gt;
-&lt;td&gt;15573&lt;/td&gt;
-&lt;td&gt;40769&lt;/td&gt;
-&lt;td&gt;0.460685&lt;/td&gt;
-&lt;td&gt;0.245327&lt;/td&gt;
+&lt;th&gt;42&lt;/th&gt;
+&lt;td&gt;USTUNDE&lt;/td&gt;
+&lt;td&gt;10&lt;/td&gt;
+&lt;td&gt;12937&lt;/td&gt;
+&lt;td&gt;1112&lt;/td&gt;
+&lt;td&gt;2279&lt;/td&gt;
+&lt;td&gt;0.507995&lt;/td&gt;
+&lt;td&gt;0.212039&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
@@ -816,7 +823,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output">
 <div class="output_area">
 <figure class="output-image">
-<img alt="Notebook-Grafik" loading="lazy" src="../assets/notebooks/04_C_Phase/image-a18a2d240eea2290.png"/>
+<img alt="Notebook-Grafik" loading="lazy" src="../assets/notebooks/04_C_Phase/image-2fd2d57c5640aa1d.png"/>
 </figure>
 </div>
 </div>
@@ -827,6 +834,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Beobachtung:</strong> Die höchsten False-Negative-Raten treten bei <code>UART</code>-Kategorien auf: <code>UART=1</code> (Kollision mit haltendem/parkendem Fahrzeug, 89,0 % FN-Rate, n=14.673), <code>UART=3</code> (Seitenkollision, 74,1 %) und <code>UART=2</code> (Auffahrunfall, 71,5 %). Auch <code>STRZUSTAND=2</code> (Winterglätte, 68,5 %, wenn auch mit kleinerem n=4.731) und <code>UART=5</code> (Abbiege-/Einbiegeunfall, der häufigste Unfalltyp, 68,0 %) liegen weit oben. Bemerkenswert: Gerade die von A³ §20 als stärkstes Einzelmerkmal identifizierte Variable <code>UART</code> (Cramér's V=0,1801) dominiert auch hier die Fehlerliste — selbst das informativste verfügbare Merkmal reicht nicht aus, um KSI-Fälle innerhalb dieser Unfalltypen zuverlässig zu erkennen. Das deckt sich mit der in §6 aufgegriffenen Feature-Obergrenze: Die Fehler sind nicht zufällig verteilt, sondern konzentrieren sich systematisch dort, wo die verfügbaren Merkmale am wenigsten trennscharf sind.</p>
+<p>Die beiden neuen Dimensionen zeigen ein deutlich schwächeres, aber nicht triviales Muster: Nach Tageszeit (<code>USTUNDE</code>) liegt die FN-Rate im morgendlichen Berufsverkehr (7–9 Uhr) mit 56,7–60,7 % spürbar über dem Durchschnitt und fällt danach kontinuierlich ab (10 Uhr: 50,8 %) — ein Hinweis, dass der Champion KSI-Fälle im dichten Frühverkehr etwas häufiger übersieht als in verkehrsärmeren Stunden. Nach Niederschlagskategorie (<code>_precip_bucket</code>) zeigt sich dagegen praktisch kein Unterschied (dry: 47,2 % vs. light 0–5 mm: 48,7 % FN-Rate) — in Test-2024 kommen ohnehin nur diese zwei Kategorien vor (moderate/heavy: n=0), sodass Niederschlag hier keine systematische Fehlerquelle ist, anders als Unfalltyp, Straßenzustand oder Tageszeit.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="3--formale-kpi-validierung-gono-go"></span></p>
@@ -956,7 +964,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stdout-output"><pre>Champion latency: 183.0 ms per 1,000 rows
+<div class="text-output stream-output stdout-output"><pre>Champion latency: 94.5 ms per 1,000 rows
 </pre></div>
 </div>
 </div>
@@ -967,6 +975,61 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </article>
 <article class="notebook-cell code-notebook-cell">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=15">
+<details class="code-cell">
+<summary aria-expanded="false">Code</summary>
+<div class="code-content"><div class="input">
+<div class="inner_cell">
+<div class="input_area">
+<div class="highlight hl-ipython3"><pre><span></span><span class="c1"># Robustness check: all three families share the exact same ColumnTransformer</span>
+<span class="c1"># preprocessing (build_preprocessor() is passed in externally to every</span>
+<span class="c1"># build_*_pipeline() in src/unfallatlas/models/*.py), so their handling of</span>
+<span class="c1"># missing OSM/DWD input is identical, not a per-family trait. Verify this</span>
+<span class="c1"># empirically instead of asserting it: null every OSM/DWD column on a small</span>
+<span class="c1"># batch and confirm the champion pipeline still predicts without raising</span>
+<span class="c1"># (numeric OSM/DWD columns are median-imputed, the one OSM categorical</span>
+<span class="c1"># column is constant-imputed to "unknown" - see build_preprocessor()).</span>
+<span class="n">_osm_dwd_cols</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">X_test_bin</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">"osm_"</span><span class="p">,</span> <span class="s2">"dwd_"</span><span class="p">))</span> <span class="ow">or</span> <span class="n">c</span> <span class="o">==</span> <span class="s2">"_precip_bucket"</span>
+<span class="p">]</span>
+<span class="n">_robustness_probe</span> <span class="o">=</span> <span class="n">X_test_bin</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">_col</span> <span class="ow">in</span> <span class="n">_osm_dwd_cols</span><span class="p">:</span>
+    <span class="n">_robustness_probe</span><span class="p">[</span><span class="n">_col</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="k">if</span> <span class="n">_robustness_probe</span><span class="p">[</span><span class="n">_col</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="s2">"fc"</span> <span class="k">else</span> <span class="kc">None</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">champion_pipeline</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">_robustness_probe</span><span class="p">)</span>
+    <span class="n">ROBUSTNESS_OK</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="n">ROBUSTNESS_OK</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Robustness probe FAILED: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="c1"># Identical across families since it is a preprocessing-pipeline property,</span>
+<span class="c1"># not a classifier property.</span>
+<span class="n">ROBUSTNESS_SCORE</span> <span class="o">=</span> <span class="mf">0.8</span> <span class="k">if</span> <span class="n">ROBUSTNESS_OK</span> <span class="k">else</span> <span class="mf">0.2</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"Pipeline tolerates fully-missing OSM/DWD input (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">_osm_dwd_cols</span><span class="p">)</span><span class="si">}</span><span class="s2"> columns nulled): "</span>
+    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ROBUSTNESS_OK</span><span class="si">}</span><span class="s2"> -&gt; robustness_score=</span><span class="si">{</span><span class="n">ROBUSTNESS_SCORE</span><span class="si">}</span><span class="s2"> for all three families"</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</details>
+<details class="output-cell" open="">
+<summary aria-expanded="true">Ausgabe</summary>
+<div class="output-content">
+<div class="output_wrapper">
+<div class="output">
+<div class="output_area">
+<div class="text-output stream-output stdout-output"><pre>Pipeline tolerates fully-missing OSM/DWD input (12 columns nulled): True -&gt; robustness_score=0.8 for all three families
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</details>
+</div>
+</article>
+<article class="notebook-cell code-notebook-cell">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=16">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -984,6 +1047,9 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <span class="c1"># trees correct previous residuals rather than voting independently, making</span>
 <span class="c1"># per-prediction path tracing less direct without SHAP). Scored 0-1, champion</span>
 <span class="c1"># favoured for its direct TreeExplainer compatibility used in §5.</span>
+<span class="c1"># Robustness: ROBUSTNESS_SCORE (computed above) is identical for all three -</span>
+<span class="c1"># it reflects the shared ColumnTransformer preprocessing, not a per-family</span>
+<span class="c1"># difference.</span>
 <span class="c1"># Training cost: Optuna trial count from the shared A³ search budget</span>
 <span class="c1"># (provenance.optuna_trials applies to the whole binary Stage-1 search, so</span>
 <span class="c1"># it is identical across families here — a genuine shared-cost fact, not an</span>
@@ -995,7 +1061,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
         <span class="s2">"recall_ksi"</span><span class="p">:</span> <span class="n">champion_row</span><span class="p">[</span><span class="s2">"recall_ksi"</span><span class="p">],</span>
         <span class="s2">"latency_ms_per_1k"</span><span class="p">:</span> <span class="n">_champion_latency_ms_per_1k</span><span class="p">,</span>
         <span class="s2">"interpretability_score"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
-        <span class="s2">"robustness_score"</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+        <span class="s2">"robustness_score"</span><span class="p">:</span> <span class="n">ROBUSTNESS_SCORE</span><span class="p">,</span>
         <span class="s2">"training_cost_score"</span><span class="p">:</span> <span class="n">model_card</span><span class="p">[</span><span class="s2">"provenance"</span><span class="p">][</span><span class="s2">"optuna_trials"</span><span class="p">],</span>
     <span class="p">},</span>
     <span class="p">{</span>
@@ -1004,7 +1070,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
         <span class="s2">"recall_ksi"</span><span class="p">:</span> <span class="n">xgboost_row</span><span class="p">[</span><span class="s2">"recall_ksi"</span><span class="p">],</span>
         <span class="s2">"latency_ms_per_1k"</span><span class="p">:</span> <span class="n">_champion_latency_ms_per_1k</span><span class="p">,</span>
         <span class="s2">"interpretability_score"</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
-        <span class="s2">"robustness_score"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
+        <span class="s2">"robustness_score"</span><span class="p">:</span> <span class="n">ROBUSTNESS_SCORE</span><span class="p">,</span>
         <span class="s2">"training_cost_score"</span><span class="p">:</span> <span class="n">model_card</span><span class="p">[</span><span class="s2">"provenance"</span><span class="p">][</span><span class="s2">"optuna_trials"</span><span class="p">],</span>
     <span class="p">},</span>
     <span class="p">{</span>
@@ -1013,7 +1079,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
         <span class="s2">"recall_ksi"</span><span class="p">:</span> <span class="n">lightgbm_row</span><span class="p">[</span><span class="s2">"recall_ksi"</span><span class="p">],</span>
         <span class="s2">"latency_ms_per_1k"</span><span class="p">:</span> <span class="n">_champion_latency_ms_per_1k</span><span class="p">,</span>
         <span class="s2">"interpretability_score"</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span>
-        <span class="s2">"robustness_score"</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
+        <span class="s2">"robustness_score"</span><span class="p">:</span> <span class="n">ROBUSTNESS_SCORE</span><span class="p">,</span>
         <span class="s2">"training_cost_score"</span><span class="p">:</span> <span class="n">model_card</span><span class="p">[</span><span class="s2">"provenance"</span><span class="p">][</span><span class="s2">"optuna_trials"</span><span class="p">],</span>
     <span class="p">},</span>
 <span class="p">]</span>
@@ -1065,20 +1131,20 @@ Test-2024 macro-F1 (A³ record): 0.6026
 &lt;td&gt;random_forest (champion)&lt;/td&gt;
 &lt;td&gt;0.601093&lt;/td&gt;
 &lt;td&gt;0.540138&lt;/td&gt;
-&lt;td&gt;183.024429&lt;/td&gt;
+&lt;td&gt;94.536073&lt;/td&gt;
 &lt;td&gt;0.8&lt;/td&gt;
 &lt;td&gt;0.8&lt;/td&gt;
 &lt;td&gt;20&lt;/td&gt;
-&lt;td&gt;0.700000&lt;/td&gt;
+&lt;td&gt;0.600000&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;th&gt;1&lt;/th&gt;
 &lt;td&gt;xgboost&lt;/td&gt;
 &lt;td&gt;0.569937&lt;/td&gt;
 &lt;td&gt;0.682418&lt;/td&gt;
-&lt;td&gt;183.024429&lt;/td&gt;
+&lt;td&gt;94.536073&lt;/td&gt;
 &lt;td&gt;0.6&lt;/td&gt;
-&lt;td&gt;0.7&lt;/td&gt;
+&lt;td&gt;0.8&lt;/td&gt;
 &lt;td&gt;20&lt;/td&gt;
 &lt;td&gt;0.517822&lt;/td&gt;
 &lt;/tr&gt;
@@ -1087,9 +1153,9 @@ Test-2024 macro-F1 (A³ record): 0.6026
 &lt;td&gt;lightgbm&lt;/td&gt;
 &lt;td&gt;0.566152&lt;/td&gt;
 &lt;td&gt;0.689739&lt;/td&gt;
-&lt;td&gt;183.024429&lt;/td&gt;
+&lt;td&gt;94.536073&lt;/td&gt;
 &lt;td&gt;0.6&lt;/td&gt;
-&lt;td&gt;0.7&lt;/td&gt;
+&lt;td&gt;0.8&lt;/td&gt;
 &lt;td&gt;20&lt;/td&gt;
 &lt;td&gt;0.500000&lt;/td&gt;
 &lt;/tr&gt;
@@ -1104,14 +1170,14 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
-<p><strong>Hinweis zur Latenz und den Trainingskosten:</strong> Nur die Champion-Pipeline ist als Artefakt gespeichert (<code>a3_binary_best_model.joblib</code>); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden — der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Trainingskosten-Score (<code>optuna_trials</code>) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher für alle drei Familien identisch — auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Beide Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit/Robustheit.</p>
+<p><strong>Hinweis zur Latenz, Robustheit und den Trainingskosten:</strong> Nur die Champion-Pipeline ist als Artefakt gespeichert (<code>a3_binary_best_model.joblib</code>); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden — der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Robustheits-Score ist für alle drei Familien identisch (<code>ROBUSTNESS_SCORE</code>, oben empirisch geprüft): Alle drei teilen sich dieselbe <code>ColumnTransformer</code>-Preprocessing-Pipeline, daher ist die Behandlung fehlender OSM/DWD-Werte eine Eigenschaft der Pipeline, nicht des Klassifikators. Der Trainingskosten-Score (<code>optuna_trials</code>) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher ebenfalls für alle drei Familien identisch — auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Alle drei Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="5--shap-erklarbarkeit"></span></p>
 <h2 id="5-%E2%80%94-SHAP-Erkl%C3%A4rbarkeit">5 — SHAP-Erklärbarkeit<a class="anchor-link" href="#5-%E2%80%94-SHAP-Erkl%C3%A4rbarkeit">¶</a></h2><p><code>TreeExplainer</code> auf einer stratifizierten Stichprobe von 5.000 Zeilen aus Test-2024 (2.500 pro Klasse) — die vollen ~223.000 Test-2024-Zeilen sind für SHAP nicht praktikabel. Zusätzlich wird <code>approximate=True</code> (Saabas-Algorithmus) verwendet: Der Champion hat 180 Bäume mit exakt Tiefe 23 und im Schnitt ~41.355 Blättern pro Baum (insgesamt ~7,4 Mio. Blätter) — für Bäume dieser Größe ist die exakte SHAP-Berechnung (Komplexität ~O(Blätter·Tiefe²)) empirisch bestätigt unpraktikabel (ein Testlauf mit 50 Zeilen ohne <code>approximate=True</code> lief über 10 Minuten, ohne zu terminieren; mit <code>approximate=True</code> dauerten 500 Zeilen 0,11 Sekunden). Diese Stichprobengröße und die Approximation sind bewusste, hier dokumentierte Entscheidungen, keine stillschweigenden Kürzungen. Zunächst die globale Sicht (Summary/Beeswarm + mittlere absolute SHAP-Werte), danach vier konkrete Fallbeispiele.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=18">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=19">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1177,7 +1243,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </article>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=19">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=20">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1199,7 +1265,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_289423/2778590902.py:1: FutureWarning: The NumPy global RNG was seeded by calling `np.random.seed`. In a future version this function will no longer use the global RNG. Pass `rng` explicitly to opt-in to the new behaviour and silence this warning.
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_491122/2778590902.py:1: FutureWarning: The NumPy global RNG was seeded by calling `np.random.seed`. In a future version this function will no longer use the global RNG. Pass `rng` explicitly to opt-in to the new behaviour and silence this warning.
   shap.summary_plot(shap_values_ksi, shap_sample_X, show=False)
 </pre></div>
 </div>
@@ -1215,7 +1281,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </article>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=20">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=21">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1237,7 +1303,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_289423/1867327022.py:1: FutureWarning: The NumPy global RNG was seeded by calling `np.random.seed`. In a future version this function will no longer use the global RNG. Pass `rng` explicitly to opt-in to the new behaviour and silence this warning.
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_491122/1867327022.py:1: FutureWarning: The NumPy global RNG was seeded by calling `np.random.seed`. In a future version this function will no longer use the global RNG. Pass `rng` explicitly to opt-in to the new behaviour and silence this warning.
   shap.summary_plot(shap_values_ksi, shap_sample_X, plot_type="bar", show=False)
 </pre></div>
 </div>
@@ -1253,7 +1319,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </article>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=21">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=22">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1302,7 +1368,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </article>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=22">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=23">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1375,7 +1441,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <p>Diese SHAP-Analyse ergänzt eine dritte, unabhängige Sicht auf dieselbe Frage — die mittleren absoluten SHAP-Werte über die 5.000er-Stichprobe:</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=25">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=26">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1438,15 +1504,15 @@ dtype: float64</pre></div>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="8--finale-modellentscheidung"></span></p>
-<h2 id="8-%E2%80%94-Finale-Modellentscheidung">8 — Finale Modellentscheidung<a class="anchor-link" href="#8-%E2%80%94-Finale-Modellentscheidung">¶</a></h2><p><strong>Synthese:</strong> Der formale Gate-Check (§3) ist für beide Kriterien <strong>bestanden</strong> (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50). Die qualitative Bewertungsmatrix (§4) bestätigt <code>random_forest</code> als Champion mit dem höchsten gewichteten Score (0,700 vs. 0,518 für xgboost und 0,500 für lightgbm), trotz niedrigerer Recall(KSI) als beide Runner-ups (§1) — der Tradeoff zugunsten von macro-F1 ist durch die 30 %/30 %-Gewichtung explizit gemacht, nicht implizit angenommen. SHAP (§5) und der Literaturabgleich (§6) zeigen ein Modell, das auf breit verteilten, schwach assoziierten Features (OSM-Straßenkontext, Fahrzeugtyp-Flags, Unfalltyp) basiert statt auf einem einzelnen dominanten Prädiktor — konsistent mit der in A³ §11/§20 belegten Feature-Obergrenze (stärkste binäre Assoziation <code>UART</code>=0,1801, weit unter dem Bereich starken Klassifikationssignals). Die Fehleranalyse (§2) zeigt, dass die verbleibenden Fehler systematisch dort auftreten, wo die verfügbaren Merkmale am wenigsten trennscharf sind — kein Hinweis auf eine behebbare, aber übersehene Schwäche des Champions.</p>
+<h2 id="8-%E2%80%94-Finale-Modellentscheidung">8 — Finale Modellentscheidung<a class="anchor-link" href="#8-%E2%80%94-Finale-Modellentscheidung">¶</a></h2><p><strong>Synthese:</strong> Der formale Gate-Check (§3) ist für beide Kriterien <strong>bestanden</strong> (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50). Die qualitative Bewertungsmatrix (§4) bestätigt <code>random_forest</code> als Champion mit dem höchsten gewichteten Score (0,600 vs. 0,518 für xgboost und 0,500 für lightgbm), trotz niedrigerer Recall(KSI) als beide Runner-ups (§1) — der Tradeoff zugunsten von macro-F1 ist durch die 30 %/30 %-Gewichtung explizit gemacht, nicht implizit angenommen. Latenz, Robustheit gegenüber fehlenden OSM/DWD-Features und Trainingskosten sind für alle drei Familien identisch (§4) und tragen daher nicht zur Rangfolge bei; die Entscheidung stützt sich primär auf macro-F1, Recall(KSI) und Interpretierbarkeit. SHAP (§5) und der Literaturabgleich (§6) zeigen ein Modell, das auf breit verteilten, schwach assoziierten Features (OSM-Straßenkontext, Fahrzeugtyp-Flags, Unfalltyp) basiert statt auf einem einzelnen dominanten Prädiktor — konsistent mit der in A³ §11/§20 belegten Feature-Obergrenze (stärkste binäre Assoziation <code>UART</code>=0,1801, weit unter dem Bereich starken Klassifikationssignals). Die Fehleranalyse (§2) zeigt, dass die verbleibenden Fehler systematisch dort auftreten, wo die verfügbaren Merkmale am wenigsten trennscharf sind (Unfalltyp, Straßenzustand, morgendlicher Berufsverkehr) — kein Hinweis auf eine behebbare, aber übersehene Schwäche des Champions.</p>
 <p><strong>Entscheidung:</strong> <code>random_forest</code> (Schwellenwert 0,4986) bleibt der bestätigte Champion für die K-Phase.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="9--ubergabe-an-die-k-phase"></span></p>
-<h2 id="9-%E2%80%94-%C3%9Cbergabe-an-die-K-Phase">9 — Übergabe an die K-Phase<a class="anchor-link" href="#9-%E2%80%94-%C3%9Cbergabe-an-die-K-Phase">¶</a></h2><p>Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (<code>a3_binary_best_model.joblib</code>), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp auflistet — damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.</p>
+<h2 id="9-%E2%80%94-%C3%9Cbergabe-an-die-K-Phase">9 — Übergabe an die K-Phase<a class="anchor-link" href="#9-%E2%80%94-%C3%9Cbergabe-an-die-K-Phase">¶</a></h2><p>Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (<code>a3_binary_best_model.joblib</code>), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp, gültigem Wertebereich bzw. Kategorienliste (aus den echten Trainingsdaten abgeleitet, nicht angenommen) und Herkunft (Unfallatlas roh/abgeleitet, DWD-Wetteranreicherung oder OSM-Straßenkontext-Anreicherung, jeweils aus der U-Phase) auflistet — damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
-<div class="cell border-box-sizing code_cell rendered" id="cell-id=30">
+<div class="cell border-box-sizing code_cell rendered" id="cell-id=31">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
 <div class="code-content"><div class="input">
@@ -1455,7 +1521,7 @@ dtype: float64</pre></div>
 <div class="highlight hl-ipython3"><pre><span></span><span class="n">feature_columns</span> <span class="o">=</span> <span class="n">X_train_bin</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 <span class="n">dtypes</span> <span class="o">=</span> <span class="p">{</span><span class="n">col</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">X_train_bin</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
-<span class="n">inference_contract</span> <span class="o">=</span> <span class="n">build_inference_contract</span><span class="p">(</span><span class="n">feature_columns</span><span class="p">,</span> <span class="n">dtypes</span><span class="p">,</span> <span class="n">model_card</span><span class="p">)</span>
+<span class="n">inference_contract</span> <span class="o">=</span> <span class="n">build_inference_contract</span><span class="p">(</span><span class="n">feature_columns</span><span class="p">,</span> <span class="n">dtypes</span><span class="p">,</span> <span class="n">model_card</span><span class="p">,</span> <span class="n">X_train_bin</span><span class="p">)</span>
 <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">PROCESSED_DIR</span> <span class="o">/</span> <span class="s2">"c_phase_inference_contract.json"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
     <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">inference_contract</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
@@ -1491,13 +1557,13 @@ Model artifact: data/processed/a3_binary_best_model.joblib (unchanged — re-con
 <h2 id="Zusammenfassung-der-C-Phase">Zusammenfassung der C-Phase<a class="anchor-link" href="#Zusammenfassung-der-C-Phase">¶</a></h2><p><strong>Was erreicht wurde:</strong></p>
 <ul>
 <li>Systematischer Vergleich aller 10 Kandidaten aus dem A³-Suchlauf mit ROC/PR/Konfusionsmatrix für den Champion (§1).</li>
-<li>Fehleranalyse nach Slices: höchste False-Negative-Raten bei <code>UART=1</code> (89,0 %), <code>UART=3</code> (74,1 %) und <code>UART=2</code> (71,5 %) — Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen (§2).</li>
+<li>Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei <code>UART=1</code> (89,0 %), <code>UART=3</code> (74,1 %) und <code>UART=2</code> (71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %) — Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).</li>
 <li>Formale Gate-Validierung: <strong>bestanden</strong> gegen beide Q-Phase-Kriterien (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50) (§3).</li>
-<li>Gewichtete qualitative Bewertungsmatrix, die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet (§4).</li>
+<li>Gewichtete qualitative Bewertungsmatrix (macro-F1 0,600 vs. 0,518 vs. 0,500), die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet — inklusive eines empirisch geprüften, für alle drei Familien identischen Robustheits-Scores gegenüber fehlenden OSM/DWD-Features (§4).</li>
 <li>SHAP-Erklärbarkeit (global + 4 Fallbeispiele), konsistent mit der A³-Feature-Evidenz (§5).</li>
 <li>Literaturabgleich: Test-2024 macro-F1 im zitierten Literaturbereich (Santos 2022, Pakgohar 2021, Schlößler 2024) (§6).</li>
 <li>Ehrliche Limitationsdiskussion (§7).</li>
-<li>Vollständiges K-Phase-Artefaktpaket: Pipeline, Schwellenwert, Inference-Contract mit 30 erforderlichen Eingabespalten (§9).</li>
+<li>Vollständiges K-Phase-Artefaktpaket: Pipeline, Schwellenwert, Inference-Contract mit 30 erforderlichen Eingabespalten inklusive Wertebereich/Kategorien und Herkunft je Spalte (§9).</li>
 </ul>
 <p><strong>Ausblick:</strong> Die K-Phase implementiert die Streamlit-App (<code>app/streamlit_app.py</code>) gegen <code>data/processed/c_phase_inference_contract.json</code> und <code>data/processed/a3_binary_best_model.joblib</code>.</p>
 <p><strong>Limitationen (siehe §7):</strong> Selektionsbias, fehlende physische Determinanten, Korrelation ≠ Kausalität, nicht-versionierte OSM-Features, begrenzte geografische/zeitliche Abdeckung, Schwellenwert-Sensitivität, bewusster Recall/macro-F1-Tradeoff.</p>
