@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Export saved Jupyter notebook outputs as offline HTML presentations."
     )
     selection = parser.add_mutually_exclusive_group(required=True)
-    selection.add_argument("notebooks", nargs="*", metavar="NOTEBOOK")
+    selection.add_argument("notebooks", nargs="*", metavar="NOTEBOOK", default=[])
     selection.add_argument("--all", action="store_true", help="export every discovered notebook")
     selection.add_argument(
         "--check", action="store_true", help="check manifest freshness without rendering"
