@@ -37,8 +37,10 @@ import json
 from pathlib import Path
 
 import joblib
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.metrics import confusion_matrix
 
 from unfallatlas.features.preprocessing import (
     chronological_split,
@@ -46,6 +48,7 @@ from unfallatlas.features.preprocessing import (
     split_features_target_binary,
 )
 from unfallatlas.models.evaluate import evaluate_binary_predictions
+from unfallatlas.viz.metrics_viz import plot_confusion_matrix_heatmap, plot_roc_pr_curves
 
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", 200)
@@ -100,3 +103,33 @@ print(
     "within the 1% cache-refresh tolerance)."
 )
 print(sanity_metrics)
+
+# %% [markdown]
+# ## 1 — Systematischer Modellvergleich
+#
+# Alle zehn Kandidaten aus dem A³-Suchlauf (drei Baselines, vier Tree-Ensemble-Familien, drei SVM-Varianten), bewertet auf Val-2023. ROC- und PR-Kurven sowie die Konfusionsmatrix werden für den Champion (`random_forest`) auf Test-2024 gezeigt.
+#
+# Die xgboost-/lightgbm-Pipelines wurden nicht persistiert (A³ speichert nur die finale Champion-Pipeline), daher können ihre ROC/PR-Kurven hier nicht aus gespeicherten Artefakten reproduziert werden — ihre macro-F1/Recall(KSI)-Werte aus `binary_comparison_df` bleiben aber der maßgebliche Vergleich und werden in §4 (qualitative Matrix) und §8 (finale Entscheidung) eingeordnet: beide Runner-ups erreichen höhere Recall(KSI)-Werte als der Champion.
+#
+# Die binäre Formulierung behandelt das Klassenungleichgewicht (~20/80) über Klassengewichtung plus schwellenwert-optimales Threshold-Moving (A³ §17) statt SMOTE/ADASYN — die multiclass-SMOTE/ADASYN-Vergleiche aus A³ §6 wurden durch die in A³ §11 bewiesene 3-Klassen-Obergrenze gegenstandslos.
+
+# %%
+display_cols = ["model", "family", "macro_f1", "recall_ksi", "recall_slight", "n_train"]
+binary_comparison_df[display_cols].sort_values("macro_f1", ascending=False)
+
+# %%
+ax_roc, ax_pr = plot_roc_pr_curves(
+    {"random_forest (champion)": (y_test_bin.values, y_test_scores_champion)},
+    title_prefix="Test-2024 —",
+)
+ax_roc.figure.savefig(FIG_DIR / "roc_curve_champion.png", dpi=150, bbox_inches="tight")
+ax_pr.figure.savefig(FIG_DIR / "pr_curve_champion.png", dpi=150, bbox_inches="tight")
+plt.show()
+
+# %%
+cm = confusion_matrix(y_test_bin, y_test_pred_champion, labels=[1, 0])
+cm_ax = plot_confusion_matrix_heatmap(
+    cm, labels=["KSI", "slight"], title="Champion — Test-2024 Confusion Matrix"
+)
+cm_ax.figure.savefig(FIG_DIR / "confusion_matrix_champion.png", dpi=150, bbox_inches="tight")
+plt.show()
