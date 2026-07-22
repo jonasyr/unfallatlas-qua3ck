@@ -3,25 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <title>Unfallatlas – Notebook-Präsentationen</title>
   <link rel="stylesheet" href="{{ style_href }}">
   <script src="{{ script_src }}" defer></script>
 </head>
 <body>
-  <main class="notebook-content">
-    <header>
-      <p class="eyebrow">Unfallatlas QUA³CK</p>
+  <header class="presentation-header index-header">
+    <div class="header-content">
+      <p class="document-kind">Unfallatlas QUA³CK</p>
       <h1>Notebook-Präsentationen</h1>
-      {% if manifest.generated_at %}<p>Stand: <time>{{ manifest.generated_at }}</time></p>{% endif %}
-    </header>
+      {% if manifest.generated_at %}<p class="source-path">Stand: <time>{{ manifest.generated_at }}</time></p>{% endif %}
+    </div>
+  </header>
+  <main class="index-shell">
     {% for title, rows in sections %}
-    <section aria-labelledby="section-{{ loop.index }}">
-      <h2 id="section-{{ loop.index }}">{{ title }}</h2>
-      <ul>
+    <section class="phase-section" aria-labelledby="section-{{ loop.index }}">
+      <div class="phase-section-heading">
+        <h2 id="section-{{ loop.index }}">{{ title }}</h2>
+        {% if title == "Veraltet" %}
+        <p class="section-hint">Der Notebook-Inhalt hat sich seit dem letzten HTML-Export geändert; die unten verlinkte Ansicht zeigt noch den Stand des vorigen Exports. Erneut exportieren, um sie zu aktualisieren.</p>
+        {% elif title == "Verwaist" %}
+        <p class="section-hint">Für diesen Eintrag existiert keine Notebook-Quelldatei mehr im Repository.</p>
+        {% endif %}
+      </div>
+      <ul class="phase-grid">
         {% for row in rows %}
-        <li>
-          {% if row.link %}<a href="{{ row.link }}">{{ row.entry.title }}</a>{% else %}<span>{{ row.entry.title }}</span>{% endif %}
-          <small>{{ row.entry.status }} · {{ row.state }}</small>
+        <li class="phase-card" data-state="{{ row.state }}">
+          <h3 class="phase-card-title">
+            {% if row.link %}<a href="{{ row.link }}">{{ row.entry.title }}</a>{% else %}<span>{{ row.entry.title }}</span>{% endif %}
+          </h3>
+          <p class="phase-card-badges">
+            <span class="status-pill" data-status="{{ row.entry.status }}">{{ row.entry.status }}</span>
+            <span class="state-pill" data-state="{{ row.state }}">{{ row.state }}</span>
+          </p>
+          <p class="phase-card-meta">{{ row.entry.source }}</p>
+          {% if row.entry.exported_at_local %}
+          <p class="phase-card-meta">Export: {{ row.entry.exported_at_local }}</p>
+          {% endif %}
         </li>
         {% endfor %}
       </ul>
