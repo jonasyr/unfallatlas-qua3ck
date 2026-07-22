@@ -71,6 +71,69 @@ window.UnfallatlasPresentation = (() => {
     return loading;
   }
 
+  const ZOOM_STORAGE_KEY = "unfallatlas-zoom";
+  // Root font-size steps: the whole layout is rem-based, so stepping the
+  // root reflows everything (the TOC column stays pinned to the viewport
+  // edge once the shell hits its 100% - 2rem cap) instead of cropping the
+  // page the way pinch/ctrl zoom on a fixed viewport would.
+  const ZOOM_STEPS = [0.875, 1, 1.125, 1.25, 1.375, 1.5, 1.75, 2];
+
+  function currentZoom() {
+    const raw = parseFloat(document.documentElement.style.fontSize);
+    return Number.isFinite(raw) ? raw / 100 : 1;
+  }
+
+  function applyZoom(factor, label) {
+    document.documentElement.style.fontSize = factor === 1 ? "" : `${factor * 100}%`;
+    try {
+      if (factor === 1) window.localStorage.removeItem(ZOOM_STORAGE_KEY);
+      else window.localStorage.setItem(ZOOM_STORAGE_KEY, String(factor));
+    } catch {
+      // Private browsing: zoom still applies for this page view.
+    }
+    if (label) label.textContent = `${Math.round(factor * 100)}%`;
+    // Plotly lays charts out in pixels and only reflows on a window resize
+    // event; a root font-size change resizes their containers without firing
+    // one, so charts would keep their old size until a page refresh.
+    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+  }
+
+  function stepZoom(direction, label) {
+    const current = currentZoom();
+    const index = ZOOM_STEPS.reduce(
+      (best, step, i) =>
+        Math.abs(step - current) < Math.abs(ZOOM_STEPS[best] - current) ? i : best,
+      0,
+    );
+    const next = ZOOM_STEPS[Math.min(Math.max(index + direction, 0), ZOOM_STEPS.length - 1)];
+    applyZoom(next, label);
+  }
+
+  function initZoomControl() {
+    const group = document.createElement("div");
+    group.className = "zoom-control";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Seitenzoom");
+    const zoomOut = document.createElement("button");
+    zoomOut.type = "button";
+    zoomOut.textContent = "−";
+    zoomOut.setAttribute("aria-label", "Seite verkleinern");
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "zoom-reset";
+    reset.textContent = `${Math.round(currentZoom() * 100)}%`;
+    reset.setAttribute("aria-label", "Seitenzoom zurücksetzen");
+    const zoomIn = document.createElement("button");
+    zoomIn.type = "button";
+    zoomIn.textContent = "+";
+    zoomIn.setAttribute("aria-label", "Seite vergrößern");
+    zoomOut.addEventListener("click", () => stepZoom(-1, reset));
+    zoomIn.addEventListener("click", () => stepZoom(1, reset));
+    reset.addEventListener("click", () => applyZoom(1, reset));
+    group.append(zoomOut, reset, zoomIn);
+    document.body.append(group);
+  }
+
   const THEME_STORAGE_KEY = "unfallatlas-theme";
   const darkSchemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -164,6 +227,7 @@ window.UnfallatlasPresentation = (() => {
     let tocReturnFocus = null;
 
     initThemeToggle();
+    initZoomControl();
 
     function announce(message) {
       if (statusRegion) statusRegion.textContent = message;

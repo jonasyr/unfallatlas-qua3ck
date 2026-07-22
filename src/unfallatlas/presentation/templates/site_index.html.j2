@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light dark">
   <title>Unfallatlas – Notebook-Präsentationen</title>
   <link rel="stylesheet" href="{{ style_href }}">
-  <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+  <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);var z=parseFloat(localStorage.getItem("unfallatlas-zoom"));if(z>=0.5&&z<=3&&z!==1)document.documentElement.style.fontSize=z*100+"%";}catch(e){}})();</script>
   <script src="{{ script_src }}" defer></script>
 </head>
 <body>
