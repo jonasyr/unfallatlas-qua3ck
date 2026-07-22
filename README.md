@@ -1,16 +1,17 @@
 # 🚦 Unfallatlas Deutschland — QUA³CK ML-Portfolio
 
-<!-- Design tokens: navy #14213D (badge base) · blue #3776AB · orange #F37626 · mint #06D6A0 · indigo #6D5DFC.
+<!-- Design tokens (aligned with reports/presentation UI, see presentation.css):
+     steel blue #315F7D (accent) · dark steel #24475F (badge base) · matching notebook charts (COLOR_PRIMARY).
      Reserved for Streamlit K-Phase severity encoding: red #E63946 (Getötet) · amber #F4A261 (Schwerverletzt) · green #2A9D8F (Leicht verletzt) -->
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=plastic&logo=python&logoColor=white&labelColor=14213D)](pyproject.toml)
-[![Jupyter](https://img.shields.io/badge/Jupyter-Notebooks-F37626?style=plastic&logo=jupyter&logoColor=white&labelColor=14213D)](notebooks/)
-[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=14213D)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=14213D)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
-[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=14213D)](https://github.com/astral-sh/uv)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=14213D)](https://github.com/astral-sh/ruff)
-[![License: MIT](https://img.shields.io/badge/License-MIT-06D6A0?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=14213D)](LICENSE)
-[![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-6D5DFC?style=plastic&logo=readthedocs&logoColor=white&labelColor=14213D)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-315F7D?style=plastic&logo=python&logoColor=white&labelColor=24475F)](pyproject.toml)
+[![Jupyter](https://img.shields.io/badge/Jupyter-Notebooks-315F7D?style=plastic&logo=jupyter&logoColor=white&labelColor=24475F)](notebooks/)
+[![CI](https://img.shields.io/github/actions/workflow/status/jonasyr/unfallatlas-qua3ck/ci.yml?branch=main&style=plastic&logo=githubactions&logoColor=white&label=CI&labelColor=24475F)](https://github.com/jonasyr/unfallatlas-qua3ck/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/codecov/c/github/jonasyr/unfallatlas-qua3ck?style=plastic&logo=codecov&logoColor=white&label=Coverage&labelColor=24475F)](https://codecov.io/gh/jonasyr/unfallatlas-qua3ck)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json&style=plastic&labelColor=24475F)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=plastic&labelColor=24475F)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/License-MIT-315F7D?style=plastic&logo=opensourceinitiative&logoColor=white&labelColor=24475F)](LICENSE)
+[![DeepWiki](https://img.shields.io/badge/DeepWiki-jonasyr%2Funfallatlas--qua3ck-315F7D?style=plastic&logo=readthedocs&logoColor=white&labelColor=24475F)](https://deepwiki.com/jonasyr/unfallatlas-qua3ck)
 <!-- DeepWiki: simple-icons has no dedicated DeepWiki glyph, so readthedocs (closest "docs" icon) stands in -->
 
 <!-- TODO(visual): add a hero image once a result is worth leading with --
