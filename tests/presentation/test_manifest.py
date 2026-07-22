@@ -78,7 +78,9 @@ def _add_entry(
     metadata = ExportMetadata(
         datetime(2026, 7, 15, 10, 30, tzinfo=UTC),
         "2026-07-15T12:30:00+02:00",
-        GitMetadata("1234567890abcdef", "1234567890ab", "feature/export", True),
+        GitMetadata(
+            "1234567890abcdef", "1234567890ab", "feature/export", True, "unfallatlas-qua3ck"
+        ),
     )
     return update_manifest(
         manifest,

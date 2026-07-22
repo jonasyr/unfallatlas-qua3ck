@@ -70,6 +70,49 @@ window.UnfallatlasPresentation = (() => {
     return loading;
   }
 
+  const THEME_STORAGE_KEY = "unfallatlas-theme";
+  const darkSchemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function currentTheme() {
+    const explicit = document.documentElement.getAttribute("data-theme");
+    if (explicit === "light" || explicit === "dark") return explicit;
+    return darkSchemeQuery.matches ? "dark" : "light";
+  }
+
+  function applyTheme(theme, button) {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch {
+      // Private browsing / disabled storage: theme still applies for this
+      // page view, it just will not persist to the next one.
+    }
+    button?.setAttribute("aria-pressed", String(theme === "dark"));
+  }
+
+  // Injected once here (not templated per-page) so every page that loads
+  // this script - the landing page and every notebook export - gets the
+  // same toggle without duplicating markup in two separate Jinja templates.
+  function initThemeToggle() {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "theme-toggle";
+    button.setAttribute("aria-label", "Farbschema umschalten (hell/dunkel)");
+    button.setAttribute("aria-pressed", String(currentTheme() === "dark"));
+    button.innerHTML =
+      '<svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>' +
+      '<svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.7A8.2 8.2 0 1 1 9.3 3.5a6.7 6.7 0 0 0 11.2 11.2Z"/></svg>';
+    button.addEventListener("click", () => {
+      applyTheme(currentTheme() === "dark" ? "light" : "dark", button);
+    });
+    darkSchemeQuery.addEventListener("change", () => {
+      if (!document.documentElement.getAttribute("data-theme")) {
+        button.setAttribute("aria-pressed", String(currentTheme() === "dark"));
+      }
+    });
+    document.body.append(button);
+  }
+
   function readStorage(key) {
     try {
       return window.sessionStorage.getItem(key);
@@ -118,6 +161,8 @@ window.UnfallatlasPresentation = (() => {
     const storagePrefix = `unfallatlas-presentation:${snapshot}`;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let tocReturnFocus = null;
+
+    initThemeToggle();
 
     function announce(message) {
       if (statusRegion) statusRegion.textContent = message;

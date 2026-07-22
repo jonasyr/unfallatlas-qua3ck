@@ -118,8 +118,10 @@ def _presentation_resources(toc: tuple[object, ...]) -> dict[str, object]:
                 "short_commit": "abc123d",
                 "branch": "feature/presentation",
                 "dirty": True,
+                "repo_name": "unfallatlas-qua3ck",
             },
         },
+        "index_href": "../index.html",
         "style_href": "../assets/ui/presentation.css",
         "script_href": "../assets/ui/presentation.js",
         "plotly_runtime_href": "../assets/vendor/plotly-6.1.0.min.js",
@@ -345,7 +347,8 @@ def test_custom_template_renders_semantic_controls_metadata_and_outputs() -> Non
     assert metadata
     metadata_text = metadata.get_text(" ", strip=True)
     assert "abc123d" in metadata_text
-    assert "Arbeitsbaum geändert" in metadata_text
+    assert "Repository unfallatlas-qua3ck" in metadata_text
+    assert "Arbeitsbaum Geändert" in metadata_text
     assert "15.07.2026, 10:30:00 CEST" in metadata_text
     assert "2 Markdown" in metadata_text
     assert "1 Code" in metadata_text
@@ -505,6 +508,7 @@ def _renderer_metadata() -> ExportMetadata:
             short_commit="abc123def456",
             branch="feature/presentation",
             dirty=False,
+            repo_name="unfallatlas-qua3ck",
         ),
     )
 
@@ -546,6 +550,8 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
     analysis = _renderer_analysis(tmp_path)
     original = copy.deepcopy(analysis.notebook)
     output_root = tmp_path / "site"
+    output_root.mkdir(parents=True, exist_ok=True)
+    (output_root / "index.html").touch()
     monkeypatch.setattr(subprocess, "run", _fail_if_called)
     monkeypatch.setattr(NotebookClient, "execute", _fail_if_called)
     monkeypatch.setattr(ExecutePreprocessor, "preprocess", _fail_if_called)
@@ -606,6 +612,8 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
 def test_render_notebook_accepts_nested_relative_output_path(tmp_path: Path) -> None:
     from unfallatlas.presentation.rendering import render_notebook
 
+    (tmp_path / "site").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "site" / "index.html").touch()
     result = render_notebook(
         _renderer_analysis(tmp_path),
         _renderer_metadata(),

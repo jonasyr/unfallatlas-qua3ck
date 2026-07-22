@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="light dark">
   <title>Unfallatlas – Notebook-Präsentationen</title>
   <link rel="stylesheet" href="{{ style_href }}">
+  <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
   <script src="{{ script_src }}" defer></script>
 </head>
 <body>
@@ -13,7 +14,7 @@
     <div class="header-content">
       <p class="document-kind">Unfallatlas QUA³CK</p>
       <h1>Notebook-Präsentationen</h1>
-      {% if manifest.generated_at %}<p class="source-path">Stand: <time>{{ manifest.generated_at }}</time></p>{% endif %}
+      {% if generated_at_local %}<p class="source-path">Stand: <time datetime="{{ manifest.generated_at | e }}">{{ generated_at_local }}</time></p>{% endif %}
     </div>
   </header>
   <main class="index-shell">

@@ -90,6 +90,7 @@ class GitMetadata:
     short_commit: str
     branch: str
     dirty: bool
+    repo_name: str
 
 
 @dataclass(frozen=True, slots=True)

@@ -6,10 +6,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
+  <meta name="color-scheme" content="light dark">
   <title>{{ resources.presentation.title | e }}</title>
   <link rel="stylesheet" href="{{ resources.presentation.style_href | e }}">
   {% for css in resources.inlining.css %}<style>{{ css }}</style>{% endfor %}
+  <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
 <body
   data-snapshot-sha256="{{ resources.presentation.snapshot_sha256 | e }}"
@@ -19,6 +20,7 @@
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
   <div class="header-content">
+    <a class="back-link" href="{{ resources.presentation.index_href | e }}">&larr; Zur Übersicht</a>
     <p class="document-kind">Unfallatlas Notebook</p>
     <h1>{{ resources.presentation.title | e }}</h1>
     <p class="source-path">{{ resources.presentation.source_path | e }}</p>
@@ -26,7 +28,8 @@
       <div><dt>Export</dt><dd>{{ resources.presentation.metadata.exported_at_local | e }}</dd></div>
       <div><dt>Commit</dt><dd><code>{{ resources.presentation.metadata.git.short_commit | e }}</code></dd></div>
       <div><dt>Branch</dt><dd>{{ resources.presentation.metadata.git.branch | e }}</dd></div>
-      <div><dt>Repository</dt><dd>{% if resources.presentation.metadata.git.dirty %}Arbeitsbaum geändert{% else %}Arbeitsbaum sauber{% endif %}</dd></div>
+      <div><dt>Repository</dt><dd>{{ resources.presentation.metadata.git.repo_name | e }}</dd></div>
+      <div><dt>Arbeitsbaum</dt><dd>{% if resources.presentation.metadata.git.dirty %}Geändert{% else %}Sauber{% endif %}</dd></div>
       <div><dt>Status</dt><dd><span class="status-pill" data-status="{{ resources.presentation.status | e }}">{{ resources.presentation.status | e }}</span></dd></div>
       <div><dt>Warnungen</dt><dd>{{ resources.presentation.warning_count }}</dd></div>
       <div><dt>Ausführungsstand</dt><dd>{% if resources.presentation.execution_complete %}<span class="state-pill" data-state="fresh">Vollständig</span>{% else %}<span class="state-pill" data-state="stale">Unvollständig</span>{% endif %}</dd></div>
@@ -34,26 +37,27 @@
       <div><dt>Ausgaben</dt><dd>{{ resources.presentation.counts.code_with_output }} mit Ausgabe, {{ resources.presentation.counts.error_outputs }} Fehlerausgabe</dd></div>
     </dl>
     {% if resources.presentation.findings %}
-    <section class="findings" aria-labelledby="findings-title">
-      <h2 id="findings-title">Hinweise zum Export</h2>
+    {% set has_error_finding = resources.presentation.findings | selectattr("severity", "equalto", "error") | list | length > 0 %}
+    <details class="findings"{% if has_error_finding %} open{% endif %}>
+      <summary>Hinweise zum Export ({{ resources.presentation.findings | length }})</summary>
       <ul>
       {% for finding in resources.presentation.findings %}
         <li data-severity="{{ finding.severity | e }}"><strong>{{ finding.code | e }}</strong>: {{ finding.message | e }}</li>
       {% endfor %}
       </ul>
-    </section>
+    </details>
     {% endif %}
   </div>
 </header>
-<div class="presentation-toolbar" aria-label="Ansichtssteuerung">
-  <button class="toc-trigger" type="button" data-action="toggle-toc" aria-controls="presentation-toc" aria-expanded="false">Inhalt</button>
-  <button type="button" data-action="show-all-code">Code öffnen</button>
-  <button type="button" data-action="hide-all-code">Code schließen</button>
-  <button type="button" data-action="show-all-output">Ausgaben öffnen</button>
-  <button type="button" data-action="hide-all-output">Ausgaben schließen</button>
-  <button type="button" data-action="print">Drucken</button>
-</div>
 <div class="presentation-shell">
+  <div class="presentation-toolbar" aria-label="Ansichtssteuerung">
+    <button class="toc-trigger" type="button" data-action="toggle-toc" aria-controls="presentation-toc" aria-expanded="false">Inhalt</button>
+    <button type="button" data-action="show-all-code">Code öffnen</button>
+    <button type="button" data-action="hide-all-code">Code schließen</button>
+    <button type="button" data-action="show-all-output">Ausgaben öffnen</button>
+    <button type="button" data-action="hide-all-output">Ausgaben schließen</button>
+    <button type="button" data-action="print">Drucken</button>
+  </div>
   <nav id="presentation-toc" class="toc" aria-label="Inhaltsverzeichnis">
     <div class="toc-heading">
       <h2>Inhalt</h2>
@@ -73,7 +77,9 @@
 
 {% block codecell %}
 <article class="notebook-cell code-notebook-cell">
+  <div class="cell-card">
 {{ super() }}
+  </div>
 </article>
 {% endblock codecell %}
 

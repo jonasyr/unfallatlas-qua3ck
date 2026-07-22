@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import asdict, replace
+from datetime import datetime
 from hashlib import sha256
 from pathlib import Path, PureWindowsPath
 from tempfile import NamedTemporaryFile
@@ -12,7 +13,7 @@ import nbformat
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from unfallatlas.presentation.assets import STATIC_DIR, write_atomic
-from unfallatlas.presentation.metadata import source_sha256
+from unfallatlas.presentation.metadata import BERLIN_TZ, source_sha256
 from unfallatlas.presentation.models import (
     ExportMetadata,
     ExportResult,
@@ -25,7 +26,7 @@ from unfallatlas.presentation.models import (
 SCHEMA_VERSION = 1
 EXPORTER_VERSION = "1"
 _FRESHNESS_STATES = frozenset({"fresh", "stale", "missing-export", "orphaned", "invalid-source"})
-_GIT_KEYS = {"commit", "short_commit", "branch", "dirty"}
+_GIT_KEYS = {"commit", "short_commit", "branch", "dirty", "repo_name"}
 _COUNT_KEYS = {
     "markdown",
     "code",
@@ -98,7 +99,9 @@ def _require_optional_index(value: Any, name: str) -> int | None:
 def _validated_git(value: Any) -> dict[str, str | bool]:
     git = _require_mapping(value, "entry git")
     _require_exact_keys(git, _GIT_KEYS, "entry git")
-    if not all(isinstance(git[key], str) for key in ("commit", "short_commit", "branch")):
+    if not all(
+        isinstance(git[key], str) for key in ("commit", "short_commit", "branch", "repo_name")
+    ):
         raise ManifestError("manifest entry git text fields are invalid")
     if not isinstance(git["dirty"], bool):
         raise ManifestError("manifest entry git dirty must be a boolean")
@@ -404,6 +407,13 @@ def _render_index(
             section = status_sections[row["entry"].status]
         buckets[section].append(row)
     sections = tuple((title, items) for title, items in buckets.items() if items)
+    generated_at_local = (
+        datetime.fromisoformat(manifest.generated_at)
+        .astimezone(BERLIN_TZ)
+        .strftime("%d.%m.%Y, %H:%M:%S %Z")
+        if manifest.generated_at
+        else ""
+    )
     environment = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
         autoescape=select_autoescape(("html", "j2")),
@@ -411,6 +421,7 @@ def _render_index(
     )
     return environment.get_template("site_index.html.j2").render(
         manifest=manifest,
+        generated_at_local=generated_at_local,
         sections=sections,
         style_href=_shared_ui_href(output_root, ".css"),
         script_src=_shared_ui_href(output_root, ".js"),

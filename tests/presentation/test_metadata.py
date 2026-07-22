@@ -185,7 +185,6 @@ def test_build_export_metadata_uses_utc_seconds_and_local_readable_time(
     metadata = build_export_metadata(tmp_path, now=now)
 
     assert metadata.exported_at == datetime(2026, 7, 14, 15, 16, 17, tzinfo=UTC)
-    assert metadata.exported_at_local == metadata.exported_at.astimezone().isoformat(
-        timespec="seconds"
-    )
+    # Summer UTC+2 (CEST): 15:16:17 UTC -> 17:16:17 Europe/Berlin.
+    assert metadata.exported_at_local == "14.07.2026, 17:16:17 CEST"
     assert metadata.git.commit == "unknown"

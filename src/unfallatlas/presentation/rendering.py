@@ -331,6 +331,7 @@ def _presentation_resources(
         "source_path": source_path,
         "warning_count": warning_count,
         "execution_complete": execution_complete,
+        "index_href": asset_href(Path("index.html"), href_prefix),
         "style_href": _href(_record_by_kind(shared_assets, "ui-style"), href_prefix),
         "script_href": _href(_record_by_kind(shared_assets, "ui-script"), href_prefix),
         "plotly_runtime_href": _href(_record_by_kind(shared_assets, "plotly-runtime"), href_prefix),

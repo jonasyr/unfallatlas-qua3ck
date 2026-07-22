@@ -4,11 +4,14 @@ import subprocess
 from copy import deepcopy
 from datetime import UTC, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import nbformat
 from nbformat import NotebookNode
 
 from unfallatlas.presentation.models import ExportMetadata, GitMetadata
+
+BERLIN_TZ = ZoneInfo("Europe/Berlin")
 
 
 def _canonical_json(notebook: NotebookNode) -> str:
@@ -59,6 +62,16 @@ def _git(args: list[str], root: Path) -> str | None:
     return result.stdout.strip()
 
 
+def _repo_name(repo_root: Path) -> str:
+    """Repository name for display - prefers the origin remote (works for
+    any clone location/name), falls back to the working directory name if
+    there is no remote configured (e.g. a local-only repo)."""
+    remote_url = _git(["remote", "get-url", "origin"], repo_root)
+    if remote_url:
+        return Path(remote_url.rstrip("/")).stem
+    return repo_root.resolve(strict=False).name
+
+
 def read_git_metadata(repo_root: Path) -> GitMetadata:
     commit = _git(["rev-parse", "HEAD"], repo_root)
     short_commit = _git(["rev-parse", "--short=12", "HEAD"], repo_root)
@@ -68,6 +81,7 @@ def read_git_metadata(repo_root: Path) -> GitMetadata:
         commit=commit or "unknown",
         short_commit=short_commit or "unknown",
         branch=branch or "unknown",
+        repo_name=_repo_name(repo_root),
         dirty=bool(status),
     )
 
@@ -79,6 +93,6 @@ def build_export_metadata(repo_root: Path, now: datetime | None = None) -> Expor
     exported_at = exported_at.astimezone(UTC).replace(microsecond=0)
     return ExportMetadata(
         exported_at=exported_at,
-        exported_at_local=exported_at.astimezone().isoformat(timespec="seconds"),
+        exported_at_local=exported_at.astimezone(BERLIN_TZ).strftime("%d.%m.%Y, %H:%M:%S %Z"),
         git=read_git_metadata(repo_root),
     )
