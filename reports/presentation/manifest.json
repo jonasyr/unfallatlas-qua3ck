@@ -22,17 +22,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-83e6909e0af834ab.css",
-          "sha256": "83e6909e0af834abd40a8cf1c98711c2251fa27c9b2114b0127063931981649b",
-          "size_bytes": 8004
+          "relative_path": "assets/ui/presentation-74dd21f8b0dd637f.css",
+          "sha256": "74dd21f8b0dd637fee3e9825378984f2e7c0797ac1eeef22e4ef36b4dafb799c",
+          "size_bytes": 10727
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-d2b0f41c4ab8eb4d.js",
-          "sha256": "d2b0f41c4ab8eb4d2e61c05803bf1bd784a847f9edca1ff6a33eec303f6de97b",
-          "size_bytes": 9368
+          "relative_path": "assets/ui/presentation-e441c0f491aa8ad4.js",
+          "sha256": "e441c0f491aa8ad4c6edc7a543fee35a42ef5e801924a9a76944c91b106574cb",
+          "size_bytes": 10281
         }
       ],
       "cell_counts": {
@@ -44,17 +44,17 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-15T07:46:21+00:00",
-      "exported_at_local": "2026-07-15T09:46:21+02:00",
+      "exported_at": "2026-07-22T00:15:18+00:00",
+      "exported_at_local": "2026-07-22T02:15:18+02:00",
       "findings": [],
       "git": {
-        "branch": "feature/binary_classifaction",
-        "commit": "e3827a3fdf329716c55af7d81ff6632379d908b6",
+        "branch": "main",
+        "commit": "104e10553852392ce051199c6048210d1e638b8d",
         "dirty": true,
-        "short_commit": "e3827a3fdf32"
+        "short_commit": "104e10553852"
       },
       "output": "notebooks/01_Q_Phase.html",
-      "size_bytes": 53921,
+      "size_bytes": 54189,
       "snapshot_sha256": "e987c33990ec3958115fa1d0b36f4e35846db1c4318ee9fba5634db66831f969",
       "source": "notebooks/01_Q_Phase.ipynb",
       "source_sha256": "e987c33990ec3958115fa1d0b36f4e35846db1c4318ee9fba5634db66831f969",
@@ -543,9 +543,9 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-83e6909e0af834ab.css",
-          "sha256": "83e6909e0af834abd40a8cf1c98711c2251fa27c9b2114b0127063931981649b",
-          "size_bytes": 8004
+          "relative_path": "assets/ui/presentation-74dd21f8b0dd637f.css",
+          "sha256": "74dd21f8b0dd637fee3e9825378984f2e7c0797ac1eeef22e4ef36b4dafb799c",
+          "size_bytes": 10727
         },
         {
           "cell_index": null,
@@ -557,83 +557,83 @@
         },
         {
           "cell_index": 5,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-ff2bb74a7940b75b.png",
-          "sha256": "ff2bb74a7940b75b46de98b0bbf4dd1960f7df130d62c48950fd694269d8061a",
-          "size_bytes": 37783
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-cdbeb3478efed916.js",
+          "sha256": "cdbeb3478efed916e965757dc67608a73daf7d9d37b6d900c540b87cb8ca5dab",
+          "size_bytes": 1457259
         },
         {
           "cell_index": 5,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-d5ee049d59f4dbcb.png",
-          "sha256": "d5ee049d59f4dbcb94f6a7f1b6fc569119af3dbd9af5cdc6d589eef9d0808c48",
-          "size_bytes": 25522
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-175c097da5da3230.js",
+          "sha256": "175c097da5da323091a4612cfae5f22bbc9849cbd3ad195e1bfa3da83d584f00",
+          "size_bytes": 5732363
         },
         {
           "cell_index": 6,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-032f1513a5439395.png",
-          "sha256": "032f1513a54393951837e319a23f8f03281d481bd9e57dfbade0436f301d78f8",
-          "size_bytes": 26227
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-a033fa25900e1a63.js",
+          "sha256": "a033fa25900e1a63874526d279e262967d0c033f2808a0bd24412805944bed67",
+          "size_bytes": 7550
         },
         {
           "cell_index": 9,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-2fd2d57c5640aa1d.png",
-          "sha256": "2fd2d57c5640aa1df5d7ea3bd7e3fdc6c7a13cb151a6b70640b9203fcd99ffde",
-          "size_bytes": 45944
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-ac8b59f003e29cae.js",
+          "sha256": "ac8b59f003e29caec32b086bceb631dd9bf4bd3749b9fdb1e7084c7d7b162284",
+          "size_bytes": 7662
         },
         {
           "cell_index": 20,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-b9380d0781778f88.png",
-          "sha256": "b9380d0781778f882051498e65935c59f4fa7e60d223cf5974cf509f69ea4ae5",
-          "size_bytes": 124892
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-793b2f55d1752c1c.js",
+          "sha256": "793b2f55d1752c1c9b4499ae41f1bc5717ebfb72a2a6301d6479ea4698dfc5e7",
+          "size_bytes": 3218871
         },
         {
           "cell_index": 21,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-54437b2e288c6d75.png",
-          "sha256": "54437b2e288c6d75a2b3d5d8863439a3d1420ea5d266d7556c0f66944d8f1a94",
-          "size_bytes": 57807
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-ba3e6ea19567c34e.js",
+          "sha256": "ba3e6ea19567c34e401f1ed7443b604ef1d249f13eb4dbc6bb522f4c10d42ee5",
+          "size_bytes": 7483
         },
         {
           "cell_index": 23,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-baa7752395182752.png",
-          "sha256": "baa775239518275235aaca83fff0d8430c47b10423c66f8a079dde8b0ab8c06d",
-          "size_bytes": 64605
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-9768edd1e5d2f4c3.js",
+          "sha256": "9768edd1e5d2f4c395446ae4a284e684f511461006282a803826eb18fb3f30c5",
+          "size_bytes": 7867
         },
         {
           "cell_index": 23,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-0e04f11c38b938af.png",
-          "sha256": "0e04f11c38b938afff67a0df479c2e26b22677c5fad7c7c4bc91d7a5bc081841",
-          "size_bytes": 57648
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-83dbb6f3ecf447f7.js",
+          "sha256": "83dbb6f3ecf447f717f14f5881df675509cba32ef1a539d2edca250268b7eb9a",
+          "size_bytes": 7857
         },
         {
           "cell_index": 23,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-faac9e3e2ebe447b.png",
-          "sha256": "faac9e3e2ebe447b3e1a17e21cf65826dc97702113eb0028ea839fde24935b0a",
-          "size_bytes": 58466
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-edfc4eb98cc99faa.js",
+          "sha256": "edfc4eb98cc99faa1d3a043cb0fc346fd204ae3aba0642a0363b75ff967adb1c",
+          "size_bytes": 7846
         },
         {
           "cell_index": 23,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/04_C_Phase/image-3d1ee64ffe1a7b18.png",
-          "sha256": "3d1ee64ffe1a7b18b096a27fb9bacc15097007bcad46e87cf617aefc07f96103",
-          "size_bytes": 55861
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-9bd4227381c89c64.js",
+          "sha256": "9bd4227381c89c64c9d9c63826538c13defc671f3246f8439a4deddafe22bff3",
+          "size_bytes": 7837
         }
       ],
       "cell_counts": {
@@ -645,25 +645,33 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-21T23:28:33+00:00",
-      "exported_at_local": "2026-07-22T01:28:33+02:00",
-      "findings": [],
+      "exported_at": "2026-07-22T00:15:54+00:00",
+      "exported_at_local": "2026-07-22T02:15:54+02:00",
+      "findings": [
+        {
+          "cell_index": 5,
+          "code": "LARGE_OUTPUT",
+          "message": "Stored output is 5732320 bytes.",
+          "severity": "warning",
+          "strict_blocker": false
+        }
+      ],
       "git": {
         "branch": "main",
-        "commit": "84a7603a2917e4f852ffd520175fd9cafb12273c",
+        "commit": "104e10553852392ce051199c6048210d1e638b8d",
         "dirty": true,
-        "short_commit": "84a7603a2917"
+        "short_commit": "104e10553852"
       },
       "output": "notebooks/04_C_Phase.html",
-      "size_bytes": 117301,
-      "snapshot_sha256": "9bdf7328bcab0fccc866dce0bf398144dd7f8e11bf3f0b90dea3472f2d311597",
+      "size_bytes": 145093,
+      "snapshot_sha256": "12ae9c287db49df8429fd3efe3ec712d74f4a3f3f331c7fcd2d4484dae8b0bb2",
       "source": "notebooks/04_C_Phase.ipynb",
-      "source_sha256": "0aacda541d4ec120f91434dd055837fbc3c45da30bdad24e6391b2966df81d2b",
+      "source_sha256": "65c2a6c0d5289b65fcef7e0369c850b5c7ac22fa0b1392e95bb3d5c1dcc12b76",
       "status": "ready",
       "title": "Unfallatlas Deutschland C Phase"
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-21T23:28:33+00:00",
+  "generated_at": "2026-07-22T00:15:54+00:00",
   "schema_version": 1
 }

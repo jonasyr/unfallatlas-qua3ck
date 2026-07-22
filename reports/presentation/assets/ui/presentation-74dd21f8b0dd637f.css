@@ -1,0 +1,253 @@
+:root {
+  color-scheme: light;
+  --page: #f7f9fb;
+  --surface: #ffffff;
+  --surface-muted: #edf2f6;
+  --text: #17212b;
+  --muted: #52616f;
+  --border: #c8d2dc;
+  --accent: #315f7d;
+  --accent-dark: #24475f;
+  --warning: #6f4d00;
+  --error: #8a2f2f;
+  --radius: 0.65rem;
+  --content-width: 68.75rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.55;
+  scroll-behavior: smooth;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--text); background: var(--page); }
+button, summary, a { font: inherit; }
+a { color: var(--accent-dark); text-underline-offset: 0.2em; }
+button {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent-dark);
+  background: var(--surface);
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:active { transform: translateY(1px); }
+:focus-visible, .focus-visible {
+  outline: 0.2rem solid var(--accent);
+  outline-offset: 0.2rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: fixed;
+  inset: 0.5rem auto auto 0.5rem;
+  z-index: 3;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  color: var(--surface);
+  background: var(--accent-dark);
+  transform: translateY(-160%);
+}
+.skip-link:focus { transform: translateY(0); }
+
+.presentation-header { border-bottom: 1px solid var(--border); background: var(--surface); }
+.header-content { width: min(100% - 2rem, var(--content-width)); margin-inline: auto; padding: 2rem 0; }
+.document-kind { margin: 0 0 0.35rem; color: var(--accent-dark); font-weight: 700; }
+.presentation-header h1 { max-width: 24ch; margin: 0; font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.15; }
+.source-path { margin: 0.65rem 0 1.5rem; color: var(--muted); overflow-wrap: anywhere; }
+.metadata-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.8rem 1.5rem; margin: 0; }
+.metadata-grid div { min-width: 0; }
+.metadata-grid dt { color: var(--muted); font-size: 0.875rem; font-weight: 700; }
+.metadata-grid dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; }
+.findings { margin-top: 1.5rem; padding: 1rem; border-radius: var(--radius); background: #fff8df; color: var(--warning); }
+.findings h2 { margin: 0; font-size: 1rem; }
+.findings ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+
+.presentation-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  width: min(100% - 2rem, var(--content-width));
+  margin: 1rem auto;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+.toc-trigger, .toc-close { display: none; }
+.presentation-shell {
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  gap: 2rem;
+  width: min(100% - 2rem, 92rem);
+  margin: 0 auto 5rem;
+  align-items: start;
+}
+.toc { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.toc-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.toc-heading h2 { margin: 0; font-size: 1rem; }
+.toc ol { margin: 0.8rem 0 0; padding: 0; list-style: none; }
+.toc ol ol { margin: 0.35rem 0 0; padding-left: 0.8rem; }
+.toc li + li { margin-top: 0.45rem; }
+.toc-link { display: block; padding: 0.25rem 0.4rem; border-radius: calc(var(--radius) / 2); text-decoration: none; }
+.toc-link[aria-current="location"] { color: var(--surface); background: var(--accent); }
+
+.notebook-main { width: min(100%, var(--content-width)); min-width: 0; }
+.notebook-cell { margin: 0 0 1.5rem; }
+.markdown-cell { max-width: 76ch; }
+.markdown-cell h1, .markdown-cell h2, .markdown-cell h3, .markdown-cell h4 { margin-top: 2em; line-height: 1.25; }
+.heading-anchor { display: block; position: relative; top: -1rem; visibility: hidden; }
+.code-cell, .output-cell { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: clip; }
+.output-cell { margin-top: 0.75rem; }
+.code-cell > summary, .output-cell > summary { padding: 0.75rem 1rem; color: var(--accent-dark); font-weight: 700; cursor: pointer; }
+.code-cell[open] > summary, .output-cell[open] > summary { border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.output-content { min-width: 0; padding: 1rem; }
+/* Code panels are a deliberately dark inset (One Dark Pro palette, injected
+   per-export by CSSHTMLHeaderPreprocessor) inside the otherwise light page
+   chrome - edge-to-edge under the light "Code" toggle bar, like a docs site
+   embedding a syntax-highlighted snippet. */
+.code-content { min-width: 0; padding: 0; }
+.input_area, .highlight { min-width: 0; margin: 0; }
+.highlight { overflow-x: auto; border-radius: 0 0 var(--radius) var(--radius); }
+.highlight pre {
+  margin: 0;
+  padding: 1rem;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+}
+/* linenos="table": Pygments emits its own <table> with a numbers gutter
+   (td.linenos) and a code column (td.code) - style the gutter, leave the
+   token colors to the injected Pygments stylesheet. */
+.highlight table { width: 100%; border-collapse: collapse; }
+.highlight td.linenos { user-select: none; border-right: 1px solid rgba(255, 255, 255, 0.08); }
+.highlight td.linenos pre { padding-right: 0.75rem; padding-left: 0.75rem; opacity: 0.7; }
+.highlight td.code { width: 100%; }
+.highlight td.code pre { overflow-x: auto; }
+.output_area, .output_subarea { max-width: 100%; }
+/* Shrink-wrap to the table's own size (most notebook tables are far
+   narrower than the output column) instead of always stretching to the
+   full output width; still caps at 100% and scrolls for wide/tall tables. */
+.table-scroll {
+  display: inline-block;
+  max-width: 100%;
+  max-height: 32rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  vertical-align: top;
+}
+.table-scroll table {
+  width: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.table-scroll th, .table-scroll td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-muted);
+  color: var(--accent-dark);
+  font-weight: 700;
+  border-bottom: 2px solid var(--border);
+}
+.table-scroll tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-muted) 45%, transparent); }
+.table-scroll tbody tr:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.table-scroll tbody tr:last-child td { border-bottom: 0; }
+.text-output { max-height: 28rem; overflow: auto; border-radius: var(--radius); background: var(--surface-muted); }
+.text-output pre, .error-output pre { margin: 0; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* stderr is routine (progress logs, deprecation warnings), not a failure -
+   an alarming red box on every such cell reads as "something is broken"
+   when nothing is; keep it visually distinct but muted, and reserve red
+   for actual exceptions/tracebacks (.error-output, .output-load-error). */
+.stderr-output { color: var(--muted); background: var(--surface-muted); border-left: 0.2rem solid var(--border); }
+.error-output, .output-load-error { color: var(--error); background: #fff1f1; }
+.plotly-output { min-height: 20rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.output-placeholder { color: var(--muted); }
+.output-image { margin: 0; }
+.output-image img, .notebook-main img, .notebook-main svg { display: block; max-width: 100%; height: auto; }
+.sandboxed-output { width: 100%; min-height: 24rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.expand-output { margin-top: 0.5rem; }
+.table-scroll.is-expanded, .text-output.is-expanded { max-height: none; }
+.back-to-top {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--surface);
+}
+.back-to-top[data-visible="true"] { opacity: 1; pointer-events: auto; }
+
+@media (min-width: 68.75rem) {
+  .toc { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto; }
+}
+
+@media (max-width: 47.5rem) {
+  .presentation-shell { display: block; width: min(100% - 1rem, var(--content-width)); }
+  .js .toc {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    max-height: 100dvh;
+    overflow: auto;
+    border: 0;
+    border-radius: 0;
+    padding: 1rem;
+  }
+  .js .toc[data-open="true"] { display: block; }
+  .js .toc-trigger, .js .toc-close { display: inline-block; }
+  .metadata-grid { grid-template-columns: 1fr; }
+  .header-content { width: min(100% - 1rem, var(--content-width)); padding: 1.25rem 0; }
+  .presentation-toolbar { width: min(100% - 1rem, var(--content-width)); }
+  .output-content { padding: 0.65rem; }
+  .highlight pre { padding: 0.65rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+@media print {
+  @page { margin: 1.5cm; }
+  :root { print-color-adjust: economy; -webkit-print-color-adjust: economy; }
+  body { background: var(--surface); font-size: 10pt; }
+  .presentation-toolbar, .toc, .back-to-top, .skip-link, button, summary { display: none !important; }
+  .presentation-shell { display: block; width: 100%; margin: 0; }
+  .presentation-header { border: 0; }
+  .header-content, .notebook-main { width: 100%; max-width: none; }
+  details > :not(summary) { display: block !important; }
+  .code-cell, .output-cell { break-inside: avoid; border-color: #b7b7b7; }
+  /* The One Dark code panel is deliberately dark on screen; on paper that
+     wastes ink and can clip under strict printer color settings, so force
+     it back to plain light text-on-white for the printed page only. */
+  .highlight, .highlight pre, .highlight td.linenos {
+    background: var(--surface) !important;
+    color: #000 !important;
+  }
+  .highlight span { color: inherit !important; background: none !important; }
+  .highlight td.linenos { border-right-color: var(--border) !important; }
+  .table-scroll, .text-output { max-height: none; overflow: visible; }
+  .plotly-output { min-height: 0; break-inside: avoid; }
+  img, svg, .plotly-output { max-height: 18cm; max-width: 100%; }
+  thead { display: table-header-group; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+}
