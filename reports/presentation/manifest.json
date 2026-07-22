@@ -22,17 +22,57 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-45986b6413adcb2b.css",
-          "sha256": "45986b6413adcb2b80d63fb1e25bf903f60d8eac61bd5d8c545c64010142f77b",
-          "size_bytes": 19648
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-ee5efcb625d6bb4c.js",
-          "sha256": "ee5efcb625d6bb4cc695f165c6605c90ab2a8cb0c5575f5793e96f8830f1dd63",
-          "size_bytes": 12366
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-mono-latin-400-normal.woff2",
+          "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+          "size_bytes": 14708
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-italic.woff2",
+          "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
+          "size_bytes": 24356
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-normal.woff2",
+          "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
+          "size_bytes": 22588
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-600-normal.woff2",
+          "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
+          "size_bytes": 24252
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-700-normal.woff2",
+          "sha256": "42e7b0c143c19df9d99fd896e76b48f846edf0902d200bc29796b34d12c33aa7",
+          "size_bytes": 22832
         }
       ],
       "cell_counts": {
@@ -44,21 +84,21 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T02:17:58+00:00",
-      "exported_at_local": "22.07.2026, 04:17:58 CEST",
+      "exported_at": "2026-07-22T03:18:47+00:00",
+      "exported_at_local": "22.07.2026, 05:18:47 CEST",
       "findings": [],
       "git": {
-        "branch": "main",
-        "commit": "fb74e77e3ca28b74c74968689634cc3889515f13",
+        "branch": "feat/presentation-design-audit",
+        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "fb74e77e3ca2"
+        "short_commit": "e4faa894648e"
       },
       "output": "notebooks/01_Q_Phase.html",
-      "size_bytes": 54589,
-      "snapshot_sha256": "e987c33990ec3958115fa1d0b36f4e35846db1c4318ee9fba5634db66831f969",
+      "size_bytes": 54615,
+      "snapshot_sha256": "f84281641d77683e203ed16f03a2248dd738cf6b15546933a16ec04342e72e43",
       "source": "notebooks/01_Q_Phase.ipynb",
-      "source_sha256": "e987c33990ec3958115fa1d0b36f4e35846db1c4318ee9fba5634db66831f969",
+      "source_sha256": "f84281641d77683e203ed16f03a2248dd738cf6b15546933a16ec04342e72e43",
       "status": "ready",
       "title": "Unfallatlas Deutschland Q Phase"
     },
@@ -84,24 +124,64 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-45986b6413adcb2b.css",
-          "sha256": "45986b6413adcb2b80d63fb1e25bf903f60d8eac61bd5d8c545c64010142f77b",
-          "size_bytes": 19648
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-ee5efcb625d6bb4c.js",
-          "sha256": "ee5efcb625d6bb4cc695f165c6605c90ab2a8cb0c5575f5793e96f8830f1dd63",
-          "size_bytes": 12366
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-mono-latin-400-normal.woff2",
+          "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+          "size_bytes": 14708
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-italic.woff2",
+          "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
+          "size_bytes": 24356
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-normal.woff2",
+          "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
+          "size_bytes": 22588
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-600-normal.woff2",
+          "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
+          "size_bytes": 24252
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-700-normal.woff2",
+          "sha256": "42e7b0c143c19df9d99fd896e76b48f846edf0902d200bc29796b34d12c33aa7",
+          "size_bytes": 22832
         },
         {
           "cell_index": 15,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-d0817bbbfd1c79ed.js",
-          "sha256": "d0817bbbfd1c79ede485c00bc2a5cbed4bd045a2e7eb74f6fb2ac7336c0f8c0e",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-a2153beef93b3e63.js",
+          "sha256": "a2153beef93b3e63e98ddff9a9a517f156b036145ef95251d6f0272f23ed5f20",
           "size_bytes": 7713
         },
         {
@@ -132,24 +212,24 @@
           "cell_index": 43,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-cd68edd262ff68a4.js",
-          "sha256": "cd68edd262ff68a4a9181b71d8a34e18df0faa42f6e0e956889181a632a6e7c4",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-78fe282d19197824.js",
+          "sha256": "78fe282d19197824abcb5031a030f5443849423b5e26e454a2653e04ff1aab77",
           "size_bytes": 9389
         },
         {
           "cell_index": 45,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-079b958996b996ce.js",
-          "sha256": "079b958996b996cec0c650f9b9dab1e119da2a7b85859ef1afc9b609b3f4542b",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-ed82a3d27ab579ba.js",
+          "sha256": "ed82a3d27ab579bade9afe0a4f3de8a601bf082112b31a5702b50becf8d03550",
           "size_bytes": 7612
         },
         {
           "cell_index": 47,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-962642647856efdb.js",
-          "sha256": "962642647856efdbe0a38bb31a48f376bf1c57dc697bc9eeedf930c7eeabe4c5",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-c2115fa4007a4e0e.js",
+          "sha256": "c2115fa4007a4e0e1e592f828d95c3f5ba467ffd8169deb3ceb73ab0620cee9f",
           "size_bytes": 44645618
         },
         {
@@ -172,8 +252,8 @@
           "cell_index": 57,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-9c5eda153645ea44.js",
-          "sha256": "9c5eda153645ea44002827e431e590556c7226753ab5432eda88eea340f62655",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-26154ddffe98f5e8.js",
+          "sha256": "26154ddffe98f5e8ed269918103af3580d8520f3ed900c3fd8042eeef13fbb75",
           "size_bytes": 8312
         },
         {
@@ -204,40 +284,40 @@
           "cell_index": 70,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-1da82d8486f4e9bc.js",
-          "sha256": "1da82d8486f4e9bc3085daef43176267607b18aaade7a9be388240bce57ab9f0",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-14a3184d8a669b04.js",
+          "sha256": "14a3184d8a669b04b7c639f7075c179bfe871b82fdb50eb405d5f7d56e82b62f",
           "size_bytes": 7700
         },
         {
           "cell_index": 71,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-2fc134585831982e.js",
-          "sha256": "2fc134585831982e574c10481d5d033ae216402f0d3e914f613e1bd2fdb8bec5",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-a3f114538dc18963.js",
+          "sha256": "a3f114538dc1896376ff40288177c81682797ddfb9b23f358cba7605d0c96bc2",
           "size_bytes": 22326726
         },
         {
           "cell_index": 72,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-75691c4d16fb3e3c.js",
-          "sha256": "75691c4d16fb3e3c441235dbd4bc11b7dc35903170ed210903e64d8839cf700a",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-245493a810bc77fe.js",
+          "sha256": "245493a810bc77fe1c5314054f4597623d72376f816b95aa7b7b9f8a804655da",
           "size_bytes": 7844
         },
         {
           "cell_index": 75,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-11f80f769852d17d.js",
-          "sha256": "11f80f769852d17d677e087430c46399682da496aaf65aae9948fca1239e0f10",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-a80fc7188430307f.js",
+          "sha256": "a80fc7188430307f43313525b58baab9b77afc8a75b0973d25512273efad71b2",
           "size_bytes": 62043054
         },
         {
           "cell_index": 77,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-d1e3a4bfa86907cc.js",
-          "sha256": "d1e3a4bfa86907ccb8284beebd6d1c7512b2fc8c55a1b5eebbff46af37360458",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-573f3446633759da.js",
+          "sha256": "573f3446633759da0dbb4d6e1dc47dd75ffbfa4ca6854d59be213fb606eb4276",
           "size_bytes": 7941
         },
         {
@@ -260,16 +340,16 @@
           "cell_index": 84,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-b69e2cec8a7e67f0.js",
-          "sha256": "b69e2cec8a7e67f07e6afaedba91bbbc5e8a9d2c7022ef7200d6577ed5881789",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-7d6dba0f346db7b8.js",
+          "sha256": "7d6dba0f346db7b8f7f7db77637e0e5cf150b5d63de062075fdac291773b2a27",
           "size_bytes": 7665
         },
         {
           "cell_index": 86,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-7c461637f50a18e0.js",
-          "sha256": "7c461637f50a18e029082886fba577f197f59df938841fb122c633025a98af31",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-7fe274d1b1353b24.js",
+          "sha256": "7fe274d1b1353b245944367f337b0356c6c45ab212ebc39799d355a1f284462a",
           "size_bytes": 16130
         },
         {
@@ -292,8 +372,8 @@
           "cell_index": 95,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-c5ac33512805678f.js",
-          "sha256": "c5ac33512805678fe45fff9b9bc17264414e520148665480ae2874e0ddf624b4",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-9219b945a49ac875.js",
+          "sha256": "9219b945a49ac87525c40446a2985f4f469d5cc87775df00d134030b2b4e342a",
           "size_bytes": 7783
         }
       ],
@@ -306,8 +386,8 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T02:18:14+00:00",
-      "exported_at_local": "22.07.2026, 04:18:14 CEST",
+      "exported_at": "2026-07-22T03:19:03+00:00",
+      "exported_at_local": "22.07.2026, 05:19:03 CEST",
       "findings": [
         {
           "cell_index": 3,
@@ -382,23 +462,23 @@
         {
           "cell_index": null,
           "code": "VERY_LARGE_NOTEBOOK_OUTPUT",
-          "message": "Notebook stores 216670185 output bytes in total.",
+          "message": "Notebook stores 216670195 output bytes in total.",
           "severity": "warning",
           "strict_blocker": false
         }
       ],
       "git": {
-        "branch": "main",
-        "commit": "fb74e77e3ca28b74c74968689634cc3889515f13",
+        "branch": "feat/presentation-design-audit",
+        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "fb74e77e3ca2"
+        "short_commit": "e4faa894648e"
       },
       "output": "notebooks/02_U_Phase.html",
-      "size_bytes": 409121,
-      "snapshot_sha256": "db1b13942df4b58ba598e1c9c75598002d5f80d2c350e5ed15b0c738444aafe0",
+      "size_bytes": 409172,
+      "snapshot_sha256": "ef0b83e0bd423f4cdee32f66411d724a126e85b03c305652aa48aa36acb40aec",
       "source": "notebooks/02_U_Phase.ipynb",
-      "source_sha256": "c969604ca94209a1df666cb2aacdc75ac8db49f561155c53f5aeab5c64f2e88c",
+      "source_sha256": "b3b38caaf248ff916d6b8948c96eefa842ca07a050a000813fdaf16884791591",
       "status": "ready",
       "title": "Unfallatlas Deutschland U Phase"
     },
@@ -471,7 +551,7 @@
         "unexecuted_code": 0
       },
       "exported_at": "2026-07-15T16:50:06+00:00",
-      "exported_at_local": "2026-07-15T18:50:06+02:00",
+      "exported_at_local": "15.07.2026, 18:50:06 CEST",
       "findings": [
         {
           "cell_index": 3,
@@ -546,17 +626,57 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-45986b6413adcb2b.css",
-          "sha256": "45986b6413adcb2b80d63fb1e25bf903f60d8eac61bd5d8c545c64010142f77b",
-          "size_bytes": 19648
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-ee5efcb625d6bb4c.js",
-          "sha256": "ee5efcb625d6bb4cc695f165c6605c90ab2a8cb0c5575f5793e96f8830f1dd63",
-          "size_bytes": 12366
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-mono-latin-400-normal.woff2",
+          "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+          "size_bytes": 14708
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-italic.woff2",
+          "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
+          "size_bytes": 24356
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-normal.woff2",
+          "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
+          "size_bytes": 22588
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-600-normal.woff2",
+          "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
+          "size_bytes": 24252
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-700-normal.woff2",
+          "sha256": "42e7b0c143c19df9d99fd896e76b48f846edf0902d200bc29796b34d12c33aa7",
+          "size_bytes": 22832
         },
         {
           "cell_index": 5,
@@ -586,8 +706,8 @@
           "cell_index": 9,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-aeb5e77d5b7019cc.js",
-          "sha256": "aeb5e77d5b7019cc8b0dcff54387ac737bfe7f941d070f19f3569ee524b27825",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-bf6ab871ad82ece1.js",
+          "sha256": "bf6ab871ad82ece1307e0fbc5589580a0fca9a4f41017c9df509428883809032",
           "size_bytes": 7881
         },
         {
@@ -602,40 +722,40 @@
           "cell_index": 21,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-137168369ed76700.js",
-          "sha256": "137168369ed76700cdd795c8c63e4875c3e8081a0d658263911adf0fbcb9bdc9",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-576b753289dbae60.js",
+          "sha256": "576b753289dbae6050932da989ddf0ba7b2e908cfc2d2286781ec8229b69380e",
           "size_bytes": 7701
         },
         {
           "cell_index": 24,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-3925f79241a58173.js",
-          "sha256": "3925f79241a58173b199112cf380c5e5c994f1172eeb1bfa8ef6b1d988d33f66",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-97b5571b8b6c365d.js",
+          "sha256": "97b5571b8b6c365d518db710ea5e77b2e47c794c4d014b3501c8173c4df621b4",
           "size_bytes": 8011
         },
         {
           "cell_index": 24,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-9ef56a83be568676.js",
-          "sha256": "9ef56a83be568676c0dcacbe5564a9e086d0b074bf523119b35faec870f85c7a",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-4aad531946a991ef.js",
+          "sha256": "4aad531946a991ef1b49f38fea1f55a1f0dcb4498f3ecc3abc5f05e578134c8a",
           "size_bytes": 8000
         },
         {
           "cell_index": 24,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-4ce183c7829653a9.js",
-          "sha256": "4ce183c7829653a9f480db90381002c8587da3e66b81bfced4be030c4b4f4b2e",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-b61a806566921c9f.js",
+          "sha256": "b61a806566921c9f7bdc80f2af4d7ec1bc62f52b5179ab4a46bc0e5031f9d0e5",
           "size_bytes": 7990
         },
         {
           "cell_index": 24,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-93e0680d97e14517.js",
-          "sha256": "93e0680d97e14517425d3c9d2c3f267e7111b262fe9a97af4e82ba9200f9f1f1",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-84ded4013973ff95.js",
+          "sha256": "84ded4013973ff95db756f37bfb1a9c3795b4b4e428f06a82c84534c9cefec46",
           "size_bytes": 7976
         }
       ],
@@ -648,8 +768,8 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T02:18:26+00:00",
-      "exported_at_local": "22.07.2026, 04:18:26 CEST",
+      "exported_at": "2026-07-22T03:19:18+00:00",
+      "exported_at_local": "22.07.2026, 05:19:18 CEST",
       "findings": [
         {
           "cell_index": 5,
@@ -660,22 +780,22 @@
         }
       ],
       "git": {
-        "branch": "main",
-        "commit": "fb74e77e3ca28b74c74968689634cc3889515f13",
+        "branch": "feat/presentation-design-audit",
+        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "fb74e77e3ca2"
+        "short_commit": "e4faa894648e"
       },
       "output": "notebooks/04_C_Phase.html",
-      "size_bytes": 151239,
-      "snapshot_sha256": "40ff205ba382c4ac288194b861f2f5dc915faefabbe56a95ac8c31ab37bd79fc",
+      "size_bytes": 151265,
+      "snapshot_sha256": "ed77da89842f9e5ec306274b28c873ff26e0e96a12fe244e5483af68f8e293bb",
       "source": "notebooks/04_C_Phase.ipynb",
-      "source_sha256": "a96985e1379f2bc1697a1821da1c5949b982010e313ee66b3efb9f54520030f1",
+      "source_sha256": "a5490511bbdc5b7ae3114201f86b98c0f1f25fe57d27bac73827cc4088733fca",
       "status": "ready",
       "title": "Unfallatlas Deutschland C Phase"
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-22T02:18:26+00:00",
+  "generated_at": "2026-07-22T03:19:18+00:00",
   "schema_version": 1
 }

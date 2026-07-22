@@ -351,7 +351,8 @@ def test_index_separates_ready_wip_placeholder_stale_and_orphaned(tmp_path: Path
     soup = BeautifulSoup(index, "html.parser")
     memberships = {
         section.find("h2").get_text(strip=True): [
-            item.find(["a", "span"]).get_text(strip=True) for item in section.find_all("li")
+            item.find(class_="phase-row-title").get_text(strip=True)
+            for item in section.find_all("li")
         ]
         for section in soup.find_all("section")
     }

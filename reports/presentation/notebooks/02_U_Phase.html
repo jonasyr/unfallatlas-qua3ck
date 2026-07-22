@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="light dark" name="color-scheme"/>
 <title>Unfallatlas Deutschland U Phase</title>
-<link href="../assets/ui/presentation-45986b6413adcb2b.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-8e59b5743466f14b.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -94,7 +94,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
 <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="db1b13942df4b58ba598e1c9c75598002d5f80d2c350e5ed15b0c738444aafe0">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="ef0b83e0bd423f4cdee32f66411d724a126e85b03c305652aa48aa36acb40aec">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
@@ -103,9 +103,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h1>Unfallatlas Deutschland U Phase</h1>
 <p class="source-path">notebooks/02_U_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>22.07.2026, 04:18:14 CEST</dd></div>
-<div><dt>Commit</dt><dd><code>fb74e77e3ca2</code></dd></div>
-<div><dt>Branch</dt><dd>main</dd></div>
+<div><dt>Export</dt><dd>22.07.2026, 05:19:03 CEST</dd></div>
+<div><dt>Commit</dt><dd><code>e4faa894648e</code></dd></div>
+<div><dt>Branch</dt><dd>feat/presentation-design-audit</dd></div>
 <div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
 <div><dt>Arbeitsbaum</dt><dd>Geändert</dd></div>
 <div><dt>Status</dt><dd><span class="status-pill" data-status="ready">ready</span></dd></div>
@@ -127,7 +127,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li data-severity="warning"><strong>LARGE_OUTPUT</strong>: Stored output is 40399834 bytes.</li>
 <li data-severity="warning"><strong>LARGE_OUTPUT</strong>: Stored output is 23092083 bytes.</li>
 <li data-severity="warning"><strong>LARGE_OUTPUT</strong>: Stored output is 22326335 bytes.</li>
-<li data-severity="warning"><strong>VERY_LARGE_NOTEBOOK_OUTPUT</strong>: Notebook stores 216670185 output bytes in total.</li>
+<li data-severity="warning"><strong>VERY_LARGE_NOTEBOOK_OUTPUT</strong>: Notebook stores 216670195 output bytes in total.</li>
 </ul>
 </details>
 </div>
@@ -347,7 +347,7 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
 
 <span class="c1"># Project colour palette — kept consistent across all U-phase plots</span>
-<span class="n">COLOR_PRIMARY</span> <span class="o">=</span> <span class="s2">"#3a6ea5"</span>  <span class="c1"># neutral blue (default categorical)</span>
+<span class="n">COLOR_PRIMARY</span> <span class="o">=</span> <span class="s2">"#315f7d"</span>  <span class="c1"># brand steel blue (matches presentation UI accent)</span>
 <span class="n">COLOR_FATAL</span> <span class="o">=</span> <span class="s2">"#c1393a"</span>  <span class="c1"># class 1 — Getötet</span>
 <span class="n">COLOR_SERIOUS</span> <span class="o">=</span> <span class="s2">"#e09f3e"</span>  <span class="c1"># class 2 — Schwer</span>
 <span class="n">COLOR_MINOR</span> <span class="o">=</span> <span class="s2">"#5a8db8"</span>  <span class="c1"># class 3 — Leicht</span>
@@ -665,13 +665,13 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
   pandas         3.0.3
   numpy          2.4.5
   plotly         6.7.0
-  git_commit     fb74e77
-  run_at_utc     2026-07-22T01:32:55Z
+  git_commit     e4faa89
+  run_at_utc     2026-07-22T03:13:14Z
   random_seed    42
 </pre></div>
 </div>
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_603210/1391053097.py:26: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_698493/1391053097.py:26: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
   "run_at_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
 </pre></div>
 </div>
@@ -707,7 +707,7 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output"><pre>&lt;_duckdb.DuckDBPyConnection at 0x7f11f469bdb0&gt;</pre></div>
+<div class="text-output"><pre>&lt;_duckdb.DuckDBPyConnection at 0x7eff6a4b9370&gt;</pre></div>
 </div>
 </div>
 </div>
@@ -1556,7 +1556,7 @@ the documentation alone.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-d0817bbbfd1c79ed.js" data-chart-id="02_U_Phase-cell-15-output-0" data-payload-key="plotly-1b287bfa0806898827628e89ad4e22b8b1bab2d446ffcb94179f96fd770dc3a2" data-size-bytes="7713" id="02_U_Phase-cell-15-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-a2153beef93b3e63.js" data-chart-id="02_U_Phase-cell-15-output-0" data-payload-key="plotly-f126f4db470abbe576ec62842a08d649c7a1acfd982f173ec41187eaa17ab7bd" data-size-bytes="7713" id="02_U_Phase-cell-15-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -2009,52 +2009,52 @@ integers, so any negative numeric value is suspicious.</p>
 <tbody>
 <tr>
 <th>0</th>
-<td>94161</td>
+<td>122895</td>
 <td>9</td>
 </tr>
 <tr>
 <th>1</th>
-<td>94169</td>
+<td>122897</td>
 <td>9</td>
 </tr>
 <tr>
 <th>2</th>
-<td>94170</td>
+<td>122997</td>
 <td>9</td>
 </tr>
 <tr>
 <th>3</th>
-<td>94260</td>
+<td>123044</td>
 <td>9</td>
 </tr>
 <tr>
 <th>4</th>
-<td>94261</td>
+<td>123069</td>
 <td>9</td>
 </tr>
 <tr>
 <th>5</th>
-<td>94277</td>
+<td>123088</td>
 <td>9</td>
 </tr>
 <tr>
 <th>6</th>
-<td>94311</td>
+<td>123148</td>
 <td>9</td>
 </tr>
 <tr>
 <th>7</th>
-<td>94348</td>
+<td>123237</td>
 <td>9</td>
 </tr>
 <tr>
 <th>8</th>
-<td>94526</td>
+<td>123319</td>
 <td>9</td>
 </tr>
 <tr>
 <th>9</th>
-<td>94534</td>
+<td>123336</td>
 <td>9</td>
 </tr>
 </tbody>
@@ -2805,7 +2805,7 @@ countplots; binary features a grid of counts; continuous features histograms.</p
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-cd68edd262ff68a4.js" data-chart-id="02_U_Phase-cell-43-output-0" data-payload-key="plotly-1fdfb34157eb69a8af77309d5d1f6d8b8e02f05b724f0a39e4326ca29c2b8af3" data-size-bytes="9389" id="02_U_Phase-cell-43-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-78fe282d19197824.js" data-chart-id="02_U_Phase-cell-43-output-0" data-payload-key="plotly-0ec75ca8fe1871045bb6c55f1e82397dbd0c5d6c2aa6181d5c5a216bf8605f47" data-size-bytes="9389" id="02_U_Phase-cell-43-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -2900,7 +2900,7 @@ countplots; binary features a grid of counts; continuous features histograms.</p
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-079b958996b996ce.js" data-chart-id="02_U_Phase-cell-45-output-0" data-payload-key="plotly-725b33a95cc289b13226d384cfda03c5a21da4879d2080be77e244360490cba6" data-size-bytes="7612" id="02_U_Phase-cell-45-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-ed82a3d27ab579ba.js" data-chart-id="02_U_Phase-cell-45-output-0" data-payload-key="plotly-198a6d0de40b0148e73f3af8eba1fac5b3f476e99a2dee3085cc357e06cafbed" data-size-bytes="7612" id="02_U_Phase-cell-45-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -2989,7 +2989,7 @@ countplots; binary features a grid of counts; continuous features histograms.</p
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-962642647856efdb.js" data-chart-id="02_U_Phase-cell-47-output-0" data-payload-key="plotly-fc8c249fc61deccbe7639ae2610efa325508157257bfd8b2cf78ea789603ae02" data-size-bytes="44645618" id="02_U_Phase-cell-47-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-c2115fa4007a4e0e.js" data-chart-id="02_U_Phase-cell-47-output-0" data-payload-key="plotly-c1ac8d659c9f6bbe34e6885eacf315ecc20616ce3378dad40b415c7b1a196233" data-size-bytes="44645618" id="02_U_Phase-cell-47-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -3690,7 +3690,7 @@ Dunkelheit + Winterglatt) rather than as standalone predictors.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-9c5eda153645ea44.js" data-chart-id="02_U_Phase-cell-57-output-0" data-payload-key="plotly-8ce22f9d023f12f5f29aba89e6fcb7a24b8ef7516938036ed785a0ca8b1e083f" data-size-bytes="8312" id="02_U_Phase-cell-57-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-26154ddffe98f5e8.js" data-chart-id="02_U_Phase-cell-57-output-0" data-payload-key="plotly-229f8eb4db9662ff0f8f6d58564890354d4134686d2e917e474fd9e8b3d4dd5c" data-size-bytes="8312" id="02_U_Phase-cell-57-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -3960,7 +3960,7 @@ derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</c
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_603210/3868951954.py:14: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_698493/3868951954.py:14: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
   fig = px.scatter_mapbox(
 </pre></div>
 </div>
@@ -4540,7 +4540,7 @@ dwd_station_dist_km          0       0.0000
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-1da82d8486f4e9bc.js" data-chart-id="02_U_Phase-cell-70-output-0" data-payload-key="plotly-ba78d84fd61f07a7dc4ba59fb19da29b559306c86285baae8dfe8531cdfb2b5c" data-size-bytes="7700" id="02_U_Phase-cell-70-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-14a3184d8a669b04.js" data-chart-id="02_U_Phase-cell-70-output-0" data-payload-key="plotly-a0a4d7c47be57f7b41f5b8c5b02d643b603f3d31776dd4f11b2a0ff7492a7301" data-size-bytes="7700" id="02_U_Phase-cell-70-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -4624,7 +4624,7 @@ dwd_station_dist_km          0       0.0000
 </pre></div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-2fc134585831982e.js" data-chart-id="02_U_Phase-cell-71-output-1" data-payload-key="plotly-bf4e1caa49da573be3def113549b1a448da13356b2d2fe3453d0d95b34bb09fd" data-size-bytes="22326726" id="02_U_Phase-cell-71-output-1" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-a3f114538dc18963.js" data-chart-id="02_U_Phase-cell-71-output-1" data-payload-key="plotly-749f993e18525584fbf4fa637e50ea7807a3ba88964f34ee50bae3ee5b3c17a0" data-size-bytes="22326726" id="02_U_Phase-cell-71-output-1" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -4712,7 +4712,7 @@ dwd_station_dist_km          0       0.0000
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-75691c4d16fb3e3c.js" data-chart-id="02_U_Phase-cell-72-output-0" data-payload-key="plotly-cfeab943450dbaaf962722e12ada49ca73c2554b3aaa3ee2e06912a3204bbb4f" data-size-bytes="7844" id="02_U_Phase-cell-72-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-245493a810bc77fe.js" data-chart-id="02_U_Phase-cell-72-output-0" data-payload-key="plotly-996e8bd6ae753191915109790db9fbbb182f6ff07c9a46fc9e28561e2683eb54" data-size-bytes="7844" id="02_U_Phase-cell-72-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -4813,7 +4813,7 @@ variables (precipitation, visibility) call for log1p; near-symmetric ones
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-11f80f769852d17d.js" data-chart-id="02_U_Phase-cell-75-output-0" data-payload-key="plotly-358075c4ab16a3845fe4b7008d903b31672d8634947c790d8ffe558a5b284ca7" data-size-bytes="62043054" id="02_U_Phase-cell-75-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-a80fc7188430307f.js" data-chart-id="02_U_Phase-cell-75-output-0" data-payload-key="plotly-cb337105888e53852543c7f29b2c7416bd7f290c4bdeb0c23a74c78bbc6bbf88" data-size-bytes="62043054" id="02_U_Phase-cell-75-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -4940,7 +4940,7 @@ extending to ~15 m/s.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-d1e3a4bfa86907cc.js" data-chart-id="02_U_Phase-cell-77-output-0" data-payload-key="plotly-928bdcc0bc99ce3d1fcf989988a58e7170edeb07ed1573fb2ca0db1ba9b17da7" data-size-bytes="7941" id="02_U_Phase-cell-77-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-573f3446633759da.js" data-chart-id="02_U_Phase-cell-77-output-0" data-payload-key="plotly-915f68c47e02005ddf03fd319f51bf5c33066cee5880274c88a33b6fa5667ece" data-size-bytes="7941" id="02_U_Phase-cell-77-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -5251,7 +5251,7 @@ Windgeschwindigkeit (m/s)     0.0181
 </pre></div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-b69e2cec8a7e67f0.js" data-chart-id="02_U_Phase-cell-84-output-1" data-payload-key="plotly-201ab58fc5c4a59569e71d6c2c1608bd039f5f61d2ba17a746e5b05993a4a8c8" data-size-bytes="7665" id="02_U_Phase-cell-84-output-1" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-7d6dba0f346db7b8.js" data-chart-id="02_U_Phase-cell-84-output-1" data-payload-key="plotly-97b725a78304b84722dedec7d538f40b7787ae5e49a4b7f2445ebc4158972393" data-size-bytes="7665" id="02_U_Phase-cell-84-output-1" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -5383,7 +5383,7 @@ likely lies in interaction terms rather than standalone signal.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-7c461637f50a18e0.js" data-chart-id="02_U_Phase-cell-86-output-0" data-payload-key="plotly-87386be9fff394e6055fb7b66e85b7b1310406a36fff5cd294b434b9ada6ffd5" data-size-bytes="16130" id="02_U_Phase-cell-86-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-7fe274d1b1353b24.js" data-chart-id="02_U_Phase-cell-86-output-0" data-payload-key="plotly-cb9d779c8af6dc665c4a7ac9037bdd7b4b664b818b99027e1c046289ecba3604" data-size-bytes="16130" id="02_U_Phase-cell-86-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -5560,7 +5560,7 @@ historical-OSM-snapshot service, out of scope here.</p>
 <div class="output_area">
 <div class="text-output stream-output stdout-output"><pre>Fetching OSM road networks for 16 states (uses per-state cache if present)...
 Progress log (works under nbconvert too): /home/jonas/Documents/Code/unfallatlas-qua3ck/reports/u_phase_osm_progress.log
-2026-07-22 03:33:28,328 [unfallatlas.data.osm] Using cached spatially-enriched DataFrame at /home/jonas/Documents/Code/unfallatlas-qua3ck/data/interim/accidents_with_weather_spatial.parquet
+2026-07-22 05:13:44,591 [unfallatlas.data.osm] Using cached spatially-enriched DataFrame at /home/jonas/Documents/Code/unfallatlas-qua3ck/data/interim/accidents_with_weather_spatial.parquet
 </pre></div>
 </div>
 <div class="output_area">
@@ -5889,7 +5889,7 @@ USTUNDE          0.7527        0.3%  ok
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-c5ac33512805678f.js" data-chart-id="02_U_Phase-cell-95-output-0" data-payload-key="plotly-1600687df2c8fa61be7103c0ef40e21b2b93b712e8bac006dae5aa7381547bd3" data-size-bytes="7783" id="02_U_Phase-cell-95-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-9219b945a49ac875.js" data-chart-id="02_U_Phase-cell-95-output-0" data-payload-key="plotly-cafb9491817fa721e223add7f830758be90c7e7d83fbe2ff18c1326e3334f826" data-size-bytes="7783" id="02_U_Phase-cell-95-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -6701,6 +6701,6 @@ implement the decisions above and train the first baseline models.</p>
 </div>
 <button class="back-to-top" data-action="back-to-top" type="button">Nach oben</button>
 <p aria-live="polite" class="sr-only" data-status-region=""></p>
-<script defer="" src="../assets/ui/presentation-ee5efcb625d6bb4c.js"></script>
+<script defer="" src="../assets/ui/presentation-236ee78fcbebc8f0.js"></script>
 </body>
 </html>

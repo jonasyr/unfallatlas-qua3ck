@@ -18,6 +18,15 @@
     </div>
   </header>
   <main class="index-shell">
+    {# Canonical QUA³CK phase names (Hagenmeyer et al., KIT); the monogram is
+       derived from the entry title, so unknown titles simply omit the name. #}
+    {% set phase_names = {
+      "Q": "Question",
+      "U": "Understanding the Data",
+      "A³": "Algorithm — Selection, Application, Adjustment",
+      "C": "Conclude & Compare",
+      "K": "Knowledge Transfer",
+    } %}
     {% for title, rows in sections %}
     <section class="phase-section" aria-labelledby="section-{{ loop.index }}">
       <div class="phase-section-heading">
@@ -28,23 +37,29 @@
         <p class="section-hint">Für diesen Eintrag existiert keine Notebook-Quelldatei mehr im Repository.</p>
         {% endif %}
       </div>
-      <ul class="phase-grid">
+      <ol class="phase-list">
         {% for row in rows %}
-        <li class="phase-card" data-state="{{ row.state }}">
-          <h3 class="phase-card-title">
-            {% if row.link %}<a href="{{ row.link }}">{{ row.entry.title }}</a>{% else %}<span>{{ row.entry.title }}</span>{% endif %}
-          </h3>
-          <p class="phase-card-badges">
-            <span class="status-pill" data-status="{{ row.entry.status }}">{{ row.entry.status }}</span>
-            <span class="state-pill" data-state="{{ row.state }}">{{ row.state }}</span>
-          </p>
-          <p class="phase-card-meta">{{ row.entry.source }}</p>
-          {% if row.entry.exported_at_local %}
-          <p class="phase-card-meta">Export: {{ row.entry.exported_at_local }}</p>
-          {% endif %}
+        {% set mark = (row.entry.title | replace("Unfallatlas Deutschland", "") | replace("Phase", "") | trim)[:2] | trim %}
+        <li class="phase-row" data-state="{{ row.state }}">
+          <span class="phase-mark" aria-hidden="true">{{ mark }}</span>
+          <div class="phase-row-main">
+            <h3 class="phase-row-title">
+              {% if row.link %}<a href="{{ row.link }}">{{ row.entry.title }}</a>{% else %}<span>{{ row.entry.title }}</span>{% endif %}
+            </h3>
+            <p class="phase-row-meta">{% if mark in phase_names %}{{ phase_names[mark] }} · {% endif %}<span class="phase-source">{{ row.entry.source }}</span></p>
+          </div>
+          <div class="phase-row-side">
+            <p class="phase-card-badges">
+              <span class="status-pill" data-status="{{ row.entry.status }}">{{ row.entry.status }}</span>
+              <span class="state-pill" data-state="{{ row.state }}">{{ row.state }}</span>
+            </p>
+            {% if row.entry.exported_at_local %}
+            <p class="phase-row-export">Export: {{ row.entry.exported_at_local }}</p>
+            {% endif %}
+          </div>
         </li>
         {% endfor %}
-      </ul>
+      </ol>
     </section>
     {% endfor %}
   </main>

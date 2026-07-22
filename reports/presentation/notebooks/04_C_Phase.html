@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="light dark" name="color-scheme"/>
 <title>Unfallatlas Deutschland C Phase</title>
-<link href="../assets/ui/presentation-45986b6413adcb2b.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-8e59b5743466f14b.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -94,7 +94,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
 <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="40ff205ba382c4ac288194b861f2f5dc915faefabbe56a95ac8c31ab37bd79fc">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="ed77da89842f9e5ec306274b28c873ff26e0e96a12fe244e5483af68f8e293bb">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
@@ -103,9 +103,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h1>Unfallatlas Deutschland C Phase</h1>
 <p class="source-path">notebooks/04_C_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>22.07.2026, 04:18:26 CEST</dd></div>
-<div><dt>Commit</dt><dd><code>fb74e77e3ca2</code></dd></div>
-<div><dt>Branch</dt><dd>main</dd></div>
+<div><dt>Export</dt><dd>22.07.2026, 05:19:18 CEST</dd></div>
+<div><dt>Commit</dt><dd><code>e4faa894648e</code></dd></div>
+<div><dt>Branch</dt><dd>feat/presentation-design-audit</dd></div>
 <div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
 <div><dt>Arbeitsbaum</dt><dd>Geändert</dd></div>
 <div><dt>Status</dt><dd><span class="status-pill" data-status="ready">ready</span></dd></div>
@@ -954,7 +954,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
         <span class="n">x</span><span class="o">=</span><span class="n">plot_df</span><span class="p">[</span><span class="s2">"false_negative_rate"</span><span class="p">],</span>
         <span class="n">y</span><span class="o">=</span><span class="n">plot_df</span><span class="p">[</span><span class="s2">"label"</span><span class="p">],</span>
         <span class="n">orientation</span><span class="o">=</span><span class="s2">"h"</span><span class="p">,</span>
-        <span class="n">marker_color</span><span class="o">=</span><span class="s2">"#528AAE"</span><span class="p">,</span>
+        <span class="n">marker_color</span><span class="o">=</span><span class="s2">"#315F7D"</span><span class="p">,</span>
         <span class="n">hovertemplate</span><span class="o">=</span><span class="s2">"%</span><span class="si">{y}</span><span class="s2">: %</span><span class="si">{x:.1%}</span><span class="s2">&lt;extra&gt;&lt;/extra&gt;"</span><span class="p">,</span>
     <span class="p">)</span>
 <span class="p">)</span>
@@ -980,7 +980,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-aeb5e77d5b7019cc.js" data-chart-id="04_C_Phase-cell-9-output-0" data-payload-key="plotly-731f46b4c937df64196bf2c77df6b8d838bb4757319264bdfc259dd8d0257d83" data-size-bytes="7881" id="04_C_Phase-cell-9-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-bf6ab871ad82ece1.js" data-chart-id="04_C_Phase-cell-9-output-0" data-payload-key="plotly-bc36a94a53c264e133f9beb275cd4933f7d6826b7cabffba4d7dd11ac2f037cf" data-size-bytes="7881" id="04_C_Phase-cell-9-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1139,7 +1139,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stdout-output"><pre>Champion latency: 92.8 ms per 1,000 rows
+<div class="text-output stream-output stdout-output"><pre>Champion latency: 96.9 ms per 1,000 rows
 </pre></div>
 </div>
 </div>
@@ -1372,7 +1372,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <td>random_forest (champion)</td>
 <td>0.601093</td>
 <td>0.540138</td>
-<td>92.796487</td>
+<td>96.871895</td>
 <td>0.8</td>
 <td>0.8</td>
 <td>20</td>
@@ -1383,7 +1383,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <td>xgboost</td>
 <td>0.569937</td>
 <td>0.682418</td>
-<td>92.796487</td>
+<td>96.871895</td>
 <td>0.6</td>
 <td>0.8</td>
 <td>20</td>
@@ -1394,7 +1394,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <td>lightgbm</td>
 <td>0.566152</td>
 <td>0.689739</td>
-<td>92.796487</td>
+<td>96.871895</td>
 <td>0.6</td>
 <td>0.8</td>
 <td>20</td>
@@ -1694,7 +1694,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
         <span class="n">x</span><span class="o">=</span><span class="n">bar_data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
         <span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="n">humanize_feature_name</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">index</span><span class="p">],</span>
         <span class="n">orientation</span><span class="o">=</span><span class="s2">"h"</span><span class="p">,</span>
-        <span class="n">marker_color</span><span class="o">=</span><span class="s2">"#528AAE"</span><span class="p">,</span>
+        <span class="n">marker_color</span><span class="o">=</span><span class="s2">"#315F7D"</span><span class="p">,</span>
         <span class="n">hovertemplate</span><span class="o">=</span><span class="s2">"%</span><span class="si">{y}</span><span class="s2">: %</span><span class="si">{x:.4f}</span><span class="s2">&lt;extra&gt;&lt;/extra&gt;"</span><span class="p">,</span>
     <span class="p">)</span>
 <span class="p">)</span>
@@ -1718,7 +1718,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-137168369ed76700.js" data-chart-id="04_C_Phase-cell-21-output-0" data-payload-key="plotly-bd3ac493a0686b33c3d92c01f6bfa90ba7d1e6d3ad2b1e1ec49f22c3a3d5e7f2" data-size-bytes="7701" id="04_C_Phase-cell-21-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-576b753289dbae60.js" data-chart-id="04_C_Phase-cell-21-output-0" data-payload-key="plotly-e55de63d5388a535576ae9817277de51904760187b82582d36898327f8ae99d2" data-size-bytes="7701" id="04_C_Phase-cell-21-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1893,7 +1893,7 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
             <span class="n">connector</span><span class="o">=</span><span class="p">{</span><span class="s2">"line"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"rgba(120, 120, 120, 0.4)"</span><span class="p">}},</span>
             <span class="n">increasing</span><span class="o">=</span><span class="p">{</span><span class="s2">"marker"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#E06C75"</span><span class="p">}},</span>
             <span class="n">decreasing</span><span class="o">=</span><span class="p">{</span><span class="s2">"marker"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#56B6C2"</span><span class="p">}},</span>
-            <span class="n">totals</span><span class="o">=</span><span class="p">{</span><span class="s2">"marker"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#528AAE"</span><span class="p">}},</span>
+            <span class="n">totals</span><span class="o">=</span><span class="p">{</span><span class="s2">"marker"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"color"</span><span class="p">:</span> <span class="s2">"#315F7D"</span><span class="p">}},</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">waterfall_fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
@@ -1917,22 +1917,22 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-3925f79241a58173.js" data-chart-id="04_C_Phase-cell-24-output-0" data-payload-key="plotly-bdaebfc7ab90579028a4538d89e6271dfb9551d1c23447616746b3cf09943f99" data-size-bytes="8011" id="04_C_Phase-cell-24-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-97b5571b8b6c365d.js" data-chart-id="04_C_Phase-cell-24-output-0" data-payload-key="plotly-ab41b57bfaa75c6ee8e70b149c3f3e84e3fd8689a1bb70dfe65c2acc6b13935a" data-size-bytes="8011" id="04_C_Phase-cell-24-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9ef56a83be568676.js" data-chart-id="04_C_Phase-cell-24-output-1" data-payload-key="plotly-3b0ba00ed326489c19aac0fb4c15fa4d54774eeebbf9f630718e593c6710f522" data-size-bytes="8000" id="04_C_Phase-cell-24-output-1" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-4aad531946a991ef.js" data-chart-id="04_C_Phase-cell-24-output-1" data-payload-key="plotly-fb874bde4a02cf8489cbce66c61b19f96bde4dacf4e6d6dd6c5fc4cca430f60d" data-size-bytes="8000" id="04_C_Phase-cell-24-output-1" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-4ce183c7829653a9.js" data-chart-id="04_C_Phase-cell-24-output-2" data-payload-key="plotly-a9e8c66e5cc67a98bd5b06767e2364d65ca726f5144ab1a803b0044d051ddb7b" data-size-bytes="7990" id="04_C_Phase-cell-24-output-2" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-b61a806566921c9f.js" data-chart-id="04_C_Phase-cell-24-output-2" data-payload-key="plotly-9461abcaf4272661f030d9ec3d16a469da1f12531bb07ff23ba192106f741253" data-size-bytes="7990" id="04_C_Phase-cell-24-output-2" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-93e0680d97e14517.js" data-chart-id="04_C_Phase-cell-24-output-3" data-payload-key="plotly-9a8a9e208ee90f55a271933c965eed5f281a136382c48b9bb1537a858a642f19" data-size-bytes="7976" id="04_C_Phase-cell-24-output-3" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-84ded4013973ff95.js" data-chart-id="04_C_Phase-cell-24-output-3" data-payload-key="plotly-afd3f93e8de454a941ec986bd481ebc571428e13b452e7288d2f0afb0a822ad2" data-size-bytes="7976" id="04_C_Phase-cell-24-output-3" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -2095,6 +2095,6 @@ Model artifact: data/processed/a3_binary_best_model.joblib (unchanged, re-confir
 </div>
 <button class="back-to-top" data-action="back-to-top" type="button">Nach oben</button>
 <p aria-live="polite" class="sr-only" data-status-region=""></p>
-<script defer="" src="../assets/ui/presentation-ee5efcb625d6bb4c.js"></script>
+<script defer="" src="../assets/ui/presentation-236ee78fcbebc8f0.js"></script>
 </body>
 </html>

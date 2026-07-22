@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.3
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: unfallatlas-qua3ck
 #     language: python
@@ -198,7 +198,7 @@ error_slice_fig = go.Figure(
         x=plot_df["false_negative_rate"],
         y=plot_df["label"],
         orientation="h",
-        marker_color="#528AAE",
+        marker_color="#315F7D",
         hovertemplate="%{y}: %{x:.1%}<extra></extra>",
     )
 )
@@ -455,7 +455,7 @@ bar_fig = go.Figure(
         x=bar_data.values,
         y=[humanize_feature_name(f) for f in bar_data.index],
         orientation="h",
-        marker_color="#528AAE",
+        marker_color="#315F7D",
         hovertemplate="%{y}: %{x:.4f}<extra></extra>",
     )
 )
@@ -533,7 +533,7 @@ for name, idx in case_indices.items():
             connector={"line": {"color": "rgba(120, 120, 120, 0.4)"}},
             increasing={"marker": {"color": "#E06C75"}},
             decreasing={"marker": {"color": "#56B6C2"}},
-            totals={"marker": {"color": "#528AAE"}},
+            totals={"marker": {"color": "#315F7D"}},
         )
     )
     waterfall_fig.update_layout(

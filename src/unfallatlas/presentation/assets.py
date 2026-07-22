@@ -22,6 +22,7 @@ from unfallatlas.presentation.validation import WIDGET_VIEW_MIME, select_widget_
 PACKAGE_DIR = Path(__file__).parent
 STATIC_DIR = PACKAGE_DIR / "static"
 VENDOR_DIR = PACKAGE_DIR / "vendor"
+FONTS_DIR = VENDOR_DIR / "fonts"
 MATHJAX_FILENAME = "mathjax-3.2.2-tex-svg-full.js"
 PLOTLY_MIME = "application/vnd.plotly.v1+json"
 
@@ -328,4 +329,16 @@ def copy_shared_assets(store: AssetStore) -> tuple[AssetRecord, ...]:
         kind="ui-script",
         cell_index=None,
     )
-    return plotly_record, mathjax_record, css_record, javascript_record
+    # Fonts keep their stable names (no content hash) because presentation.css
+    # references them by relative URL; the CSS itself is content-hashed, so a
+    # font change still propagates through the CSS digest that embeds its URLs.
+    font_records = tuple(
+        store.put_named_bytes(
+            relative_path=Path("assets/vendor/fonts") / font_path.name,
+            data=font_path.read_bytes(),
+            media_type="font/woff2",
+            kind="ui-font",
+        )
+        for font_path in sorted(FONTS_DIR.glob("*.woff2"))
+    )
+    return plotly_record, mathjax_record, css_record, javascript_record, *font_records
