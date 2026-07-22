@@ -410,7 +410,12 @@ def test_progressive_enhancement_and_print_styles_are_packaged_offline() -> None
     assert "window.print()" in javascript
     assert 'matchMedia("(prefers-reduced-motion: reduce)")' in javascript
     assert 'behavior: reduceMotion.matches ? "auto" : "smooth"' in javascript
-    assert "https://" not in javascript
+    # Offline guard: the only external URL allowed is the repo link's
+    # navigation href - it is never fetched, so it cannot break offline
+    # rendering the way an external script/stylesheet would.
+    assert javascript.count("https://") == javascript.count(
+        "https://github.com/jonasyr/unfallatlas-qua3ck"
+    )
 
     for selector in (
         ".presentation-shell",

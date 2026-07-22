@@ -71,67 +71,18 @@ window.UnfallatlasPresentation = (() => {
     return loading;
   }
 
-  const ZOOM_STORAGE_KEY = "unfallatlas-zoom";
-  // Root font-size steps: the whole layout is rem-based, so stepping the
-  // root reflows everything (the TOC column stays pinned to the viewport
-  // edge once the shell hits its 100% - 2rem cap) instead of cropping the
-  // page the way pinch/ctrl zoom on a fixed viewport would.
-  const ZOOM_STEPS = [0.875, 1, 1.125, 1.25, 1.375, 1.5, 1.75, 2];
-
-  function currentZoom() {
-    const raw = parseFloat(document.documentElement.style.fontSize);
-    return Number.isFinite(raw) ? raw / 100 : 1;
-  }
-
-  function applyZoom(factor, label) {
-    document.documentElement.style.fontSize = factor === 1 ? "" : `${factor * 100}%`;
-    try {
-      if (factor === 1) window.localStorage.removeItem(ZOOM_STORAGE_KEY);
-      else window.localStorage.setItem(ZOOM_STORAGE_KEY, String(factor));
-    } catch {
-      // Private browsing: zoom still applies for this page view.
-    }
-    if (label) label.textContent = `${Math.round(factor * 100)}%`;
-    // Plotly lays charts out in pixels and only reflows on a window resize
-    // event; a root font-size change resizes their containers without firing
-    // one, so charts would keep their old size until a page refresh.
-    requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-  }
-
-  function stepZoom(direction, label) {
-    const current = currentZoom();
-    const index = ZOOM_STEPS.reduce(
-      (best, step, i) =>
-        Math.abs(step - current) < Math.abs(ZOOM_STEPS[best] - current) ? i : best,
-      0,
-    );
-    const next = ZOOM_STEPS[Math.min(Math.max(index + direction, 0), ZOOM_STEPS.length - 1)];
-    applyZoom(next, label);
-  }
-
-  function initZoomControl() {
-    const group = document.createElement("div");
-    group.className = "zoom-control";
-    group.setAttribute("role", "group");
-    group.setAttribute("aria-label", "Seitenzoom");
-    const zoomOut = document.createElement("button");
-    zoomOut.type = "button";
-    zoomOut.textContent = "−";
-    zoomOut.setAttribute("aria-label", "Seite verkleinern");
-    const reset = document.createElement("button");
-    reset.type = "button";
-    reset.className = "zoom-reset";
-    reset.textContent = `${Math.round(currentZoom() * 100)}%`;
-    reset.setAttribute("aria-label", "Seitenzoom zurücksetzen");
-    const zoomIn = document.createElement("button");
-    zoomIn.type = "button";
-    zoomIn.textContent = "+";
-    zoomIn.setAttribute("aria-label", "Seite vergrößern");
-    zoomOut.addEventListener("click", () => stepZoom(-1, reset));
-    zoomIn.addEventListener("click", () => stepZoom(1, reset));
-    reset.addEventListener("click", () => applyZoom(1, reset));
-    group.append(zoomOut, reset, zoomIn);
-    document.body.append(group);
+  // Injected next to the theme toggle so both the landing page and every
+  // notebook export carry the same corner control without templating it twice.
+  function initRepoLink() {
+    const link = document.createElement("a");
+    link.className = "repo-link";
+    link.href = "https://github.com/jonasyr/unfallatlas-qua3ck";
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.setAttribute("aria-label", "GitHub-Repository öffnen (neuer Tab)");
+    link.innerHTML =
+      '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>';
+    document.body.append(link);
   }
 
   const THEME_STORAGE_KEY = "unfallatlas-theme";
@@ -227,7 +178,7 @@ window.UnfallatlasPresentation = (() => {
     let tocReturnFocus = null;
 
     initThemeToggle();
-    initZoomControl();
+    initRepoLink();
 
     function announce(message) {
       if (statusRegion) statusRegion.textContent = message;
@@ -346,6 +297,19 @@ window.UnfallatlasPresentation = (() => {
         document.querySelector(`.toc-link[href="#${CSS.escape(anchor.id)}"]`),
       ]),
     );
+    // Long notebooks produce a TOC taller than its sticky viewport; keep the
+    // active entry visible by nudging the TOC's own scroll position whenever
+    // the highlight would otherwise sit outside it.
+    function revealActiveTocLink(link) {
+      if (!toc || toc.scrollHeight <= toc.clientHeight) return;
+      const linkRect = link.getBoundingClientRect();
+      const tocRect = toc.getBoundingClientRect();
+      if (linkRect.top >= tocRect.top && linkRect.bottom <= tocRect.bottom) return;
+      const target =
+        toc.scrollTop + linkRect.top - tocRect.top - toc.clientHeight / 2 + linkRect.height / 2;
+      toc.scrollTo({top: target, behavior: reduceMotion.matches ? "auto" : "smooth"});
+    }
+
     const headingObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -355,6 +319,7 @@ window.UnfallatlasPresentation = (() => {
             current.removeAttribute("aria-current"),
           );
           link.setAttribute("aria-current", "location");
+          revealActiveTocLink(link);
         });
       },
       {rootMargin: "-15% 0px -70%"},

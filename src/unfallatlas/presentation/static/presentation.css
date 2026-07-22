@@ -517,39 +517,25 @@ button:active { transform: translateY(1px); }
   :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
 }
 
-/* Sits left of the fixed theme toggle; same corner-control language.
-   Sized in rem on purpose: the controls scale with the page zoom they set,
-   staying proportionate instead of shrinking relative to everything else. */
-.zoom-control {
+/* GitHub link to the repository, left of the theme toggle - same fixed
+   corner-control language (surface pill, accent stroke, soft shadow). */
+.repo-link {
   position: fixed;
   top: 1rem;
   right: 4rem;
   z-index: 4;
-  display: flex;
-  align-items: stretch;
-  padding: 0;
-  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: 0 0.4rem 1rem -0.6rem rgba(23, 33, 43, 0.35);
-  overflow: clip;
+  transition: background-color 0.15s ease;
 }
-.zoom-control button {
-  min-height: 2.5rem;
-  min-width: 2.2rem;
-  padding: 0 0.55rem;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  font-size: 0.95rem;
-}
-.zoom-control button + button { border-left: 1px solid var(--border); }
-.zoom-control .zoom-reset {
-  min-width: 3.4rem;
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
+.repo-link:hover, .repo-link:focus-visible { background: var(--surface-muted); }
+.repo-link svg { width: 1.15rem; height: 1.15rem; fill: var(--accent-dark); }
 
 @media (min-width: 47.5625rem) {
   /* top offset clears the sticky toolbar above it (top: 0.75rem + its own
@@ -593,9 +579,6 @@ button:active { transform: translateY(1px); }
 
 @media print {
   @page { margin: 1.5cm; }
-  /* !important beats the inline style the zoom control sets on <html>,
-     so paper always prints at 100% regardless of the on-screen zoom. */
-  html { font-size: 100% !important; }
   /* Printed pages are always light, regardless of the on-screen theme -
      paper doesn't have a "dark mode" and forcing dark backgrounds through
      would waste ink / fail on strict printer color settings. */
@@ -610,7 +593,7 @@ button:active { transform: translateY(1px); }
     --border: #c8d2dc;
   }
   body { border-top: 0; background: var(--surface); font-size: 10pt; }
-  .presentation-toolbar, .toc, .back-to-top, .theme-toggle, .zoom-control, .skip-link, button, summary { display: none !important; }
+  .presentation-toolbar, .toc, .back-to-top, .theme-toggle, .repo-link, .skip-link, button, summary { display: none !important; }
   .presentation-shell { display: block; width: 100%; margin: 0; }
   .presentation-header { border: 0; }
   .header-content, .notebook-main { width: 100%; max-width: none; }
