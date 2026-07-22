@@ -84,6 +84,27 @@
 </details>
 {% endblock input_group %}
 
+{#
+  classic/base.html.j2's default `input` block pipes highlight_code() output
+  through `clean_html` (bleach + html5lib). html5lib's HTML5 tree-construction
+  implicitly inserts a <tbody> around bare <tr>s inside <table> (the shape
+  Pygments' linenos="table" formatter emits for the line-number gutter);
+  bleach's allowed-tags list omits tbody/thead/th/caption, so it escapes that
+  implied tag as literal "&lt;tbody&gt;" text instead of stripping it -
+  visibly corrupting every code cell's line-number gutter. cell.source here
+  is always plain notebook code text run through Pygments' own escaping, not
+  user-controlled raw HTML, so re-sanitizing the already-safe, self-generated
+  markup is unnecessary; skip clean_html and keep everything else identical
+  to the upstream block.
+#}
+{% block input %}
+<div class="inner_cell">
+    <div class="input_area">
+{{ cell.source | highlight_code(metadata=cell.metadata) }}
+    </div>
+</div>
+{%- endblock input %}
+
 {% block output_group %}
 <details class="output-cell" open>
   <summary aria-expanded="true">Ausgabe</summary>

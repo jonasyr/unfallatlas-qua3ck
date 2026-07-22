@@ -311,13 +311,39 @@ def nest_toc(entries: tuple[TocEntry, ...]) -> tuple[TocNode, ...]:
 
 
 def classify_html_output(value: str) -> HtmlOutput:
-    """Allow only sanitized passive table HTML; sandbox every other HTML output."""
+    """Allow only sanitized passive table HTML; sandbox every other HTML output.
+
+    pandas' DataFrame ``_repr_html_()`` wraps its ``<table>`` in a
+    ``<div>...<style scoped>...</style><table>...</table></div>`` shell, so a
+    literal single-top-level-``<table>`` check sends every DataFrame output to
+    the sandboxed iframe fallback instead of the styled ``.table-scroll``
+    path - the iframe is a separate document (no inherited page font/CSS) and
+    always reserves a fixed min-height, which is why DataFrame tables render
+    with default browser styling in an oversized box. Unwrap that specific,
+    known-inert shell (drop the ``<style>`` block, keep only the table) before
+    the table check, so real DataFrame output reaches the same sanitized,
+    site-styled path as a hand-written table.
+    """
     from bs4 import BeautifulSoup, NavigableString, Tag
 
     soup = BeautifulSoup(value, "html.parser")
     top_level = [
         item for item in soup.contents if not isinstance(item, NavigableString) or item.strip()
     ]
+    if len(top_level) == 1 and isinstance(top_level[0], Tag) and top_level[0].name == "div":
+        wrapper = top_level[0]
+        wrapper_children = [
+            item
+            for item in wrapper.contents
+            if not isinstance(item, NavigableString) or item.strip()
+        ]
+        non_style = [c for c in wrapper_children if not (isinstance(c, Tag) and c.name == "style")]
+        if len(non_style) == 1 and isinstance(non_style[0], Tag) and non_style[0].name == "table":
+            for style_tag in wrapper.find_all("style", recursive=False):
+                style_tag.decompose()
+            wrapper.unwrap()
+            top_level = non_style
+
     if len(top_level) != 1 or not isinstance(top_level[0], Tag) or top_level[0].name != "table":
         return HtmlOutput("sandbox", value)
 

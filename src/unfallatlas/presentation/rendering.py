@@ -11,6 +11,8 @@ from urllib.parse import unquote, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup
 from nbconvert import HTMLExporter
+from nbconvert.preprocessors.csshtmlheader import CSSHTMLHeaderPreprocessor
+from traitlets.config import Config
 
 from unfallatlas.presentation.assets import (
     AssetStore,
@@ -37,11 +39,40 @@ class PresentationHTMLExporter(HTMLExporter):
     """nbconvert HTML exporter configured with presentation template helpers."""
 
     def __init__(self, **kwargs: Any) -> None:
+        # Highlight2HTML (the filter that actually tokenizes code cell
+        # source into `.highlight .k`/`.s`/... spans) reads
+        # `extra_formatter_options` from traitlets config on its parent
+        # (this exporter) - passed straight through to Pygments'
+        # HtmlFormatter. Set it before super().__init__() so the filter
+        # picks it up the first time it is instantiated in
+        # HTMLExporter.from_notebook_node(). linenos="table" renders the
+        # standard two-column line-number gutter + code layout used by
+        # GitHub/VS Code, not inline numbers mixed into the copyable text.
+        config = kwargs.pop("config", None) or Config()
+        config.Highlight2HTML.extra_formatter_options = {"linenos": "table"}
+        kwargs["config"] = config
         kwargs.setdefault("template_name", "notebook")
         kwargs.setdefault("extra_template_basedirs", [str(PACKAGE_TEMPLATES_ROOT)])
         super().__init__(**kwargs)
         self.register_filter("classify_html_output", classify_html_output)
         self.register_filter("nest_toc", nest_toc)
+        # The "notebook" template extends nbconvert's bare "basic" template
+        # (no built-in <style> block), and HTMLExporter does not enable
+        # CSSHTMLHeaderPreprocessor by default outside the "lab"/"classic"
+        # templates. Without it, resources["inlining"]["css"] - which
+        # templates/notebook/index.html.j2 loops over - stays empty, so
+        # code cells get Pygments' `.highlight .k`/`.s`/... span classes
+        # with no matching CSS rules and render as unstyled black text.
+        # "one-dark" mirrors the Atom/VS Code "One Dark Pro" theme
+        # (#282c34 slate background, purple keywords, cyan operators,
+        # muted-gray comments) - a widely recognized, professional look;
+        # the surrounding page chrome stays light (see presentation.css),
+        # so only the code panels themselves are dark, like a docs site
+        # embedding a syntax-highlighted snippet.
+        self.register_preprocessor(
+            CSSHTMLHeaderPreprocessor(style="one-dark"),
+            enabled=True,
+        )
 
 
 def _href(record: AssetRecord, href_prefix: Path = Path("..")) -> str:

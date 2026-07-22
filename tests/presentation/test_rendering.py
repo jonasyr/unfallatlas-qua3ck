@@ -259,6 +259,41 @@ def test_html_classifier_allows_only_sanitized_passive_table_markup() -> None:
     assert not soup.select_one("[class], [style], [data-extra]")
 
 
+def test_html_classifier_unwraps_pandas_dataframe_repr_shell() -> None:
+    # pandas DataFrame._repr_html_() output shape: a wrapping <div> with an
+    # embedded <style scoped> block ahead of the actual <table>.
+    value = (
+        "<div>\n"
+        "<style scoped>\n"
+        "    .dataframe tbody tr th { vertical-align: top; }\n"
+        "    .dataframe thead th { text-align: right; }\n"
+        "</style>\n"
+        '<table border="1" class="dataframe">'
+        "<thead><tr><th></th><th>macro_f1</th></tr></thead>"
+        "<tbody><tr><th>0</th><td>0.601093</td></tr></tbody>"
+        "</table>\n"
+        "</div>"
+    )
+
+    classification = models.classify_html_output(value)
+    soup = BeautifulSoup(classification.content, "html.parser")
+
+    assert classification.kind == "table"
+    assert soup.select_one("table")
+    assert not soup.select_one("div, style")
+    assert not soup.select_one("[class]")
+    assert soup.select_one("td").get_text() == "0.601093"
+
+
+def test_html_classifier_does_not_unwrap_div_with_extra_active_content() -> None:
+    value = "<div><table><tr><td>A</td></tr></table><script>alert(1)</script></div>"
+
+    classification = models.classify_html_output(value)
+
+    assert classification.kind == "sandbox"
+    assert classification.content == value
+
+
 def test_template_sandboxes_active_html_and_renders_only_passive_table_inline() -> None:
     values = [
         '<table><tr><td scope="row">Sicher</td></tr></table>',
@@ -472,6 +507,30 @@ def _renderer_metadata() -> ExportMetadata:
             dirty=False,
         ),
     )
+
+
+def test_render_notebook_code_cell_linenos_table_is_not_html_escaped(
+    tmp_path: Path, monkeypatch
+) -> None:
+    # Regression test: nbconvert's classic/base.html.j2 default `input` block
+    # pipes highlight_code() output through `clean_html` (bleach+html5lib).
+    # html5lib implicitly inserts <tbody> around the bare <tr>s Pygments'
+    # linenos="table" formatter emits, and bleach's allow-list omits tbody,
+    # so it used to render as literal "&lt;tbody&gt;" text in every code
+    # cell instead of a working line-number gutter.
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    output_root = tmp_path / "site"
+    monkeypatch.setattr(subprocess, "run", _fail_if_called)
+    monkeypatch.setattr(NotebookClient, "execute", _fail_if_called)
+    monkeypatch.setattr(ExecutePreprocessor, "preprocess", _fail_if_called)
+
+    result = render_notebook(analysis, _renderer_metadata(), output_root, repo_root=tmp_path)
+
+    html = result.destination.read_text(encoding="utf-8")
+    assert "&lt;tbody&gt;" not in html
+    assert '<table class="highlight' in html
 
 
 def _fail_if_called(*args, **kwargs):

@@ -107,18 +107,76 @@ button:active { transform: translateY(1px); }
 .output-cell { margin-top: 0.75rem; }
 .code-cell > summary, .output-cell > summary { padding: 0.75rem 1rem; color: var(--accent-dark); font-weight: 700; cursor: pointer; }
 .code-cell[open] > summary, .output-cell[open] > summary { border-bottom: 1px solid var(--border); background: var(--surface-muted); }
-.code-content, .output-content { min-width: 0; padding: 1rem; }
-.input_area, .highlight, .highlight pre { min-width: 0; margin: 0; }
-.highlight { overflow-x: auto; }
-.highlight pre { white-space: pre; overflow-wrap: normal; word-break: normal; }
+.output-content { min-width: 0; padding: 1rem; }
+/* Code panels are a deliberately dark inset (One Dark Pro palette, injected
+   per-export by CSSHTMLHeaderPreprocessor) inside the otherwise light page
+   chrome - edge-to-edge under the light "Code" toggle bar, like a docs site
+   embedding a syntax-highlighted snippet. */
+.code-content { min-width: 0; padding: 0; }
+.input_area, .highlight { min-width: 0; margin: 0; }
+.highlight { overflow-x: auto; border-radius: 0 0 var(--radius) var(--radius); }
+.highlight pre {
+  margin: 0;
+  padding: 1rem;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+}
+/* linenos="table": Pygments emits its own <table> with a numbers gutter
+   (td.linenos) and a code column (td.code) - style the gutter, leave the
+   token colors to the injected Pygments stylesheet. */
+.highlight table { width: 100%; border-collapse: collapse; }
+.highlight td.linenos { user-select: none; border-right: 1px solid rgba(255, 255, 255, 0.08); }
+.highlight td.linenos pre { padding-right: 0.75rem; padding-left: 0.75rem; opacity: 0.7; }
+.highlight td.code { width: 100%; }
+.highlight td.code pre { overflow-x: auto; }
 .output_area, .output_subarea { max-width: 100%; }
-.table-scroll { max-height: 32rem; overflow: auto; border: 1px solid var(--border); border-radius: var(--radius); }
-.table-scroll table { width: 100%; border-collapse: collapse; }
-.table-scroll th, .table-scroll td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); text-align: left; }
-.table-scroll thead { position: sticky; top: 0; background: var(--surface-muted); }
+/* Shrink-wrap to the table's own size (most notebook tables are far
+   narrower than the output column) instead of always stretching to the
+   full output width; still caps at 100% and scrolls for wide/tall tables. */
+.table-scroll {
+  display: inline-block;
+  max-width: 100%;
+  max-height: 32rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  vertical-align: top;
+}
+.table-scroll table {
+  width: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.table-scroll th, .table-scroll td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-muted);
+  color: var(--accent-dark);
+  font-weight: 700;
+  border-bottom: 2px solid var(--border);
+}
+.table-scroll tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-muted) 45%, transparent); }
+.table-scroll tbody tr:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.table-scroll tbody tr:last-child td { border-bottom: 0; }
 .text-output { max-height: 28rem; overflow: auto; border-radius: var(--radius); background: var(--surface-muted); }
 .text-output pre, .error-output pre { margin: 0; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-.stderr-output, .error-output, .output-load-error { color: var(--error); background: #fff1f1; }
+/* stderr is routine (progress logs, deprecation warnings), not a failure -
+   an alarming red box on every such cell reads as "something is broken"
+   when nothing is; keep it visually distinct but muted, and reserve red
+   for actual exceptions/tracebacks (.error-output, .output-load-error). */
+.stderr-output { color: var(--muted); background: var(--surface-muted); border-left: 0.2rem solid var(--border); }
+.error-output, .output-load-error { color: var(--error); background: #fff1f1; }
 .plotly-output { min-height: 20rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
 .output-placeholder { color: var(--muted); }
 .output-image { margin: 0; }
@@ -159,7 +217,8 @@ button:active { transform: translateY(1px); }
   .metadata-grid { grid-template-columns: 1fr; }
   .header-content { width: min(100% - 1rem, var(--content-width)); padding: 1.25rem 0; }
   .presentation-toolbar { width: min(100% - 1rem, var(--content-width)); }
-  .code-content, .output-content { padding: 0.65rem; }
+  .output-content { padding: 0.65rem; }
+  .highlight pre { padding: 0.65rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -177,6 +236,15 @@ button:active { transform: translateY(1px); }
   .header-content, .notebook-main { width: 100%; max-width: none; }
   details > :not(summary) { display: block !important; }
   .code-cell, .output-cell { break-inside: avoid; border-color: #b7b7b7; }
+  /* The One Dark code panel is deliberately dark on screen; on paper that
+     wastes ink and can clip under strict printer color settings, so force
+     it back to plain light text-on-white for the printed page only. */
+  .highlight, .highlight pre, .highlight td.linenos {
+    background: var(--surface) !important;
+    color: #000 !important;
+  }
+  .highlight span { color: inherit !important; background: none !important; }
+  .highlight td.linenos { border-right-color: var(--border) !important; }
   .table-scroll, .text-output { max-height: none; overflow: visible; }
   .plotly-output { min-height: 0; break-inside: avoid; }
   img, svg, .plotly-output { max-height: 18cm; max-width: 100%; }
