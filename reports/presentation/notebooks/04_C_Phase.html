@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="light" name="color-scheme"/>
 <title>Unfallatlas Deutschland C Phase</title>
-<link href="../assets/ui/presentation-74dd21f8b0dd637f.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-a1385ae4f2f1188e.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -93,7 +93,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .vm { color: #E06C75 } /* Name.Variable.Magic */
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="12ae9c287db49df8429fd3efe3ec712d74f4a3f3f331c7fcd2d4484dae8b0bb2">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="43c7fe564b567ea2d85c97a7a16a069148a86820d65b57f381ccb23b967aad19">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
@@ -101,14 +101,14 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h1>Unfallatlas Deutschland C Phase</h1>
 <p class="source-path">notebooks/04_C_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>2026-07-22T02:15:54+02:00</dd></div>
-<div><dt>Commit</dt><dd><code>104e10553852</code></dd></div>
+<div><dt>Export</dt><dd>2026-07-22T02:48:18+02:00</dd></div>
+<div><dt>Commit</dt><dd><code>278f33b4f568</code></dd></div>
 <div><dt>Branch</dt><dd>main</dd></div>
 <div><dt>Repository</dt><dd>Arbeitsbaum geändert</dd></div>
 <div><dt>Status</dt><dd>ready</dd></div>
 <div><dt>Warnungen</dt><dd>1</dd></div>
 <div><dt>Ausführungsstand</dt><dd>Vollständig</dd></div>
-<div><dt>Zellen</dt><dd>15 Markdown, 18 Code</dd></div>
+<div><dt>Zellen</dt><dd>16 Markdown, 18 Code</dd></div>
 <div><dt>Ausgaben</dt><dd>18 mit Ausgabe, 0 Fehlerausgabe</dd></div>
 </dl>
 <section aria-labelledby="findings-title" class="findings">
@@ -155,7 +155,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="unfallatlas-deutschland--c-phase"></span></p>
 <h1 id="Unfallatlas-Deutschland-%E2%80%94-C-Phase">Unfallatlas Deutschland — C-Phase<a class="anchor-link" href="#Unfallatlas-Deutschland-%E2%80%94-C-Phase">¶</a></h1><p><span aria-hidden="true" class="heading-anchor" id="position-im-qua3ck-prozess"></span></p>
-<h2 id="Position-im-QUA%C2%B3CK-Prozess">Position im QUA³CK-Prozess<a class="anchor-link" href="#Position-im-QUA%C2%B3CK-Prozess">¶</a></h2><p>Die <strong>C-Phase (Conclude &amp; Compare)</strong> schließt den QUA³CK-Zyklus für die binäre KSI-Klassifikation (getötet/schwerverletzt vs. leichtverletzt) ab. Sie trainiert <strong>nichts neu</strong>: sie lädt die in der A³-Phase gespeicherten Artefakte (<code>a3_binary_best_model.joblib</code>, <code>a3_binary_model_card.json</code>, <code>a3_binary_model_comparison.csv</code>) und liefert:</p>
+<h2 id="Position-im-QUA%C2%B3CK-Prozess">Position im QUA³CK-Prozess<a class="anchor-link" href="#Position-im-QUA%C2%B3CK-Prozess">¶</a></h2><p>Die <strong>C-Phase (Conclude &amp; Compare)</strong> schließt den QUA³CK-Zyklus für die binäre KSI-Klassifikation (getötet/schwerverletzt vs. leichtverletzt) ab. Sie trainiert nichts neu, sondern lädt die in der A³-Phase gespeicherten Artefakte (<code>a3_binary_best_model.joblib</code>, <code>a3_binary_model_card.json</code>, <code>a3_binary_model_comparison.csv</code>) und liefert:</p>
 <ol>
 <li>den systematischen Vergleich aller zehn Kandidaten aus dem A³-Suchlauf (ROC/PR-Kurven, Konfusionsmatrizen),</li>
 <li>eine fehlerorientierte Diagnose (welche Slices werden systematisch verfehlt?),</li>
@@ -217,7 +217,9 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <span class="normal">39</span>
 <span class="normal">40</span>
 <span class="normal">41</span>
-<span class="normal">42</span></pre></div></td><td class="code"><div><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span></pre></div></td><td class="code"><div><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
@@ -237,6 +239,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
     <span class="n">build_inference_contract</span><span class="p">,</span>
     <span class="n">build_qualitative_matrix</span><span class="p">,</span>
     <span class="n">compute_error_slices</span><span class="p">,</span>
+    <span class="n">decode_slice_label</span><span class="p">,</span>
+    <span class="n">humanize_feature_name</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">unfallatlas.models.evaluate</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_binary_predictions</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">unfallatlas.viz.metrics_viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_confusion_matrix_heatmap</span><span class="p">,</span> <span class="n">plot_roc_pr_curves</span>
@@ -608,6 +612,15 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
+<p><strong>Interpretation:</strong> Die ROC-Kurve liegt deutlich über der Zufalls-Diagonale, was ein
+brauchbares, aber nicht sehr starkes Trennvermögen anzeigt (konsistent mit der schwachen
+Merkmalsassoziation aus §6). Die Precision-Recall-Kurve fällt bei steigendem Recall spürbar ab,
+was bei diesem starken Klassenungleichgewicht (~20 % KSI) typisch ist und den in §0 berichteten
+Recall(KSI)-Wert (≈0,52) einordnet: Über die Hälfte der tatsächlichen KSI-Fälle wird erkannt, aber
+nicht durchgängig. Die Konfusionsmatrix macht das konkret: Der Champion erkennt gut die Hälfte
+der echten KSI-Fälle korrekt (oben links), übersieht aber die andere Hälfte (oben rechts, False
+Negatives); umgekehrt werden auch etliche leichte Unfälle fälschlich als KSI eingestuft (unten
+links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüsselt.</p>
 <p><span aria-hidden="true" class="heading-anchor" id="2--fehleranalyse-nach-slices"></span></p>
 <h2 id="2-%E2%80%94-Fehleranalyse-nach-Slices">2 — Fehleranalyse nach Slices<a class="anchor-link" href="#2-%E2%80%94-Fehleranalyse-nach-Slices">¶</a></h2><p>False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (<code>UART</code>), dominanter OSM-Straßenklasse, Straßenzustand (<code>STRZUSTAND</code>), Lichtverhältnissen (<code>ULICHTVERH</code>), Niederschlagskategorie (<code>_precip_bucket</code>, aus <code>dwd_precip_mm</code> abgeleitet) und Tageszeit (<code>USTUNDE</code>, Unfallstunde 0–23), um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.</p>
 </section>
@@ -631,7 +644,22 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <span class="normal">11</span>
 <span class="normal">12</span>
 <span class="normal">13</span>
-<span class="normal">14</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">slice_columns</span> <span class="o">=</span> <span class="p">[</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">slice_columns</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"UART"</span><span class="p">,</span>
     <span class="s2">"osm_dominant_road_class"</span><span class="p">,</span>
     <span class="s2">"STRZUSTAND"</span><span class="p">,</span>
@@ -644,7 +672,22 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <span class="n">error_slice_df</span> <span class="o">=</span> <span class="n">compute_error_slices</span><span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">y_test_bin</span><span class="o">.</span><span class="n">values</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">y_test_pred_champion</span><span class="p">),</span> <span class="n">slice_frame</span><span class="p">,</span> <span class="n">slice_columns</span>
 <span class="p">)</span>
-<span class="n">error_slice_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"false_negative_rate"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
+<span class="c1"># Decoded "Spalte: Wertlabel" per row (e.g. "Unfallart: Zzs. vorausfahrendes</span>
+<span class="c1"># Fz. (Auffahrunfall)") so every table/chart below shows the human-readable</span>
+<span class="c1"># category directly, never a bare code the reader has to look up elsewhere.</span>
+<span class="n">error_slice_df</span><span class="p">[</span><span class="s2">"label"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">decode_slice_label</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">error_slice_df</span><span class="p">[</span><span class="s2">"slice_column"</span><span class="p">],</span> <span class="n">error_slice_df</span><span class="p">[</span><span class="s2">"slice_value"</span><span class="p">])</span>
+<span class="p">]</span>
+<span class="n">error_display_cols</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"label"</span><span class="p">,</span>
+    <span class="s2">"n"</span><span class="p">,</span>
+    <span class="s2">"n_false_negative"</span><span class="p">,</span>
+    <span class="s2">"n_false_positive"</span><span class="p">,</span>
+    <span class="s2">"false_negative_rate"</span><span class="p">,</span>
+    <span class="s2">"false_positive_rate"</span><span class="p">,</span>
+<span class="p">]</span>
+<span class="n">error_slice_df</span><span class="p">[</span><span class="n">error_display_cols</span><span class="p">]</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">"false_negative_rate"</span><span class="p">,</span> <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>
 </pre></div></td></tr></table></div>
 </div>
 </div>
@@ -662,8 +705,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <thead>
 <tr>
 <th></th>
-<th>slice_column</th>
-<th>slice_value</th>
+<th>label</th>
 <th>n</th>
 <th>n_false_negative</th>
 <th>n_false_positive</th>
@@ -674,8 +716,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <tbody>
 <tr>
 <th>1</th>
-<td>UART</td>
-<td>1</td>
+<td>Unfallart: Zzs. ruhendes Fz.</td>
 <td>14673</td>
 <td>1268</td>
 <td>342</td>
@@ -684,8 +725,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>3</th>
-<td>UART</td>
-<td>3</td>
+<td>Unfallart: Zzs. seitlich gleichfahrendes Fz.</td>
 <td>14960</td>
 <td>1447</td>
 <td>1228</td>
@@ -694,8 +734,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>2</th>
-<td>UART</td>
-<td>2</td>
+<td>Unfallart: Zzs. vorausfahrendes Fz. (Auffahrun...</td>
 <td>42854</td>
 <td>2535</td>
 <td>1967</td>
@@ -704,8 +743,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>26</th>
-<td>STRZUSTAND</td>
-<td>2</td>
+<td>Straßenzustand: Winterglatt</td>
 <td>4731</td>
 <td>475</td>
 <td>590</td>
@@ -714,8 +752,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>5</th>
-<td>UART</td>
-<td>5</td>
+<td>Unfallart: Zzs. einbiegendes/kreuzendes Fz.</td>
 <td>71003</td>
 <td>6505</td>
 <td>7216</td>
@@ -724,8 +761,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>22</th>
-<td>osm_dominant_road_class</td>
-<td>trunk_link</td>
+<td>Straßenklasse (OSM): trunk_link</td>
 <td>900</td>
 <td>69</td>
 <td>107</td>
@@ -734,8 +770,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>21</th>
-<td>osm_dominant_road_class</td>
-<td>trunk</td>
+<td>Straßenklasse (OSM): trunk</td>
 <td>15445</td>
 <td>1330</td>
 <td>1770</td>
@@ -744,8 +779,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>40</th>
-<td>USTUNDE</td>
-<td>8</td>
+<td>Uhrzeit: 08:00 Uhr</td>
 <td>11642</td>
 <td>908</td>
 <td>1541</td>
@@ -754,8 +788,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>39</th>
-<td>USTUNDE</td>
-<td>7</td>
+<td>Uhrzeit: 07:00 Uhr</td>
 <td>16153</td>
 <td>1209</td>
 <td>2252</td>
@@ -764,8 +797,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>41</th>
-<td>USTUNDE</td>
-<td>9</td>
+<td>Uhrzeit: 09:00 Uhr</td>
 <td>11099</td>
 <td>979</td>
 <td>1766</td>
@@ -774,8 +806,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>15</th>
-<td>osm_dominant_road_class</td>
-<td>residential</td>
+<td>Straßenklasse (OSM): residential</td>
 <td>2994</td>
 <td>267</td>
 <td>619</td>
@@ -784,8 +815,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>12</th>
-<td>osm_dominant_road_class</td>
-<td>motorway_link</td>
+<td>Straßenklasse (OSM): motorway_link</td>
 <td>1690</td>
 <td>106</td>
 <td>212</td>
@@ -794,8 +824,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>25</th>
-<td>STRZUSTAND</td>
-<td>1</td>
+<td>Straßenzustand: Nass/feucht/schlüpfrig</td>
 <td>63802</td>
 <td>5383</td>
 <td>10528</td>
@@ -804,8 +833,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>11</th>
-<td>osm_dominant_road_class</td>
-<td>motorway</td>
+<td>Straßenklasse (OSM): motorway</td>
 <td>36055</td>
 <td>3061</td>
 <td>6036</td>
@@ -814,8 +842,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>0</th>
-<td>UART</td>
-<td>0</td>
+<td>Unfallart: Anderer Art</td>
 <td>46946</td>
 <td>4574</td>
 <td>10942</td>
@@ -824,8 +851,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>38</th>
-<td>USTUNDE</td>
-<td>6</td>
+<td>Uhrzeit: 06:00 Uhr</td>
 <td>7283</td>
 <td>627</td>
 <td>1308</td>
@@ -834,8 +860,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>37</th>
-<td>USTUNDE</td>
-<td>5</td>
+<td>Uhrzeit: 05:00 Uhr</td>
 <td>3865</td>
 <td>362</td>
 <td>736</td>
@@ -844,8 +869,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>28</th>
-<td>ULICHTVERH</td>
-<td>1</td>
+<td>Lichtverhältnisse: Dämmerung</td>
 <td>14597</td>
 <td>1182</td>
 <td>2467</td>
@@ -854,8 +878,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>13</th>
-<td>osm_dominant_road_class</td>
-<td>primary</td>
+<td>Straßenklasse (OSM): primary</td>
 <td>76806</td>
 <td>6142</td>
 <td>13049</td>
@@ -864,8 +887,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </tr>
 <tr>
 <th>42</th>
-<td>USTUNDE</td>
-<td>10</td>
+<td>Uhrzeit: 10:00 Uhr</td>
 <td>12937</td>
 <td>1112</td>
 <td>2279</td>
@@ -909,14 +931,12 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <span class="normal">18</span>
 <span class="normal">19</span>
 <span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">plot_df</span> <span class="o">=</span> <span class="n">error_slice_df</span><span class="p">[</span><span class="n">error_slice_df</span><span class="p">[</span><span class="s2">"n"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">100</span><span class="p">]</span><span class="o">.</span><span class="n">nlargest</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="s2">"false_negative_rate"</span><span class="p">)</span>
-<span class="n">plot_labels</span> <span class="o">=</span> <span class="n">plot_df</span><span class="p">[</span><span class="s2">"slice_column"</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"="</span> <span class="o">+</span> <span class="n">plot_df</span><span class="p">[</span><span class="s2">"slice_value"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+<span class="normal">21</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">plot_df</span> <span class="o">=</span> <span class="n">error_slice_df</span><span class="p">[</span><span class="n">error_slice_df</span><span class="p">[</span><span class="s2">"n"</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">100</span><span class="p">]</span><span class="o">.</span><span class="n">nlargest</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="s2">"false_negative_rate"</span><span class="p">)</span>
 
 <span class="n">error_slice_fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span>
     <span class="n">go</span><span class="o">.</span><span class="n">Bar</span><span class="p">(</span>
         <span class="n">x</span><span class="o">=</span><span class="n">plot_df</span><span class="p">[</span><span class="s2">"false_negative_rate"</span><span class="p">],</span>
-        <span class="n">y</span><span class="o">=</span><span class="n">plot_labels</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="n">plot_df</span><span class="p">[</span><span class="s2">"label"</span><span class="p">],</span>
         <span class="n">orientation</span><span class="o">=</span><span class="s2">"h"</span><span class="p">,</span>
         <span class="n">marker_color</span><span class="o">=</span><span class="s2">"#528AAE"</span><span class="p">,</span>
         <span class="n">hovertemplate</span><span class="o">=</span><span class="s2">"%</span><span class="si">{y}</span><span class="s2">: %</span><span class="si">{x:.1%}</span><span class="s2">&lt;extra&gt;&lt;/extra&gt;"</span><span class="p">,</span>
@@ -944,7 +964,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-ac8b59f003e29cae.js" data-chart-id="04_C_Phase-cell-9-output-0" data-payload-key="plotly-ba382fd9f5461151089f12fe29c5912f12881740921c0c7350c11422ed639869" data-size-bytes="7662" id="04_C_Phase-cell-9-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-aeb5e77d5b7019cc.js" data-chart-id="04_C_Phase-cell-9-output-0" data-payload-key="plotly-731f46b4c937df64196bf2c77df6b8d838bb4757319264bdfc259dd8d0257d83" data-size-bytes="7881" id="04_C_Phase-cell-9-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1099,7 +1119,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stdout-output"><pre>Champion latency: 107.0 ms per 1,000 rows
+<div class="text-output stream-output stdout-output"><pre>Champion latency: 94.0 ms per 1,000 rows
 </pre></div>
 </div>
 </div>
@@ -1328,7 +1348,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <td>random_forest (champion)</td>
 <td>0.601093</td>
 <td>0.540138</td>
-<td>107.026184</td>
+<td>94.017694</td>
 <td>0.8</td>
 <td>0.8</td>
 <td>20</td>
@@ -1339,7 +1359,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <td>xgboost</td>
 <td>0.569937</td>
 <td>0.682418</td>
-<td>107.026184</td>
+<td>94.017694</td>
 <td>0.6</td>
 <td>0.8</td>
 <td>20</td>
@@ -1350,7 +1370,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <td>lightgbm</td>
 <td>0.566152</td>
 <td>0.689739</td>
-<td>107.026184</td>
+<td>94.017694</td>
 <td>0.6</td>
 <td>0.8</td>
 <td>20</td>
@@ -1533,7 +1553,9 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <span class="normal">48</span>
 <span class="normal">49</span>
 <span class="normal">50</span>
-<span class="normal">51</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">shap_importance</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">shap_importance</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
     <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">shap_values_ksi</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="n">shap_sample_X</span><span class="o">.</span><span class="n">columns</span>
 <span class="p">)</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -1567,8 +1589,8 @@ Test-2024 macro-F1 (A³ record): 0.6026
                 <span class="k">if</span> <span class="n">row</span> <span class="o">==</span> <span class="mi">0</span>
                 <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">feat</span><span class="p">,</span>
-            <span class="n">hovertemplate</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">feat</span><span class="si">}</span><span class="s2">&lt;br&gt;SHAP=%</span><span class="se">{{</span><span class="s2">x:.3f</span><span class="se">}}</span><span class="s2">&lt;extra&gt;&lt;/extra&gt;"</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">humanize_feature_name</span><span class="p">(</span><span class="n">feat</span><span class="p">),</span>
+            <span class="n">hovertemplate</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">humanize_feature_name</span><span class="p">(</span><span class="n">feat</span><span class="p">)</span><span class="si">}</span><span class="s2">&lt;br&gt;SHAP=%</span><span class="se">{{</span><span class="s2">x:.3f</span><span class="se">}}</span><span class="s2">&lt;extra&gt;&lt;/extra&gt;"</span><span class="p">,</span>
             <span class="n">showlegend</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
@@ -1576,7 +1598,9 @@ Test-2024 macro-F1 (A³ record): 0.6026
     <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"SHAP Summary (Beeswarm), Top </span><span class="si">{</span><span class="n">N_BEESWARM_FEATURES</span><span class="si">}</span><span class="s2"> Features"</span><span class="p">,</span>
     <span class="n">xaxis_title</span><span class="o">=</span><span class="s2">"SHAP-Wert (Einfluss auf KSI-Score)"</span><span class="p">,</span>
     <span class="n">yaxis</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
-        <span class="n">tickmode</span><span class="o">=</span><span class="s2">"array"</span><span class="p">,</span> <span class="n">tickvals</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">N_BEESWARM_FEATURES</span><span class="p">)),</span> <span class="n">ticktext</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">top_features</span><span class="p">)</span>
+        <span class="n">tickmode</span><span class="o">=</span><span class="s2">"array"</span><span class="p">,</span>
+        <span class="n">tickvals</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">N_BEESWARM_FEATURES</span><span class="p">)),</span>
+        <span class="n">ticktext</span><span class="o">=</span><span class="p">[</span><span class="n">humanize_feature_name</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">top_features</span><span class="p">],</span>
     <span class="p">),</span>
     <span class="n">template</span><span class="o">=</span><span class="s2">"plotly_white"</span><span class="p">,</span>
     <span class="n">height</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span>
@@ -1596,7 +1620,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-793b2f55d1752c1c.js" data-chart-id="04_C_Phase-cell-20-output-0" data-payload-key="plotly-08031a0bcd556eb0bc172ab767aafc4a07106e81b4823d252157635d40f12021" data-size-bytes="3218871" id="04_C_Phase-cell-20-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-eee323109ef7353a.js" data-chart-id="04_C_Phase-cell-20-output-0" data-payload-key="plotly-f832530b7bdcf6c106f3d55b803d0b382aa85645038b2b79af098ecc0fb0b495" data-size-bytes="3219282" id="04_C_Phase-cell-20-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1638,7 +1662,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <span class="n">bar_fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span>
     <span class="n">go</span><span class="o">.</span><span class="n">Bar</span><span class="p">(</span>
         <span class="n">x</span><span class="o">=</span><span class="n">bar_data</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
-        <span class="n">y</span><span class="o">=</span><span class="n">bar_data</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="p">[</span><span class="n">humanize_feature_name</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">bar_data</span><span class="o">.</span><span class="n">index</span><span class="p">],</span>
         <span class="n">orientation</span><span class="o">=</span><span class="s2">"h"</span><span class="p">,</span>
         <span class="n">marker_color</span><span class="o">=</span><span class="s2">"#528AAE"</span><span class="p">,</span>
         <span class="n">hovertemplate</span><span class="o">=</span><span class="s2">"%</span><span class="si">{y}</span><span class="s2">: %</span><span class="si">{x:.4f}</span><span class="s2">&lt;extra&gt;&lt;/extra&gt;"</span><span class="p">,</span>
@@ -1664,7 +1688,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-ba3e6ea19567c34e.js" data-chart-id="04_C_Phase-cell-21-output-0" data-payload-key="plotly-6475521b23e819cb765e32c3a15c6218e26ce0e137e9aba6123a5db092b1a783" data-size-bytes="7483" id="04_C_Phase-cell-21-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-e32c3434124f7d8b.js" data-chart-id="04_C_Phase-cell-21-output-0" data-payload-key="plotly-9bab3dbb0288208cb8995ab3258dfa38bf2972813610508d466c084cdefe33de" data-size-bytes="7599" id="04_C_Phase-cell-21-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1674,6 +1698,14 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </details>
 </div>
 </article>
+<section class="notebook-cell markdown-cell rendered_html">
+<p><strong>Interpretation:</strong> Im Beeswarm-Plot verschiebt Rot (hoher Feature-Wert) den SHAP-Wert für die
+meisten Top-Features klar in eine Richtung, Blau (niedriger Wert) in die andere; eine breite,
+durchmischte Punktwolke statt einer klaren Trennung würde auf ein schwaches Merkmal hindeuten.
+Der Balkenplot bestätigt die Rangfolge über den Mittelwert der absoluten SHAP-Beiträge: Kein
+einzelnes Feature dominiert (§6 ordnet diese Rangfolge gegen die Literatur ein). Die vier
+folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorhersagen auswirkt.</p>
+</section>
 <article class="notebook-cell code-notebook-cell">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=22">
 <details class="code-cell">
@@ -1841,22 +1873,22 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9768edd1e5d2f4c3.js" data-chart-id="04_C_Phase-cell-23-output-0" data-payload-key="plotly-4aeb039a957484102558986e612ebaa1c211e570acc18842e356a064c16eeaf7" data-size-bytes="7867" id="04_C_Phase-cell-23-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9768edd1e5d2f4c3.js" data-chart-id="04_C_Phase-cell-24-output-0" data-payload-key="plotly-4aeb039a957484102558986e612ebaa1c211e570acc18842e356a064c16eeaf7" data-size-bytes="7867" id="04_C_Phase-cell-24-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-83dbb6f3ecf447f7.js" data-chart-id="04_C_Phase-cell-23-output-1" data-payload-key="plotly-bc81fe64bbd18de03401db0cfbea0a8811e90794fa05d9b4dec719338278ac86" data-size-bytes="7857" id="04_C_Phase-cell-23-output-1" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-83dbb6f3ecf447f7.js" data-chart-id="04_C_Phase-cell-24-output-1" data-payload-key="plotly-bc81fe64bbd18de03401db0cfbea0a8811e90794fa05d9b4dec719338278ac86" data-size-bytes="7857" id="04_C_Phase-cell-24-output-1" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-edfc4eb98cc99faa.js" data-chart-id="04_C_Phase-cell-23-output-2" data-payload-key="plotly-30b0dc1cdeada8d1e708c6a470248218a796213f4d23d7e6ead43b6a65181dc5" data-size-bytes="7846" id="04_C_Phase-cell-23-output-2" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-edfc4eb98cc99faa.js" data-chart-id="04_C_Phase-cell-24-output-2" data-payload-key="plotly-30b0dc1cdeada8d1e708c6a470248218a796213f4d23d7e6ead43b6a65181dc5" data-size-bytes="7846" id="04_C_Phase-cell-24-output-2" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9bd4227381c89c64.js" data-chart-id="04_C_Phase-cell-23-output-3" data-payload-key="plotly-ae0333787bdf49a29a9ed873166b0233fcd732e07cc6a7959b71130fdde21033" data-size-bytes="7837" id="04_C_Phase-cell-23-output-3" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9bd4227381c89c64.js" data-chart-id="04_C_Phase-cell-24-output-3" data-payload-key="plotly-ae0333787bdf49a29a9ed873166b0233fcd732e07cc6a7959b71130fdde21033" data-size-bytes="7837" id="04_C_Phase-cell-24-output-3" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1871,7 +1903,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="6--abgleich-mit-der-literatur"></span></p>
-<h2 id="6-%E2%80%94-Abgleich-mit-der-Literatur">6 — Abgleich mit der Literatur<a class="anchor-link" href="#6-%E2%80%94-Abgleich-mit-der-Literatur">¶</a></h2><p>A³ §20 hat Cramér's V direkt gegen das <strong>binäre</strong> KSI-Label neu berechnet (nicht gegen das ursprüngliche 3-Klassen-<code>UKATGEORIE</code>, für das <code>docs/project/Technical_Review_Next_Steps.md</code> bereits eine Assoziationsobergrenze von ≤0,13 dokumentiert hatte): <code>UART</code> (Unfallart) ist mit <strong>0,1801</strong> das stärkste Einzelmerkmal für die binäre Klassifikation, gefolgt von <code>UTYP1</code> mit 0,1505; <code>ULICHTVERH</code> und <code>STRZUSTAND</code> liegen beide unter 0,03. Selbst das stärkste binäre Merkmal bleibt damit deutlich unter dem für starkes Klassifikationssignal üblichen Bereich von ~0,3–0,5; die binäre Reformulierung erhöht zwar die erreichbare Vorhersagegüte gegenüber der 3-Klassen-Formulierung (A³ §11), löst aber nicht das zugrundeliegende Problem schwacher Merkmalsassoziation.</p>
+<h2 id="6-%E2%80%94-Abgleich-mit-der-Literatur">6 — Abgleich mit der Literatur<a class="anchor-link" href="#6-%E2%80%94-Abgleich-mit-der-Literatur">¶</a></h2><p>A³ §20 hat Cramér's V direkt gegen das <strong>binäre</strong> KSI-Label neu berechnet (nicht gegen das ursprüngliche 3-Klassen-<code>UKATGEORIE</code>, für das die U-Phase, §6, bereits eine Assoziationsobergrenze von ≤0,13 dokumentiert hatte): <code>UART</code> (Unfallart) ist mit <strong>0,1801</strong> das stärkste Einzelmerkmal für die binäre Klassifikation, gefolgt von <code>UTYP1</code> mit 0,1505; <code>ULICHTVERH</code> und <code>STRZUSTAND</code> liegen beide unter 0,03. Selbst das stärkste binäre Merkmal bleibt damit deutlich unter dem für starkes Klassifikationssignal üblichen Bereich von ~0,3–0,5; die binäre Reformulierung erhöht zwar die erreichbare Vorhersagegüte gegenüber der 3-Klassen-Formulierung (A³ §11), löst aber nicht das zugrundeliegende Problem schwacher Merkmalsassoziation.</p>
 <p>Diese SHAP-Analyse ergänzt eine dritte, unabhängige Sicht auf dieselbe Frage: die mittleren absoluten SHAP-Werte über die 5.000er-Stichprobe:</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
@@ -1881,7 +1913,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="code-content"><div class="input">
 <div class="inner_cell">
 <div class="input_area">
-<div class="highlight hl-ipython3"><table class="highlight hl-ipython3table"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">shap_importance</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+<div class="highlight hl-ipython3"><table class="highlight hl-ipython3table"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">shap_importance</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">humanize_feature_name</span><span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
 </pre></div></td></tr></table></div>
 </div>
 </div>
@@ -1894,21 +1926,21 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output"><pre>osm_way_count        0.036329
-IstKrad              0.032670
-UTYP1_1              0.030287
-osm_road_density     0.030098
-UART_2               0.030032
-IstPKW               0.026856
-UKREIS_target_enc    0.025333
-osm_maxspeed_mean    0.020016
-UTYP1_6              0.014776
-osm_maxspeed_max     0.014289
-LAT                  0.013944
-UART_4               0.012915
-LON                  0.011727
-IstRad               0.008816
-UTYP1_4              0.008269
+<div class="text-output"><pre>osm_way_count                                          0.036329
+IstKrad                                                0.032670
+Unfalltyp: Fahrunfall                                  0.030287
+osm_road_density                                       0.030098
+Unfallart: Zzs. vorausfahrendes Fz. (Auffahrunfall)    0.030032
+IstPKW                                                 0.026856
+UKREIS_target_enc                                      0.025333
+osm_maxspeed_mean                                      0.020016
+Unfalltyp: Längsverkehr                                0.014776
+osm_maxspeed_max                                       0.014289
+LAT                                                    0.013944
+Unfallart: Zzs. Gegenverkehr                           0.012915
+LON                                                    0.011727
+IstRad                                                 0.008816
+Unfalltyp: Überschreiten                               0.008269
 dtype: float64</pre></div>
 </div>
 </div>
@@ -1999,7 +2031,7 @@ Model artifact: data/processed/a3_binary_best_model.joblib (unchanged, re-confir
 <p><strong>Was erreicht wurde:</strong></p>
 <ul>
 <li>Systematischer Vergleich aller 10 Kandidaten aus dem A³-Suchlauf mit ROC/PR/Konfusionsmatrix für den Champion (§1).</li>
-<li>Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei <code>UART=1</code> (89,0 %), <code>UART=3</code> (74,1 %) und <code>UART=2</code> (71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %); Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).</li>
+<li>Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei Unfallart "Zzs. ruhendes Fz." (<code>UART=1</code>, 89,0 %), "Zzs. seitlich gleichfahrendes Fz." (<code>UART=3</code>, 74,1 %) und "Zzs. vorausfahrendes Fz." / Auffahrunfall (<code>UART=2</code>, 71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %); Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).</li>
 <li>Formale Gate-Validierung: <strong>bestanden</strong> gegen beide Q-Phase-Kriterien (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50) (§3).</li>
 <li>Gewichtete qualitative Bewertungsmatrix (macro-F1 0,600 vs. 0,518 vs. 0,500), die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet; inklusive eines empirisch geprüften, für alle drei Familien identischen Robustheits-Scores gegenüber fehlenden OSM/DWD-Features (§4).</li>
 <li>SHAP-Erklärbarkeit (global + 4 Fallbeispiele), konsistent mit der A³-Feature-Evidenz (§5).</li>
