@@ -349,10 +349,14 @@ def test_copy_shared_assets_copies_one_plotly_mathjax_css_and_javascript(
 
     records = copy_shared_assets(AssetStore(tmp_path / "site"))
 
-    assert len(records) == 4
+    assert len(records) == 9
     kinds = [record.kind for record in records]
     assert kinds.count("plotly-runtime") == 1
     assert kinds.count("mathjax-runtime") == 1
+    assert kinds.count("ui-font") == 5
+    fonts = [record for record in records if record.kind == "ui-font"]
+    assert all(record.media_type == "font/woff2" for record in fonts)
+    assert all(record.relative_path.parts[:3] == ("assets", "vendor", "fonts") for record in fonts)
     assert {record.media_type for record in records} >= {"text/css", "text/javascript"}
     assert all(not record.relative_path.is_absolute() for record in records)
     assert all((tmp_path / "site" / record.relative_path).is_file() for record in records)

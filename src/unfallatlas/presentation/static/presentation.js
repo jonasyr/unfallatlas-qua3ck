@@ -57,6 +57,7 @@ window.UnfallatlasPresentation = (() => {
         });
         container.dataset.loaded = "true";
       } catch (error) {
+        container.dataset.loaded = "error";
         const message = document.createElement("p");
         message.className = "output-load-error";
         message.textContent =

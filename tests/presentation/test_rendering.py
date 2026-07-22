@@ -914,6 +914,7 @@ def test_render_notebook_error_retains_assets_from_completed_publication_phases(
         "mathjax-runtime",
         "ui-style",
         "ui-script",
+        "ui-font",
     }
 
 
