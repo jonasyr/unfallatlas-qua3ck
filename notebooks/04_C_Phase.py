@@ -515,7 +515,12 @@ for name, idx in case_indices.items():
     ).head(N_WATERFALL_FEATURES)
     other_sum = contributions.drop(top_contrib.index).sum()
 
-    labels = ["Basiswert", *top_contrib.index.tolist(), "Übrige Features", "Vorhersage"]
+    labels = [
+        "Basiswert",
+        *(humanize_feature_name(f) for f in top_contrib.index),
+        "Übrige Features",
+        "Vorhersage",
+    ]
     values = [expected_value_ksi, *top_contrib.tolist(), other_sum, 0]
     measures = ["absolute", *(["relative"] * (len(top_contrib) + 1)), "total"]
 
