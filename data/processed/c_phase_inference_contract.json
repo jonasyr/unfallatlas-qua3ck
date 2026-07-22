@@ -249,5 +249,5 @@
   "threshold": 0.49860217036273086,
   "target_encoding": "1 = KSI (UKATGEORIE in {1,2}), 0 = slight (UKATGEORIE = 3)",
   "model_path": "data/processed/a3_binary_best_model.joblib",
-  "generated_at_utc": "2026-07-22T01:35:55.497029+00:00"
+  "generated_at_utc": "2026-07-22T02:53:45.071009+00:00"
 }

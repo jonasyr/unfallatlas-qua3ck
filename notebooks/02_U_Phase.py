@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.3
+#       jupytext_version: 1.19.5
 #   kernelspec:
 #     display_name: unfallatlas-qua3ck
 #     language: python
@@ -88,7 +88,7 @@ pd.set_option("display.float_format", lambda x: f"{x:,.4f}")
 np.random.seed(42)
 
 # Project colour palette — kept consistent across all U-phase plots
-COLOR_PRIMARY = "#3a6ea5"  # neutral blue (default categorical)
+COLOR_PRIMARY = "#315f7d"  # brand steel blue (matches presentation UI accent)
 COLOR_FATAL = "#c1393a"  # class 1 — Getötet
 COLOR_SERIOUS = "#e09f3e"  # class 2 — Schwer
 COLOR_MINOR = "#5a8db8"  # class 3 — Leicht
