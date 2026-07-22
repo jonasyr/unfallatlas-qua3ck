@@ -517,6 +517,26 @@ button:active { transform: translateY(1px); }
   :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
 }
 
+/* GitHub link to the repository, left of the theme toggle - same fixed
+   corner-control language (surface pill, accent stroke, soft shadow). */
+.repo-link {
+  position: fixed;
+  top: 1rem;
+  right: 4rem;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 0.4rem 1rem -0.6rem rgba(23, 33, 43, 0.35);
+  transition: background-color 0.15s ease;
+}
+.repo-link:hover, .repo-link:focus-visible { background: var(--surface-muted); }
+.repo-link svg { width: 1.15rem; height: 1.15rem; fill: var(--accent-dark); }
+
 @media (min-width: 47.5625rem) {
   /* top offset clears the sticky toolbar above it (top: 0.75rem + its own
      ~2.975rem height) plus a small gap, so the two sticky elements never
@@ -573,7 +593,7 @@ button:active { transform: translateY(1px); }
     --border: #c8d2dc;
   }
   body { border-top: 0; background: var(--surface); font-size: 10pt; }
-  .presentation-toolbar, .toc, .back-to-top, .theme-toggle, .skip-link, button, summary { display: none !important; }
+  .presentation-toolbar, .toc, .back-to-top, .theme-toggle, .repo-link, .skip-link, button, summary { display: none !important; }
   .presentation-shell { display: block; width: 100%; margin: 0; }
   .presentation-header { border: 0; }
   .header-content, .notebook-main { width: 100%; max-width: none; }

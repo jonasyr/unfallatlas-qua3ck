@@ -6,7 +6,7 @@
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="light dark" name="color-scheme"/>
 <title>Unfallatlas Deutschland U Phase</title>
-<link href="../assets/ui/presentation-0b40568b9386338f.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-8e59b5743466f14b.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -94,7 +94,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
 <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="52d3c93306fd3cb5cd8e026161565bb62581ba541c4713455166b2e8f7d7a869">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="ef0b83e0bd423f4cdee32f66411d724a126e85b03c305652aa48aa36acb40aec">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
@@ -103,8 +103,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <h1>Unfallatlas Deutschland U Phase</h1>
 <p class="source-path">notebooks/02_U_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>22.07.2026, 04:54:25 CEST</dd></div>
-<div><dt>Commit</dt><dd><code>67f402aad35b</code></dd></div>
+<div><dt>Export</dt><dd>22.07.2026, 05:19:03 CEST</dd></div>
+<div><dt>Commit</dt><dd><code>e4faa894648e</code></dd></div>
 <div><dt>Branch</dt><dd>feat/presentation-design-audit</dd></div>
 <div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
 <div><dt>Arbeitsbaum</dt><dd>Geändert</dd></div>
@@ -665,13 +665,13 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
   pandas         3.0.3
   numpy          2.4.5
   plotly         6.7.0
-  git_commit     67f402a
-  run_at_utc     2026-07-22T02:52:34Z
+  git_commit     e4faa89
+  run_at_utc     2026-07-22T03:13:14Z
   random_seed    42
 </pre></div>
 </div>
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_675555/1391053097.py:26: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_698493/1391053097.py:26: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
   "run_at_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
 </pre></div>
 </div>
@@ -707,7 +707,7 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output"><pre>&lt;_duckdb.DuckDBPyConnection at 0x7f598c8e5db0&gt;</pre></div>
+<div class="text-output"><pre>&lt;_duckdb.DuckDBPyConnection at 0x7eff6a4b9370&gt;</pre></div>
 </div>
 </div>
 </div>
@@ -2009,52 +2009,52 @@ integers, so any negative numeric value is suspicious.</p>
 <tbody>
 <tr>
 <th>0</th>
-<td>122958</td>
+<td>122895</td>
 <td>9</td>
 </tr>
 <tr>
 <th>1</th>
-<td>123016</td>
+<td>122897</td>
 <td>9</td>
 </tr>
 <tr>
 <th>2</th>
-<td>123031</td>
+<td>122997</td>
 <td>9</td>
 </tr>
 <tr>
 <th>3</th>
-<td>123064</td>
+<td>123044</td>
 <td>9</td>
 </tr>
 <tr>
 <th>4</th>
-<td>123099</td>
+<td>123069</td>
 <td>9</td>
 </tr>
 <tr>
 <th>5</th>
-<td>123127</td>
+<td>123088</td>
 <td>9</td>
 </tr>
 <tr>
 <th>6</th>
-<td>123136</td>
+<td>123148</td>
 <td>9</td>
 </tr>
 <tr>
 <th>7</th>
-<td>123137</td>
+<td>123237</td>
 <td>9</td>
 </tr>
 <tr>
 <th>8</th>
-<td>123196</td>
+<td>123319</td>
 <td>9</td>
 </tr>
 <tr>
 <th>9</th>
-<td>123215</td>
+<td>123336</td>
 <td>9</td>
 </tr>
 </tbody>
@@ -3960,7 +3960,7 @@ derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</c
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_675555/3868951954.py:14: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_698493/3868951954.py:14: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
   fig = px.scatter_mapbox(
 </pre></div>
 </div>
@@ -4940,7 +4940,7 @@ extending to ~15 m/s.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-e82cea7ba8a0a61e.js" data-chart-id="02_U_Phase-cell-77-output-0" data-payload-key="plotly-14bf24d8d02a13013b0a756d4d68353d8b8b53358b3061f8a71d3b5fad13ddb2" data-size-bytes="7941" id="02_U_Phase-cell-77-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-573f3446633759da.js" data-chart-id="02_U_Phase-cell-77-output-0" data-payload-key="plotly-915f68c47e02005ddf03fd319f51bf5c33066cee5880274c88a33b6fa5667ece" data-size-bytes="7941" id="02_U_Phase-cell-77-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -5383,7 +5383,7 @@ likely lies in interaction terms rather than standalone signal.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-402298cc289c0e86.js" data-chart-id="02_U_Phase-cell-86-output-0" data-payload-key="plotly-8ccc908c744f7635950f16787952494b30ea3faea831e500ee3c60036f66a767" data-size-bytes="16130" id="02_U_Phase-cell-86-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-7fe274d1b1353b24.js" data-chart-id="02_U_Phase-cell-86-output-0" data-payload-key="plotly-cb9d779c8af6dc665c4a7ac9037bdd7b4b664b818b99027e1c046289ecba3604" data-size-bytes="16130" id="02_U_Phase-cell-86-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -5560,7 +5560,7 @@ historical-OSM-snapshot service, out of scope here.</p>
 <div class="output_area">
 <div class="text-output stream-output stdout-output"><pre>Fetching OSM road networks for 16 states (uses per-state cache if present)...
 Progress log (works under nbconvert too): /home/jonas/Documents/Code/unfallatlas-qua3ck/reports/u_phase_osm_progress.log
-2026-07-22 04:53:01,467 [unfallatlas.data.osm] Using cached spatially-enriched DataFrame at /home/jonas/Documents/Code/unfallatlas-qua3ck/data/interim/accidents_with_weather_spatial.parquet
+2026-07-22 05:13:44,591 [unfallatlas.data.osm] Using cached spatially-enriched DataFrame at /home/jonas/Documents/Code/unfallatlas-qua3ck/data/interim/accidents_with_weather_spatial.parquet
 </pre></div>
 </div>
 <div class="output_area">
@@ -6701,6 +6701,6 @@ implement the decisions above and train the first baseline models.</p>
 </div>
 <button class="back-to-top" data-action="back-to-top" type="button">Nach oben</button>
 <p aria-live="polite" class="sr-only" data-status-region=""></p>
-<script defer="" src="../assets/ui/presentation-95df13f54c8d3d1d.js"></script>
+<script defer="" src="../assets/ui/presentation-236ee78fcbebc8f0.js"></script>
 </body>
 </html>

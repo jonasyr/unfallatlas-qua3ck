@@ -22,17 +22,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-0b40568b9386338f.css",
-          "sha256": "0b40568b9386338fa271715e40092e98aa138a026e1833558b4e7b2d146577a1",
-          "size_bytes": 24348
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-95df13f54c8d3d1d.js",
-          "sha256": "95df13f54c8d3d1d25f73fa46f1b3fde3f46d08aea0ee72197f4da4b506630bd",
-          "size_bytes": 12410
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
         },
         {
           "cell_index": null,
@@ -84,15 +84,15 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T02:54:09+00:00",
-      "exported_at_local": "22.07.2026, 04:54:09 CEST",
+      "exported_at": "2026-07-22T03:18:47+00:00",
+      "exported_at_local": "22.07.2026, 05:18:47 CEST",
       "findings": [],
       "git": {
         "branch": "feat/presentation-design-audit",
-        "commit": "67f402aad35ba5d7b1a39d152b0c133a5b41f042",
+        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "67f402aad35b"
+        "short_commit": "e4faa894648e"
       },
       "output": "notebooks/01_Q_Phase.html",
       "size_bytes": 54615,
@@ -124,17 +124,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-0b40568b9386338f.css",
-          "sha256": "0b40568b9386338fa271715e40092e98aa138a026e1833558b4e7b2d146577a1",
-          "size_bytes": 24348
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-95df13f54c8d3d1d.js",
-          "sha256": "95df13f54c8d3d1d25f73fa46f1b3fde3f46d08aea0ee72197f4da4b506630bd",
-          "size_bytes": 12410
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
         },
         {
           "cell_index": null,
@@ -316,8 +316,8 @@
           "cell_index": 77,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-e82cea7ba8a0a61e.js",
-          "sha256": "e82cea7ba8a0a61e969a915851c5d225c21e3a0e44b365b70c95f704ed6a6201",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-573f3446633759da.js",
+          "sha256": "573f3446633759da0dbb4d6e1dc47dd75ffbfa4ca6854d59be213fb606eb4276",
           "size_bytes": 7941
         },
         {
@@ -348,8 +348,8 @@
           "cell_index": 86,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-402298cc289c0e86.js",
-          "sha256": "402298cc289c0e862c5fd1384e7d6da02323972877ebbf61319a3372ea3a2b60",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-7fe274d1b1353b24.js",
+          "sha256": "7fe274d1b1353b245944367f337b0356c6c45ab212ebc39799d355a1f284462a",
           "size_bytes": 16130
         },
         {
@@ -386,8 +386,8 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T02:54:25+00:00",
-      "exported_at_local": "22.07.2026, 04:54:25 CEST",
+      "exported_at": "2026-07-22T03:19:03+00:00",
+      "exported_at_local": "22.07.2026, 05:19:03 CEST",
       "findings": [
         {
           "cell_index": 3,
@@ -469,14 +469,14 @@
       ],
       "git": {
         "branch": "feat/presentation-design-audit",
-        "commit": "67f402aad35ba5d7b1a39d152b0c133a5b41f042",
+        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "67f402aad35b"
+        "short_commit": "e4faa894648e"
       },
       "output": "notebooks/02_U_Phase.html",
       "size_bytes": 409172,
-      "snapshot_sha256": "52d3c93306fd3cb5cd8e026161565bb62581ba541c4713455166b2e8f7d7a869",
+      "snapshot_sha256": "ef0b83e0bd423f4cdee32f66411d724a126e85b03c305652aa48aa36acb40aec",
       "source": "notebooks/02_U_Phase.ipynb",
       "source_sha256": "b3b38caaf248ff916d6b8948c96eefa842ca07a050a000813fdaf16884791591",
       "status": "ready",
@@ -626,17 +626,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-0b40568b9386338f.css",
-          "sha256": "0b40568b9386338fa271715e40092e98aa138a026e1833558b4e7b2d146577a1",
-          "size_bytes": 24348
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-95df13f54c8d3d1d.js",
-          "sha256": "95df13f54c8d3d1d25f73fa46f1b3fde3f46d08aea0ee72197f4da4b506630bd",
-          "size_bytes": 12410
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
         },
         {
           "cell_index": null,
@@ -768,8 +768,8 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T02:54:36+00:00",
-      "exported_at_local": "22.07.2026, 04:54:36 CEST",
+      "exported_at": "2026-07-22T03:19:18+00:00",
+      "exported_at_local": "22.07.2026, 05:19:18 CEST",
       "findings": [
         {
           "cell_index": 5,
@@ -781,14 +781,14 @@
       ],
       "git": {
         "branch": "feat/presentation-design-audit",
-        "commit": "67f402aad35ba5d7b1a39d152b0c133a5b41f042",
+        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "67f402aad35b"
+        "short_commit": "e4faa894648e"
       },
       "output": "notebooks/04_C_Phase.html",
       "size_bytes": 151265,
-      "snapshot_sha256": "d2528719c5e5555fcb3d0ffc411477e7f8086bb050a265c4e0c30b9180b96ec3",
+      "snapshot_sha256": "ed77da89842f9e5ec306274b28c873ff26e0e96a12fe244e5483af68f8e293bb",
       "source": "notebooks/04_C_Phase.ipynb",
       "source_sha256": "a5490511bbdc5b7ae3114201f86b98c0f1f25fe57d27bac73827cc4088733fca",
       "status": "ready",
@@ -796,6 +796,6 @@
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-22T02:54:36+00:00",
+  "generated_at": "2026-07-22T03:19:18+00:00",
   "schema_version": 1
 }

@@ -50,6 +50,7 @@ vollständig (Code + interaktive Plotly-Outputs) als offlinefähiges HTML — oh
 - [Notebook-Präsentationen](#notebook-präsentationen)
 - [Tech-Stack](#tech-stack)
 - [Dokumentation](#dokumentation)
+- [Verwandte Projekte](#verwandte-projekte)
 - [Lizenz & Datenquellen](#lizenz--datenquellen)
 
 ## QUA³CK-Phasen
@@ -180,6 +181,11 @@ Offline-Kopie, PDF und GitHub Pages beschreibt der
 - [docs/dataset/](docs/dataset/) — Datensatzbeschreibung (DSB_Unfallatlas)
 - [docs/course-material/](docs/course-material/) — Kursunterlagen als KI-Kontext
 - [docs/project/](docs/project/) — Repo-/Prozessdokumentation (Conventional Commits, Projektplan)
+
+## Verwandte Projekte
+
+- [EnergyCast-App](https://github.com/NiklasSkulll/EnergyCast-App) — verwandtes Notebook-Portfolioprojekt:
+  Prognose des Strombedarfs aus Wetterdaten, Solar-/Windeinspeisung und zeitlichen Mustern
 
 ## Lizenz & Datenquellen
 
