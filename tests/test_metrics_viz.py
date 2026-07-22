@@ -132,35 +132,29 @@ def test_plot_f1_recall_front_legend_label_unchanged_by_refactor(comparison_df):
     plt.close("all")
 
 
-def test_plot_roc_pr_curves_returns_two_axes():
+def test_plot_roc_pr_curves_returns_two_plotly_figures():
+    import plotly.graph_objects as go
+
     rng = np.random.default_rng(42)
     y_true = rng.integers(0, 2, size=200)
     models = {
         "champion": (y_true, rng.random(200)),
         "runner_up": (y_true, rng.random(200)),
     }
-    ax_roc, ax_pr = plot_roc_pr_curves(models, title_prefix="Test")
-    assert isinstance(ax_roc, plt.Axes)
-    assert isinstance(ax_pr, plt.Axes)
-    assert len(ax_roc.lines) >= 2  # 2 model curves (+ optional chance line)
-    assert len(ax_pr.lines) >= 2
-    plt.close("all")
+    roc_fig, pr_fig = plot_roc_pr_curves(models, title_prefix="Test")
+    assert isinstance(roc_fig, go.Figure)
+    assert isinstance(pr_fig, go.Figure)
+    assert len(roc_fig.data) == 3  # 2 model curves + chance line
+    assert len(pr_fig.data) == 2
+    assert roc_fig.layout.title.text == "Test ROC Curve"
+    assert pr_fig.layout.title.text == "Test Precision-Recall Curve"
 
 
-def test_plot_roc_pr_curves_accepts_external_axes():
-    rng = np.random.default_rng(42)
-    y_true = rng.integers(0, 2, size=100)
-    models = {"champion": (y_true, rng.random(100))}
-    _, (ax_roc_in, ax_pr_in) = plt.subplots(1, 2)
-    ax_roc, ax_pr = plot_roc_pr_curves(models, ax_roc=ax_roc_in, ax_pr=ax_pr_in)
-    assert ax_roc is ax_roc_in
-    assert ax_pr is ax_pr_in
-    plt.close("all")
+def test_plot_confusion_matrix_heatmap_returns_plotly_figure():
+    import plotly.graph_objects as go
 
-
-def test_plot_confusion_matrix_heatmap_returns_axes():
     cm = np.array([[23228, 20970], [53506, 170815]])
-    ax = plot_confusion_matrix_heatmap(cm, labels=["KSI", "slight"], title="Test CM")
-    assert isinstance(ax, plt.Axes)
-    assert ax.get_title() == "Test CM"
-    plt.close("all")
+    fig = plot_confusion_matrix_heatmap(cm, labels=["KSI", "slight"], title="Test CM")
+    assert isinstance(fig, go.Figure)
+    assert fig.layout.title.text == "Test CM"
+    assert fig.data[0].z.tolist() == cm.tolist()

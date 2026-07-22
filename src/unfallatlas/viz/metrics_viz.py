@@ -144,79 +144,95 @@ def plot_binary_f1_recall_front(
 
 def plot_roc_pr_curves(
     models: dict[str, tuple],
-    ax_roc: plt.Axes | None = None,
-    ax_pr: plt.Axes | None = None,
     title_prefix: str = "",
-) -> tuple[plt.Axes, plt.Axes]:
-    """Overlay ROC and PR curves for multiple (y_true, y_score) pairs.
+):
+    """Overlay interactive Plotly ROC and PR curves for multiple (y_true, y_score) pairs.
 
     Args:
         models: maps a display name to a (y_true, y_score) tuple, where
             y_score is the predicted probability / decision score for the
             positive (KSI) class.
-        ax_roc: Optional existing Axes for the ROC curve; created if None.
-        ax_pr: Optional existing Axes for the PR curve; created if None.
         title_prefix: Prepended to both plot titles.
 
     Returns:
-        (ax_roc, ax_pr) — the populated Axes objects.
+        (roc_fig, pr_fig) - two `plotly.graph_objects.Figure` instances.
     """
+    import plotly.graph_objects as go
     from sklearn.metrics import auc, precision_recall_curve, roc_curve
 
-    if ax_roc is None:
-        _, ax_roc = plt.subplots()
-    if ax_pr is None:
-        _, ax_pr = plt.subplots()
+    roc_fig = go.Figure()
+    pr_fig = go.Figure()
 
     for name, (y_true, y_score) in models.items():
         fpr, tpr, _ = roc_curve(y_true, y_score)
         roc_auc = auc(fpr, tpr)
-        ax_roc.plot(fpr, tpr, label=f"{name} (AUC={roc_auc:.3f})")
+        roc_fig.add_trace(
+            go.Scatter(
+                x=fpr, y=tpr, mode="lines", name=f"{name} (AUC={roc_auc:.3f})", hoverinfo="all"
+            )
+        )
 
         precision, recall, _ = precision_recall_curve(y_true, y_score)
         pr_auc = auc(recall, precision)
-        ax_pr.plot(recall, precision, label=f"{name} (AUC={pr_auc:.3f})")
+        pr_fig.add_trace(
+            go.Scatter(
+                x=recall,
+                y=precision,
+                mode="lines",
+                name=f"{name} (AUC={pr_auc:.3f})",
+                hoverinfo="all",
+            )
+        )
 
-    ax_roc.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Chance")
-    ax_roc.set_xlabel("False Positive Rate")
-    ax_roc.set_ylabel("True Positive Rate")
-    ax_roc.set_title(f"{title_prefix} ROC Curve".strip())
-    ax_roc.legend()
+    roc_fig.add_trace(
+        go.Scatter(
+            x=[0, 1], y=[0, 1], mode="lines", name="Chance", line=dict(dash="dash", color="gray")
+        )
+    )
+    roc_fig.update_layout(
+        title=f"{title_prefix} ROC Curve".strip(),
+        xaxis_title="False Positive Rate",
+        yaxis_title="True Positive Rate",
+        template="plotly_white",
+        legend=dict(
+            x=0.99, y=0.02, xanchor="right", yanchor="bottom", bgcolor="rgba(255,255,255,0.8)"
+        ),
+    )
 
-    ax_pr.set_xlabel("Recall")
-    ax_pr.set_ylabel("Precision")
-    ax_pr.set_title(f"{title_prefix} Precision-Recall Curve".strip())
-    ax_pr.legend()
+    pr_fig.update_layout(
+        title=f"{title_prefix} Precision-Recall Curve".strip(),
+        xaxis_title="Recall",
+        yaxis_title="Precision",
+        template="plotly_white",
+        legend=dict(
+            x=0.99, y=0.98, xanchor="right", yanchor="top", bgcolor="rgba(255,255,255,0.8)"
+        ),
+    )
 
-    return ax_roc, ax_pr
+    return roc_fig, pr_fig
 
 
-def plot_confusion_matrix_heatmap(
-    cm,
-    labels: list[str],
-    ax: plt.Axes | None = None,
-    title: str = "",
-) -> plt.Axes:
-    """Annotated confusion-matrix heatmap for a binary classifier."""
+def plot_confusion_matrix_heatmap(cm, labels: list[str], title: str = ""):
+    """Annotated interactive Plotly confusion-matrix heatmap for a binary classifier."""
     import numpy as np
-
-    if ax is None:
-        _, ax = plt.subplots()
+    import plotly.graph_objects as go
 
     cm = np.asarray(cm)
-    im = ax.imshow(cm, cmap="Blues")
-    ax.figure.colorbar(im, ax=ax)
+    x_labels = [f"Pred {label}" for label in labels]
+    y_labels = [f"True {label}" for label in labels]
 
-    ax.set_xticks(range(len(labels)))
-    ax.set_xticklabels([f"Pred {label}" for label in labels])
-    ax.set_yticks(range(len(labels)))
-    ax.set_yticklabels([f"True {label}" for label in labels])
-
-    cm_max = cm.max()
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            color = "white" if cm[i, j] > cm_max / 2 else "black"
-            ax.text(j, i, f"{cm[i, j]:,}", ha="center", va="center", color=color)
-
-    ax.set_title(title)
-    return ax
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=cm,
+            x=x_labels,
+            y=y_labels,
+            colorscale="Blues",
+            text=cm,
+            texttemplate="%{text:,}",
+            textfont={"size": 14},
+            hovertemplate="%{y} / %{x}: %{z:,}<extra></extra>",
+            showscale=True,
+        )
+    )
+    fig.update_layout(title=title, template="plotly_white", yaxis=dict(autorange="reversed"))
+    return fig
