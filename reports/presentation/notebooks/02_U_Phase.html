@@ -4,9 +4,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="light" name="color-scheme"/>
+<meta content="light dark" name="color-scheme"/>
 <title>Unfallatlas Deutschland U Phase</title>
-<link href="../assets/ui/presentation-9c511daa388be4d6.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-45986b6413adcb2b.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -92,27 +92,30 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .vi { color: #E06C75 } /* Name.Variable.Instance */
 .highlight .vm { color: #E06C75 } /* Name.Variable.Magic */
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
+<script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="8d67c5a30c22876549cbe85611ce6d1fb2596b6421686b1ac85ce75840865396">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="db1b13942df4b58ba598e1c9c75598002d5f80d2c350e5ed15b0c738444aafe0">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
+<a class="back-link" href="../index.html">← Zur Übersicht</a>
 <p class="document-kind">Unfallatlas Notebook</p>
 <h1>Unfallatlas Deutschland U Phase</h1>
 <p class="source-path">notebooks/02_U_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>2026-07-22T03:12:47+02:00</dd></div>
-<div><dt>Commit</dt><dd><code>151b65a7d94a</code></dd></div>
+<div><dt>Export</dt><dd>22.07.2026, 04:18:14 CEST</dd></div>
+<div><dt>Commit</dt><dd><code>fb74e77e3ca2</code></dd></div>
 <div><dt>Branch</dt><dd>main</dd></div>
-<div><dt>Repository</dt><dd>Arbeitsbaum geändert</dd></div>
+<div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
+<div><dt>Arbeitsbaum</dt><dd>Geändert</dd></div>
 <div><dt>Status</dt><dd><span class="status-pill" data-status="ready">ready</span></dd></div>
 <div><dt>Warnungen</dt><dd>7</dd></div>
 <div><dt>Ausführungsstand</dt><dd><span class="state-pill" data-state="fresh">Vollständig</span></dd></div>
 <div><dt>Zellen</dt><dd>56 Markdown, 55 Code</dd></div>
 <div><dt>Ausgaben</dt><dd>52 mit Ausgabe, 0 Fehlerausgabe</dd></div>
 </dl>
-<section aria-labelledby="findings-title" class="findings">
-<h2 id="findings-title">Hinweise zum Export</h2>
+<details class="findings" open="">
+<summary>Hinweise zum Export (11)</summary>
 <ul>
 <li data-severity="info"><strong>EXECUTED_NO_OUTPUT</strong>: Code cell was executed and legitimately stored no output.</li>
 <li data-severity="info"><strong>EXECUTED_NO_OUTPUT</strong>: Code cell was executed and legitimately stored no output.</li>
@@ -126,9 +129,10 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li data-severity="warning"><strong>LARGE_OUTPUT</strong>: Stored output is 22326335 bytes.</li>
 <li data-severity="warning"><strong>VERY_LARGE_NOTEBOOK_OUTPUT</strong>: Notebook stores 216670185 output bytes in total.</li>
 </ul>
-</section>
+</details>
 </div>
 </header>
+<div class="presentation-shell">
 <div aria-label="Ansichtssteuerung" class="presentation-toolbar">
 <button aria-controls="presentation-toc" aria-expanded="false" class="toc-trigger" data-action="toggle-toc" type="button">Inhalt</button>
 <button data-action="show-all-code" type="button">Code öffnen</button>
@@ -137,7 +141,6 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <button data-action="hide-all-output" type="button">Ausgaben schließen</button>
 <button data-action="print" type="button">Drucken</button>
 </div>
-<div class="presentation-shell">
 <nav aria-label="Inhaltsverzeichnis" class="toc" id="presentation-toc">
 <div class="toc-heading">
 <h2>Inhalt</h2>
@@ -273,6 +276,7 @@ Figures save as standalone <code>.html</code> files (preserve interactivity) and
 optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv pip install kaleido</code>).</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=3">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -355,8 +359,10 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=4">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -499,8 +505,10 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=5">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -567,8 +575,10 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=6">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -655,13 +665,13 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
   pandas         3.0.3
   numpy          2.4.5
   plotly         6.7.0
-  git_commit     151b65a
-  run_at_utc     2026-07-22T01:11:07Z
+  git_commit     fb74e77
+  run_at_utc     2026-07-22T01:32:55Z
   random_seed    42
 </pre></div>
 </div>
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_585268/1391053097.py:26: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_603210/1391053097.py:26: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
   "run_at_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
 </pre></div>
 </div>
@@ -670,8 +680,10 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=7">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -695,12 +707,13 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output"><pre>&lt;_duckdb.DuckDBPyConnection at 0x7f93d31c9270&gt;</pre></div>
+<div class="text-output"><pre>&lt;_duckdb.DuckDBPyConnection at 0x7f11f469bdb0&gt;</pre></div>
 </div>
 </div>
 </div>
 </div>
 </details>
+</div>
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
@@ -709,6 +722,7 @@ optionally as <code>.png</code> if <code>kaleido</code> is installed (<code>uv p
 how many distinct values does each one carry?</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=9">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -948,8 +962,10 @@ how many distinct values does each one carry?</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=10">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1187,6 +1203,7 @@ how many distinct values does each one carry?</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="semantic-type-annotation"></span></p>
@@ -1307,6 +1324,7 @@ the documentation alone.</p>
 <h2 id="2-%E2%80%94-Volume-and-temporal-coverage">2 — Volume and temporal coverage<a class="anchor-link" href="#2-%E2%80%94-Volume-and-temporal-coverage">¶</a></h2><p>Verifies the Q-phase assumption: ~2.09 M rows, 9 vintages 2016 – 2024.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=13">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1368,8 +1386,10 @@ the documentation alone.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=14">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1479,8 +1499,10 @@ the documentation alone.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=15">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1543,6 +1565,7 @@ the documentation alone.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -1566,6 +1589,7 @@ and consistency rules.</p>
 <h3 id="3.1--Missing-values">3.1  Missing values<a class="anchor-link" href="#3.1--Missing-values">¶</a></h3>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=19">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1621,8 +1645,10 @@ and consistency rules.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=20">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1685,6 +1711,7 @@ and consistency rules.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -1704,6 +1731,7 @@ must be hunted explicitly. The Unfallatlas codebook uses small positive
 integers, so any negative numeric value is suspicious.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=23">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1875,8 +1903,10 @@ integers, so any negative numeric value is suspicious.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=24">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1918,12 +1948,14 @@ integers, so any negative numeric value is suspicious.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="33-duplicates"></span></p>
 <h3 id="3.3--Duplicates">3.3  Duplicates<a class="anchor-link" href="#3.3--Duplicates">¶</a></h3>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=26">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1977,52 +2009,52 @@ integers, so any negative numeric value is suspicious.</p>
 <tbody>
 <tr>
 <th>0</th>
-<td>57257</td>
+<td>94161</td>
 <td>9</td>
 </tr>
 <tr>
 <th>1</th>
-<td>57305</td>
+<td>94169</td>
 <td>9</td>
 </tr>
 <tr>
 <th>2</th>
-<td>57489</td>
+<td>94170</td>
 <td>9</td>
 </tr>
 <tr>
 <th>3</th>
-<td>57527</td>
+<td>94260</td>
 <td>9</td>
 </tr>
 <tr>
 <th>4</th>
-<td>57528</td>
+<td>94261</td>
 <td>9</td>
 </tr>
 <tr>
 <th>5</th>
-<td>57550</td>
+<td>94277</td>
 <td>9</td>
 </tr>
 <tr>
 <th>6</th>
-<td>57579</td>
+<td>94311</td>
 <td>9</td>
 </tr>
 <tr>
 <th>7</th>
-<td>57678</td>
+<td>94348</td>
 <td>9</td>
 </tr>
 <tr>
 <th>8</th>
-<td>57691</td>
+<td>94526</td>
 <td>9</td>
 </tr>
 <tr>
 <th>9</th>
-<td>57700</td>
+<td>94534</td>
 <td>9</td>
 </tr>
 </tbody>
@@ -2034,8 +2066,10 @@ integers, so any negative numeric value is suspicious.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=27">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2075,12 +2109,14 @@ integers, so any negative numeric value is suspicious.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="34-range-checks"></span></p>
 <h3 id="3.4--Range-checks">3.4  Range checks<a class="anchor-link" href="#3.4--Range-checks">¶</a></h3><p>Domain-bound checks catch errors that statistical outlier rules will miss.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=29">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2180,12 +2216,14 @@ integers, so any negative numeric value is suspicious.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="35-consistency-rules"></span></p>
 <h3 id="3.5--Consistency-rules">3.5  Consistency rules<a class="anchor-link" href="#3.5--Consistency-rules">¶</a></h3><p>Domain rule: every accident must involve at least one transport mode.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=31">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2227,6 +2265,7 @@ integers, so any negative numeric value is suspicious.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -2254,6 +2293,7 @@ only the label encoding changes.</p>
 </blockquote>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=35">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2337,8 +2377,10 @@ only the label encoding changes.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=36">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2370,8 +2412,10 @@ only the label encoding changes.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=37">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2464,6 +2508,7 @@ only the label encoding changes.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="42-stability-across-years"></span></p>
@@ -2471,6 +2516,7 @@ only the label encoding changes.</p>
 proportions drift across years, the held-out performance estimate is biased.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=39">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2588,8 +2634,10 @@ proportions drift across years, the held-out performance estimate is biased.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=40">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2648,6 +2696,7 @@ proportions drift across years, the held-out performance estimate is biased.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -2662,6 +2711,7 @@ years — no structural drift that would invalidate the chronological split.</p>
 countplots; binary features a grid of counts; continuous features histograms.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=43">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2764,11 +2814,13 @@ countplots; binary features a grid of counts; continuous features histograms.</p
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Daylight (ULICHTVERH=0) and dry road (STRZUSTAND=0) dominate as expected. For accident type (UART), collisions with merging/crossing vehicles (code 5) are most frequent, while road-departure accidents (codes 8/9) carry the highest fatality rate. "Other type" (code 0) accounts for 15 % of records and has an unusual profile: 58 % bicycle involvement.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=45">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2857,11 +2909,13 @@ countplots; binary features a grid of counts; continuous features histograms.</p
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Car involvement (IstPKW) dominates at ~77 % of accidents. The high bicycle share (~30 %) is notable and relevant to the severity model, since cyclist accidents have a distinct injury profile. Heavy-goods vehicles (IstGkfz) are rare (~4 %) but associated with higher fatality rates. All transport-mode flags enter the model as binary features.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=47">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2944,6 +2998,7 @@ countplots; binary features a grid of counts; continuous features histograms.</p
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -2961,6 +3016,7 @@ measure for categorical-vs-categorical association is <strong>Cramér's V</stron
 (range 0 … 1).</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=50">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -3300,8 +3356,10 @@ measure for categorical-vs-categorical association is <strong>Cramér's V</stron
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=51">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -3374,6 +3432,7 @@ measure for categorical-vs-categorical association is <strong>Cramér's V</stron
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -3387,6 +3446,7 @@ probe in §9 tests whether those structural correlations introduce leakage.</p>
 </blockquote>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=53">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -3505,6 +3565,7 @@ probe in §9 tests whether those structural correlations introduce leakage.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -3525,6 +3586,7 @@ Dunkelheit + Winterglatt) rather than as standalone predictors.</p>
 <h2 id="7-%E2%80%94-Temporal-patterns">7 — Temporal patterns<a class="anchor-link" href="#7-%E2%80%94-Temporal-patterns">¶</a></h2><p>Hourly profile, weekday × hour heatmaps, and stability checks.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=57">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -3637,6 +3699,7 @@ Dunkelheit + Winterglatt) rather than as standalone predictors.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Accident frequency peaks during the afternoon commute
@@ -3647,6 +3710,7 @@ speeds and lower visibility. USTUNDE is encoded as cyclic (sin/cos) features
 for modelling.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=59">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -3783,6 +3847,7 @@ for modelling.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -3801,6 +3866,7 @@ Bundesland-level aggregate of fatal-accident share. The Bundesland is
 derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</code>).</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=62">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -3894,7 +3960,7 @@ derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</c
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_585268/3868951954.py:14: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
+<div class="text-output stream-output stderr-output"><pre>/tmp/ipykernel_603210/3868951954.py:14: DeprecationWarning: *scatter_mapbox* is deprecated! Use *scatter_map* instead. Learn more at: https://plotly.com/python/mapbox-to-maplibre/
   fig = px.scatter_mapbox(
 </pre></div>
 </div>
@@ -3908,11 +3974,13 @@ derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</c
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Accidents are concentrated in urban agglomerations (Berlin, Ruhr, Munich), but fatal accidents (red) occur disproportionately on rural roads and federal highways where higher speeds and absent median barriers amplify injury outcomes. This urban–rural contrast supports hypothesis H4 (spatial heterogeneity).</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=64">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4130,8 +4198,10 @@ derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</c
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=65">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4208,6 +4278,7 @@ derived from the first two digits of <code>UKREIS</code> (per <code>AGENTS.md</c
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -4235,6 +4306,7 @@ treating these columns as modelling inputs, three conditions must hold:</p>
 or adopting an explicit missing-data strategy before A³.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=68">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4347,8 +4419,10 @@ Weather columns found : ['dwd_temp_air_2m', 'dwd_precip_mm', 'dwd_visibility_m',
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=69">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4411,8 +4485,10 @@ dwd_station_dist_km          0       0.0000
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=70">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4473,8 +4549,10 @@ dwd_station_dist_km          0       0.0000
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=71">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4555,8 +4633,10 @@ dwd_station_dist_km          0       0.0000
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=72">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4641,6 +4721,7 @@ dwd_station_dist_km          0       0.0000
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -4664,6 +4745,7 @@ variables (precipitation, visibility) call for log1p; near-symmetric ones
 (temperature, wind speed) do not.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=75">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4740,6 +4822,7 @@ variables (precipitation, visibility) call for log1p; near-symmetric ones
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Air temperature is bimodal — a winter peak around
@@ -4753,6 +4836,7 @@ Wind speed is right-skewed with a modal peak around 3 m/s and a tail
 extending to ~15 m/s.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=77">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4856,7 +4940,7 @@ extending to ~15 m/s.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-d15822e53daacccb.js" data-chart-id="02_U_Phase-cell-77-output-0" data-payload-key="plotly-f612690f37328ac079a7bc2c02cbec940f7f229724fa4665d94654b297583f5c" data-size-bytes="7941" id="02_U_Phase-cell-77-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-d1e3a4bfa86907cc.js" data-chart-id="02_U_Phase-cell-77-output-0" data-payload-key="plotly-928bdcc0bc99ce3d1fcf989988a58e7170edeb07ed1573fb2ca0db1ba9b17da7" data-size-bytes="7941" id="02_U_Phase-cell-77-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -4864,6 +4948,7 @@ extending to ~15 m/s.</p>
 </div>
 </div>
 </details>
+</div>
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
@@ -4875,6 +4960,7 @@ winter levels by December. Winter months have more icy road conditions
 (STRZUSTAND=2), which is a relevant interaction target with temperature in A³.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=79">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -4981,6 +5067,7 @@ winter levels by December. Winter months have more icy road conditions
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -5003,6 +5090,7 @@ Cramér's V and observation-driven framework as §6. These findings feed
 directly into the §10 decision table.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=82">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5057,6 +5145,7 @@ directly into the §10 decision table.</p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> The chart shows two precipitation buckets — dry (0 mm)
@@ -5066,6 +5155,7 @@ on severity is negligible in isolation, consistent with the low Cramér's V
 (0.008).</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=84">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5170,6 +5260,7 @@ Windgeschwindigkeit (m/s)     0.0181
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> All four weather features show a weak positive association
@@ -5180,6 +5271,7 @@ primary predictors (UART, UTYP1) rather than replacing them, and their value
 likely lies in interaction terms rather than standalone signal.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=86">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5291,7 +5383,7 @@ likely lies in interaction terms rather than standalone signal.</p>
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-8336f50fc8bad9eb.js" data-chart-id="02_U_Phase-cell-86-output-0" data-payload-key="plotly-5ba39768d3aff96004360da01d062ff060eb1ddf43dbd12b30199f4a84d34047" data-size-bytes="16130" id="02_U_Phase-cell-86-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/02_U_Phase/plotly-7c461637f50a18e0.js" data-chart-id="02_U_Phase-cell-86-output-0" data-payload-key="plotly-87386be9fff394e6055fb7b66e85b7b1310406a36fff5cd294b434b9ada6ffd5" data-size-bytes="16130" id="02_U_Phase-cell-86-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -5299,6 +5391,7 @@ likely lies in interaction terms rather than standalone signal.</p>
 </div>
 </div>
 </details>
+</div>
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
@@ -5331,6 +5424,7 @@ weather join's day-of-month averaging, §8.5) — not solvable without a paid
 historical-OSM-snapshot service, out of scope here.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=89">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5466,7 +5560,7 @@ historical-OSM-snapshot service, out of scope here.</p>
 <div class="output_area">
 <div class="text-output stream-output stdout-output"><pre>Fetching OSM road networks for 16 states (uses per-state cache if present)...
 Progress log (works under nbconvert too): /home/jonas/Documents/Code/unfallatlas-qua3ck/reports/u_phase_osm_progress.log
-2026-07-22 03:11:36,188 [unfallatlas.data.osm] Using cached spatially-enriched DataFrame at /home/jonas/Documents/Code/unfallatlas-qua3ck/data/interim/accidents_with_weather_spatial.parquet
+2026-07-22 03:33:28,328 [unfallatlas.data.osm] Using cached spatially-enriched DataFrame at /home/jonas/Documents/Code/unfallatlas-qua3ck/data/interim/accidents_with_weather_spatial.parquet
 </pre></div>
 </div>
 <div class="output_area">
@@ -5486,8 +5580,10 @@ dtype: float64
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=90">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5530,8 +5626,10 @@ dtype: float64
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=91">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5574,6 +5672,7 @@ dtype: float64
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="9--leakage-audit"></span></p>
@@ -5589,6 +5688,7 @@ severity outcome. We measure the conditional-entropy reduction:</p>
 <p>A reduction near 100 % means the feature definitionally encodes the target.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=94">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5698,8 +5798,10 @@ USTUNDE          0.7527        0.3%  ok
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=95">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5796,6 +5898,7 @@ USTUNDE          0.7527        0.3%  ok
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -5816,6 +5919,7 @@ features retained; no review triggered.</strong></p>
 <h3 id="9.2--Chronological-split-verification">9.2  Chronological split verification<a class="anchor-link" href="#9.2--Chronological-split-verification">¶</a></h3>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=98">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5907,8 +6011,10 @@ features retained; no review triggered.</strong></p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=99">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -5996,12 +6102,14 @@ features retained; no review triggered.</strong></p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="93-no-overlap-check"></span></p>
 <h3 id="9.3--No-overlap-check">9.3  No-overlap check<a class="anchor-link" href="#9.3--No-overlap-check">¶</a></h3><p>A sanity check: no <code>OBJECTID</code> may appear in more than one split.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=101">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -6055,6 +6163,7 @@ features retained; no review triggered.</strong></p>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -6073,6 +6182,7 @@ in real time. No future information enters by construction.</p>
 <p>The probe below documents the rural-proxy character of <code>dwd_station_dist_km</code>.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=104">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -6159,6 +6269,7 @@ All DWD values are historical observations — no future data can enter.
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <blockquote>
@@ -6179,6 +6290,7 @@ construction (it describes the road, not the crash), so a strong result
 should read as a real severity signal, not a leak.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=107">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -6237,6 +6349,7 @@ Reduction: 0.2%
 </div>
 </div>
 </details>
+</div>
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
@@ -6588,6 +6701,6 @@ implement the decisions above and train the first baseline models.</p>
 </div>
 <button class="back-to-top" data-action="back-to-top" type="button">Nach oben</button>
 <p aria-live="polite" class="sr-only" data-status-region=""></p>
-<script defer="" src="../assets/ui/presentation-e441c0f491aa8ad4.js"></script>
+<script defer="" src="../assets/ui/presentation-ee5efcb625d6bb4c.js"></script>
 </body>
 </html>

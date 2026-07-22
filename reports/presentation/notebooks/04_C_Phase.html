@@ -4,9 +4,9 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<meta content="light" name="color-scheme"/>
+<meta content="light dark" name="color-scheme"/>
 <title>Unfallatlas Deutschland C Phase</title>
-<link href="../assets/ui/presentation-9c511daa388be4d6.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-45986b6413adcb2b.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -92,33 +92,37 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .vi { color: #E06C75 } /* Name.Variable.Instance */
 .highlight .vm { color: #E06C75 } /* Name.Variable.Magic */
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
+<script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="bb21f0bd402acdab2b4492fdfa762e1e62cf13ed5cd36445e310561471f94b06">
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="40ff205ba382c4ac288194b861f2f5dc915faefabbe56a95ac8c31ab37bd79fc">
 <a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
 <header class="presentation-header">
 <div class="header-content">
+<a class="back-link" href="../index.html">← Zur Übersicht</a>
 <p class="document-kind">Unfallatlas Notebook</p>
 <h1>Unfallatlas Deutschland C Phase</h1>
 <p class="source-path">notebooks/04_C_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>2026-07-22T03:12:59+02:00</dd></div>
-<div><dt>Commit</dt><dd><code>151b65a7d94a</code></dd></div>
+<div><dt>Export</dt><dd>22.07.2026, 04:18:26 CEST</dd></div>
+<div><dt>Commit</dt><dd><code>fb74e77e3ca2</code></dd></div>
 <div><dt>Branch</dt><dd>main</dd></div>
-<div><dt>Repository</dt><dd>Arbeitsbaum geändert</dd></div>
+<div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
+<div><dt>Arbeitsbaum</dt><dd>Geändert</dd></div>
 <div><dt>Status</dt><dd><span class="status-pill" data-status="ready">ready</span></dd></div>
 <div><dt>Warnungen</dt><dd>1</dd></div>
 <div><dt>Ausführungsstand</dt><dd><span class="state-pill" data-state="fresh">Vollständig</span></dd></div>
 <div><dt>Zellen</dt><dd>16 Markdown, 18 Code</dd></div>
 <div><dt>Ausgaben</dt><dd>18 mit Ausgabe, 0 Fehlerausgabe</dd></div>
 </dl>
-<section aria-labelledby="findings-title" class="findings">
-<h2 id="findings-title">Hinweise zum Export</h2>
+<details class="findings">
+<summary>Hinweise zum Export (1)</summary>
 <ul>
 <li data-severity="warning"><strong>LARGE_OUTPUT</strong>: Stored output is 5732320 bytes.</li>
 </ul>
-</section>
+</details>
 </div>
 </header>
+<div class="presentation-shell">
 <div aria-label="Ansichtssteuerung" class="presentation-toolbar">
 <button aria-controls="presentation-toc" aria-expanded="false" class="toc-trigger" data-action="toggle-toc" type="button">Inhalt</button>
 <button data-action="show-all-code" type="button">Code öffnen</button>
@@ -127,7 +131,6 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <button data-action="hide-all-output" type="button">Ausgaben schließen</button>
 <button data-action="print" type="button">Drucken</button>
 </div>
-<div class="presentation-shell">
 <nav aria-label="Inhaltsverzeichnis" class="toc" id="presentation-toc">
 <div class="toc-heading">
 <h2>Inhalt</h2>
@@ -170,6 +173,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <p><strong>Champion (A³-Ergebnis):</strong> <code>random_forest</code>, klassen-gewichtet, Optuna-getunt, Schwellenwert 0.4986. Test-2024: macro-F1 0.6026, Recall(KSI) 0.5255; beide Gates (macro-F1 ≥ 0.55, Recall(KSI) ≥ 0.50) <strong>bestanden</strong>.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=1">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -285,8 +289,10 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=2">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -379,6 +385,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="1--systematischer-modellvergleich"></span></p>
@@ -387,6 +394,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 <p>Die binäre Formulierung behandelt das Klassenungleichgewicht (~20/80) über Klassengewichtung plus schwellenwert-optimales Threshold-Moving (A³ §17) statt SMOTE/ADASYN; die multiclass-SMOTE/ADASYN-Vergleiche aus A³ §6 wurden durch die in A³ §11 bewiesene 3-Klassen-Obergrenze gegenstandslos.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=4">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -521,8 +529,10 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=5">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -570,8 +580,10 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=6">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -610,6 +622,7 @@ Test-2024 macro-F1 (A³ record): 0.6026
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Die ROC-Kurve liegt deutlich über der Zufalls-Diagonale, was ein
@@ -625,6 +638,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <h2 id="2-%E2%80%94-Fehleranalyse-nach-Slices">2 — Fehleranalyse nach Slices<a class="anchor-link" href="#2-%E2%80%94-Fehleranalyse-nach-Slices">¶</a></h2><p>False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (<code>UART</code>), dominanter OSM-Straßenklasse, Straßenzustand (<code>STRZUSTAND</code>), Lichtverhältnissen (<code>ULICHTVERH</code>), Niederschlagskategorie (<code>_precip_bucket</code>, aus <code>dwd_precip_mm</code> abgeleitet) und Tageszeit (<code>USTUNDE</code>, Unfallstunde 0–23), um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=8">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -903,8 +917,10 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=9">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -973,6 +989,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Beobachtung:</strong> Die höchsten False-Negative-Raten treten bei <code>UART</code>-Kategorien auf: <code>UART=1</code> (Kollision mit haltendem/parkendem Fahrzeug, 89,0 % FN-Rate, n=14.673), <code>UART=3</code> (Seitenkollision, 74,1 %) und <code>UART=2</code> (Auffahrunfall, 71,5 %). Auch <code>STRZUSTAND=2</code> (Winterglätte, 68,5 %, wenn auch mit kleinerem n=4.731) und <code>UART=5</code> (Abbiege-/Einbiegeunfall, der häufigste Unfalltyp, 68,0 %) liegen weit oben. Bemerkenswert: Gerade die von A³ §20 als stärkstes Einzelmerkmal identifizierte Variable <code>UART</code> (Cramér's V=0,1801) dominiert auch hier die Fehlerliste: selbst das informativste verfügbare Merkmal reicht nicht aus, um KSI-Fälle innerhalb dieser Unfalltypen zuverlässig zu erkennen. Das deckt sich mit der in §6 aufgegriffenen Feature-Obergrenze: Die Fehler sind nicht zufällig verteilt, sondern konzentrieren sich systematisch dort, wo die verfügbaren Merkmale am wenigsten trennscharf sind.</p>
@@ -983,6 +1000,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <h2 id="3-%E2%80%94-Formale-KPI-Validierung:-Go/No-Go">3 — Formale KPI-Validierung: Go/No-Go<a class="anchor-link" href="#3-%E2%80%94-Formale-KPI-Validierung:-Go/No-Go">¶</a></h2><p>Explizite Prüfung des Champions gegen die in der Q-Phase festgelegten Akzeptanzkriterien für die binäre KSI-Formulierung, auf Basis der in §0 frisch berechneten Test-2024-Metriken (<code>sanity_metrics</code>).</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=12">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1085,6 +1103,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="4--qualitative-bewertungsmatrix"></span></p>
@@ -1092,6 +1111,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <p><strong>Gewichtung:</strong> macro-F1 und Recall(KSI) je 30 % (Kernmetriken der Q-Phase-Gates), die übrigen vier Kriterien je 10 %.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=14">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1119,7 +1139,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div class="text-output stream-output stdout-output"><pre>Champion latency: 106.9 ms per 1,000 rows
+<div class="text-output stream-output stdout-output"><pre>Champion latency: 92.8 ms per 1,000 rows
 </pre></div>
 </div>
 </div>
@@ -1127,8 +1147,10 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=15">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1208,8 +1230,10 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=16">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1348,7 +1372,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <td>random_forest (champion)</td>
 <td>0.601093</td>
 <td>0.540138</td>
-<td>106.91394</td>
+<td>92.796487</td>
 <td>0.8</td>
 <td>0.8</td>
 <td>20</td>
@@ -1359,7 +1383,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <td>xgboost</td>
 <td>0.569937</td>
 <td>0.682418</td>
-<td>106.91394</td>
+<td>92.796487</td>
 <td>0.6</td>
 <td>0.8</td>
 <td>20</td>
@@ -1370,7 +1394,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <td>lightgbm</td>
 <td>0.566152</td>
 <td>0.689739</td>
-<td>106.91394</td>
+<td>92.796487</td>
 <td>0.6</td>
 <td>0.8</td>
 <td>20</td>
@@ -1385,6 +1409,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Hinweis zur Latenz, Robustheit und den Trainingskosten:</strong> Nur die Champion-Pipeline ist als Artefakt gespeichert (<code>a3_binary_best_model.joblib</code>); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden; der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Robustheits-Score ist für alle drei Familien identisch (<code>ROBUSTNESS_SCORE</code>, oben empirisch geprüft): Alle drei teilen sich dieselbe <code>ColumnTransformer</code>-Preprocessing-Pipeline, daher ist die Behandlung fehlender OSM/DWD-Werte eine Eigenschaft der Pipeline, nicht des Klassifikators. Der Trainingskosten-Score (<code>optuna_trials</code>) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher ebenfalls für alle drei Familien identisch; auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Alle drei Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit.</p>
@@ -1394,6 +1419,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 <h2 id="5-%E2%80%94-SHAP-Erkl%C3%A4rbarkeit">5 — SHAP-Erklärbarkeit<a class="anchor-link" href="#5-%E2%80%94-SHAP-Erkl%C3%A4rbarkeit">¶</a></h2><p><code>TreeExplainer</code> auf einer stratifizierten Stichprobe von 5.000 Zeilen aus Test-2024 (2.500 pro Klasse); die vollen ~223.000 Test-2024-Zeilen sind für SHAP nicht praktikabel. Zusätzlich wird <code>approximate=True</code> (Saabas-Algorithmus) verwendet: Der Champion hat 180 Bäume mit exakt Tiefe 23 und im Schnitt ~41.355 Blättern pro Baum (insgesamt ~7,4 Mio. Blätter); für Bäume dieser Größe ist die exakte SHAP-Berechnung (Komplexität ~O(Blätter·Tiefe²)) empirisch bestätigt unpraktikabel (ein Testlauf mit 50 Zeilen ohne <code>approximate=True</code> lief über 10 Minuten, ohne zu terminieren; mit <code>approximate=True</code> dauerten 500 Zeilen 0,11 Sekunden). Diese Stichprobengröße und die Approximation sind bewusste, hier dokumentierte Entscheidungen, keine stillschweigenden Kürzungen. Zunächst die globale Sicht (Summary/Beeswarm + mittlere absolute SHAP-Werte), danach vier konkrete Fallbeispiele.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=19">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1495,8 +1521,10 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=20">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1629,8 +1657,10 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=21">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1697,6 +1727,7 @@ links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüs
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><strong>Interpretation:</strong> Im Beeswarm-Plot verschiebt Rot (hoher Feature-Wert) den SHAP-Wert für die
@@ -1707,6 +1738,7 @@ einzelnes Feature dominiert (§6 ordnet diese Rangfolge gegen die Literatur ein)
 folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorhersagen auswirkt.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=23">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1774,8 +1806,10 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
 </div>
 </details>
 </div>
+</div>
 </article>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=24">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1821,7 +1855,12 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
 <span class="normal">37</span>
 <span class="normal">38</span>
 <span class="normal">39</span>
-<span class="normal">40</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">expected_value</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">expected_value</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span></pre></div></td><td class="code"><div><pre><span></span><span class="n">expected_value</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">expected_value</span>
 <span class="n">expected_value_ksi</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">expected_value</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expected_value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">expected_value</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span>
@@ -1836,7 +1875,12 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
     <span class="p">)</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">N_WATERFALL_FEATURES</span><span class="p">)</span>
     <span class="n">other_sum</span> <span class="o">=</span> <span class="n">contributions</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">top_contrib</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
-    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Basiswert"</span><span class="p">,</span> <span class="o">*</span><span class="n">top_contrib</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="s2">"Übrige Features"</span><span class="p">,</span> <span class="s2">"Vorhersage"</span><span class="p">]</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"Basiswert"</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">(</span><span class="n">humanize_feature_name</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">top_contrib</span><span class="o">.</span><span class="n">index</span><span class="p">),</span>
+        <span class="s2">"Übrige Features"</span><span class="p">,</span>
+        <span class="s2">"Vorhersage"</span><span class="p">,</span>
+    <span class="p">]</span>
     <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">expected_value_ksi</span><span class="p">,</span> <span class="o">*</span><span class="n">top_contrib</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">other_sum</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
     <span class="n">measures</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"absolute"</span><span class="p">,</span> <span class="o">*</span><span class="p">([</span><span class="s2">"relative"</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">top_contrib</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)),</span> <span class="s2">"total"</span><span class="p">]</span>
 
@@ -1873,22 +1917,22 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
 <div class="output_wrapper">
 <div class="output">
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9768edd1e5d2f4c3.js" data-chart-id="04_C_Phase-cell-24-output-0" data-payload-key="plotly-4aeb039a957484102558986e612ebaa1c211e570acc18842e356a064c16eeaf7" data-size-bytes="7867" id="04_C_Phase-cell-24-output-0" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-3925f79241a58173.js" data-chart-id="04_C_Phase-cell-24-output-0" data-payload-key="plotly-bdaebfc7ab90579028a4538d89e6271dfb9551d1c23447616746b3cf09943f99" data-size-bytes="8011" id="04_C_Phase-cell-24-output-0" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-83dbb6f3ecf447f7.js" data-chart-id="04_C_Phase-cell-24-output-1" data-payload-key="plotly-bc81fe64bbd18de03401db0cfbea0a8811e90794fa05d9b4dec719338278ac86" data-size-bytes="7857" id="04_C_Phase-cell-24-output-1" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9ef56a83be568676.js" data-chart-id="04_C_Phase-cell-24-output-1" data-payload-key="plotly-3b0ba00ed326489c19aac0fb4c15fa4d54774eeebbf9f630718e593c6710f522" data-size-bytes="8000" id="04_C_Phase-cell-24-output-1" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-edfc4eb98cc99faa.js" data-chart-id="04_C_Phase-cell-24-output-2" data-payload-key="plotly-30b0dc1cdeada8d1e708c6a470248218a796213f4d23d7e6ead43b6a65181dc5" data-size-bytes="7846" id="04_C_Phase-cell-24-output-2" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-4ce183c7829653a9.js" data-chart-id="04_C_Phase-cell-24-output-2" data-payload-key="plotly-a9e8c66e5cc67a98bd5b06767e2364d65ca726f5144ab1a803b0044d051ddb7b" data-size-bytes="7990" id="04_C_Phase-cell-24-output-2" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
 <div class="output_area">
-<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-9bd4227381c89c64.js" data-chart-id="04_C_Phase-cell-24-output-3" data-payload-key="plotly-ae0333787bdf49a29a9ed873166b0233fcd732e07cc6a7959b71130fdde21033" data-size-bytes="7837" id="04_C_Phase-cell-24-output-3" role="img">
+<div aria-label="Interaktive Plotly-Grafik" class="plotly-output" data-asset="../assets/notebooks/04_C_Phase/plotly-93e0680d97e14517.js" data-chart-id="04_C_Phase-cell-24-output-3" data-payload-key="plotly-9a8a9e208ee90f55a271933c965eed5f281a136382c48b9bb1537a858a642f19" data-size-bytes="7976" id="04_C_Phase-cell-24-output-3" role="img">
 <p class="output-placeholder">Grafik wird beim Öffnen geladen.</p>
 </div>
 </div>
@@ -1896,6 +1940,7 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
 </div>
 </div>
 </details>
+</div>
 </div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
@@ -1907,6 +1952,7 @@ folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorh
 <p>Diese SHAP-Analyse ergänzt eine dritte, unabhängige Sicht auf dieselbe Frage: die mittleren absoluten SHAP-Werte über die 5.000er-Stichprobe:</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=27">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -1948,6 +1994,7 @@ dtype: float64</pre></div>
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p>Die global wichtigsten SHAP-Features sind <code>osm_way_count</code>, <code>IstKrad</code>, <code>UTYP1_1</code>, <code>osm_road_density</code>, <code>UART_2</code>, <code>IstPKW</code>, <code>UKREIS_target_enc</code>, <code>osm_maxspeed_mean</code>; eine Mischung aus OSM-Straßenkontext, Fahrzeugtyp-Flags und Unfalltyp-Kategorien, nicht eine einzelne dominante Variable. Das deckt sich mit A³ §20/§21: Der Champion stützt sich stärker auf OSM-Straßenkontext- und Geo-Features als primär auf die assoziationsstärksten <code>UART</code>/<code>UTYP1</code>-Codes; ein Modell, das schwaches Signal über viele Merkmale hinweg extrahiert, statt sich auf ein dominantes Prädiktor zu verlassen.</p>
@@ -1975,6 +2022,7 @@ dtype: float64</pre></div>
 <h2 id="9-%E2%80%94-%C3%9Cbergabe-an-die-K-Phase">9 — Übergabe an die K-Phase<a class="anchor-link" href="#9-%E2%80%94-%C3%9Cbergabe-an-die-K-Phase">¶</a></h2><p>Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (<code>a3_binary_best_model.joblib</code>), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp, gültigem Wertebereich bzw. Kategorienliste (aus den echten Trainingsdaten abgeleitet, nicht angenommen) und Herkunft (Unfallatlas roh/abgeleitet, DWD-Wetteranreicherung oder OSM-Straßenkontext-Anreicherung, jeweils aus der U-Phase) auflistet, damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.</p>
 </section>
 <article class="notebook-cell code-notebook-cell">
+<div class="cell-card">
 <div class="cell border-box-sizing code_cell rendered" id="cell-id=32">
 <details class="code-cell">
 <summary aria-expanded="false">Code</summary>
@@ -2024,6 +2072,7 @@ Model artifact: data/processed/a3_binary_best_model.joblib (unchanged, re-confir
 </div>
 </details>
 </div>
+</div>
 </article>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="zusammenfassung-der-c-phase"></span></p>
@@ -2046,6 +2095,6 @@ Model artifact: data/processed/a3_binary_best_model.joblib (unchanged, re-confir
 </div>
 <button class="back-to-top" data-action="back-to-top" type="button">Nach oben</button>
 <p aria-live="polite" class="sr-only" data-status-region=""></p>
-<script defer="" src="../assets/ui/presentation-e441c0f491aa8ad4.js"></script>
+<script defer="" src="../assets/ui/presentation-ee5efcb625d6bb4c.js"></script>
 </body>
 </html>
