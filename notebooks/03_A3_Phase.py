@@ -1850,8 +1850,9 @@ print(f"Binary champion-search front plot saved to {out_path}")
 # %% [markdown]
 # ## 20 — Binary KSI Evidence: Association & Feature Importance
 #
-# `docs/project/Technical_Review_Next_Steps.md` established Cramer's V <= 0.13 for the strongest
-# available feature against the *3-class* `UKATGEORIE` target. This section repeats that association
+# U-Phase SS6 (Cramer's-V matrix) established Cramer's V <= 0.13 for the strongest
+# available feature against the *3-class* `UKATGEORIE` target - the finding SS11's ceiling
+# argument builds on. This section repeats that association
 # check directly against the binary KSI label used by this model, and reports the actual binary
 # champion's feature importances (when available), so the Test-2024 result below is contextualised
 # against the same feature-limitation evidence used for the 3-class ceiling argument (SS11), rather
