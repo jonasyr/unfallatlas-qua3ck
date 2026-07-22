@@ -18,7 +18,7 @@
 #
 # ## Position im QUA³CK-Prozess
 #
-# Die **C-Phase (Conclude & Compare)** schließt den QUA³CK-Zyklus für die binäre KSI-Klassifikation (getötet/schwerverletzt vs. leichtverletzt) ab. Sie trainiert **nichts neu**: sie lädt die in der A³-Phase gespeicherten Artefakte (`a3_binary_best_model.joblib`, `a3_binary_model_card.json`, `a3_binary_model_comparison.csv`) und liefert:
+# Die **C-Phase (Conclude & Compare)** schließt den QUA³CK-Zyklus für die binäre KSI-Klassifikation (getötet/schwerverletzt vs. leichtverletzt) ab. Sie trainiert nichts neu, sondern lädt die in der A³-Phase gespeicherten Artefakte (`a3_binary_best_model.joblib`, `a3_binary_model_card.json`, `a3_binary_model_comparison.csv`) und liefert:
 #
 # 1. den systematischen Vergleich aller zehn Kandidaten aus dem A³-Suchlauf (ROC/PR-Kurven, Konfusionsmatrizen),
 # 2. eine fehlerorientierte Diagnose (welche Slices werden systematisch verfehlt?),
@@ -53,6 +53,8 @@ from unfallatlas.models.c_phase import (
     build_inference_contract,
     build_qualitative_matrix,
     compute_error_slices,
+    decode_slice_label,
+    humanize_feature_name,
 )
 from unfallatlas.models.evaluate import evaluate_binary_predictions
 from unfallatlas.viz.metrics_viz import plot_confusion_matrix_heatmap, plot_roc_pr_curves
@@ -143,6 +145,16 @@ cm_fig.write_html(FIG_DIR / "confusion_matrix_champion.html", include_plotlyjs=T
 cm_fig.show()
 
 # %% [markdown]
+# **Interpretation:** Die ROC-Kurve liegt deutlich über der Zufalls-Diagonale, was ein
+# brauchbares, aber nicht sehr starkes Trennvermögen anzeigt (konsistent mit der schwachen
+# Merkmalsassoziation aus §6). Die Precision-Recall-Kurve fällt bei steigendem Recall spürbar ab,
+# was bei diesem starken Klassenungleichgewicht (~20 % KSI) typisch ist und den in §0 berichteten
+# Recall(KSI)-Wert (≈0,52) einordnet: Über die Hälfte der tatsächlichen KSI-Fälle wird erkannt, aber
+# nicht durchgängig. Die Konfusionsmatrix macht das konkret: Der Champion erkennt gut die Hälfte
+# der echten KSI-Fälle korrekt (oben links), übersieht aber die andere Hälfte (oben rechts, False
+# Negatives); umgekehrt werden auch etliche leichte Unfälle fälschlich als KSI eingestuft (unten
+# links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüsselt.
+#
 # ## 2 — Fehleranalyse nach Slices
 #
 # False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (`UART`), dominanter OSM-Straßenklasse, Straßenzustand (`STRZUSTAND`), Lichtverhältnissen (`ULICHTVERH`), Niederschlagskategorie (`_precip_bucket`, aus `dwd_precip_mm` abgeleitet) und Tageszeit (`USTUNDE`, Unfallstunde 0–23), um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.
@@ -161,16 +173,30 @@ slice_frame = test_df[slice_columns].reset_index(drop=True)
 error_slice_df = compute_error_slices(
     pd.Series(y_test_bin.values), pd.Series(y_test_pred_champion), slice_frame, slice_columns
 )
-error_slice_df.sort_values("false_negative_rate", ascending=False).head(20)
+# Decoded "Spalte: Wertlabel" per row (e.g. "Unfallart: Zzs. vorausfahrendes
+# Fz. (Auffahrunfall)") so every table/chart below shows the human-readable
+# category directly, never a bare code the reader has to look up elsewhere.
+error_slice_df["label"] = [
+    decode_slice_label(col, value)
+    for col, value in zip(error_slice_df["slice_column"], error_slice_df["slice_value"])
+]
+error_display_cols = [
+    "label",
+    "n",
+    "n_false_negative",
+    "n_false_positive",
+    "false_negative_rate",
+    "false_positive_rate",
+]
+error_slice_df[error_display_cols].sort_values("false_negative_rate", ascending=False).head(20)
 
 # %%
 plot_df = error_slice_df[error_slice_df["n"] >= 100].nlargest(15, "false_negative_rate")
-plot_labels = plot_df["slice_column"] + "=" + plot_df["slice_value"].astype(str)
 
 error_slice_fig = go.Figure(
     go.Bar(
         x=plot_df["false_negative_rate"],
-        y=plot_labels,
+        y=plot_df["label"],
         orientation="h",
         marker_color="#528AAE",
         hovertemplate="%{y}: %{x:.1%}<extra></extra>",
@@ -400,8 +426,8 @@ for row, feat in enumerate(top_features):
                 if row == 0
                 else None,
             ),
-            name=feat,
-            hovertemplate=f"{feat}<br>SHAP=%{{x:.3f}}<extra></extra>",
+            name=humanize_feature_name(feat),
+            hovertemplate=f"{humanize_feature_name(feat)}<br>SHAP=%{{x:.3f}}<extra></extra>",
             showlegend=False,
         )
     )
@@ -409,7 +435,9 @@ beeswarm_fig.update_layout(
     title=f"SHAP Summary (Beeswarm), Top {N_BEESWARM_FEATURES} Features",
     xaxis_title="SHAP-Wert (Einfluss auf KSI-Score)",
     yaxis=dict(
-        tickmode="array", tickvals=list(range(N_BEESWARM_FEATURES)), ticktext=list(top_features)
+        tickmode="array",
+        tickvals=list(range(N_BEESWARM_FEATURES)),
+        ticktext=[humanize_feature_name(f) for f in top_features],
     ),
     template="plotly_white",
     height=700,
@@ -425,7 +453,7 @@ bar_data = shap_importance.head(N_BAR_FEATURES).iloc[::-1]
 bar_fig = go.Figure(
     go.Bar(
         x=bar_data.values,
-        y=bar_data.index,
+        y=[humanize_feature_name(f) for f in bar_data.index],
         orientation="h",
         marker_color="#528AAE",
         hovertemplate="%{y}: %{x:.4f}<extra></extra>",
@@ -439,6 +467,14 @@ bar_fig.update_layout(
 )
 bar_fig.write_html(FIG_DIR / "shap_importance_bar.html", include_plotlyjs=True)
 bar_fig.show()
+
+# %% [markdown]
+# **Interpretation:** Im Beeswarm-Plot verschiebt Rot (hoher Feature-Wert) den SHAP-Wert für die
+# meisten Top-Features klar in eine Richtung, Blau (niedriger Wert) in die andere; eine breite,
+# durchmischte Punktwolke statt einer klaren Trennung würde auf ein schwaches Merkmal hindeuten.
+# Der Balkenplot bestätigt die Rangfolge über den Mittelwert der absoluten SHAP-Beiträge: Kein
+# einzelnes Feature dominiert (§6 ordnet diese Rangfolge gegen die Literatur ein). Die vier
+# folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorhersagen auswirkt.
 
 # %%
 shap_sample_pred_proba = champion_pipeline.predict_proba(shap_sample_X_raw)[:, 1]
@@ -511,12 +547,12 @@ for name, idx in case_indices.items():
 # %% [markdown]
 # ## 6 — Abgleich mit der Literatur
 #
-# A³ §20 hat Cramér's V direkt gegen das **binäre** KSI-Label neu berechnet (nicht gegen das ursprüngliche 3-Klassen-`UKATGEORIE`, für das `docs/project/Technical_Review_Next_Steps.md` bereits eine Assoziationsobergrenze von ≤0,13 dokumentiert hatte): `UART` (Unfallart) ist mit **0,1801** das stärkste Einzelmerkmal für die binäre Klassifikation, gefolgt von `UTYP1` mit 0,1505; `ULICHTVERH` und `STRZUSTAND` liegen beide unter 0,03. Selbst das stärkste binäre Merkmal bleibt damit deutlich unter dem für starkes Klassifikationssignal üblichen Bereich von ~0,3–0,5; die binäre Reformulierung erhöht zwar die erreichbare Vorhersagegüte gegenüber der 3-Klassen-Formulierung (A³ §11), löst aber nicht das zugrundeliegende Problem schwacher Merkmalsassoziation.
+# A³ §20 hat Cramér's V direkt gegen das **binäre** KSI-Label neu berechnet (nicht gegen das ursprüngliche 3-Klassen-`UKATGEORIE`, für das die U-Phase, §6, bereits eine Assoziationsobergrenze von ≤0,13 dokumentiert hatte): `UART` (Unfallart) ist mit **0,1801** das stärkste Einzelmerkmal für die binäre Klassifikation, gefolgt von `UTYP1` mit 0,1505; `ULICHTVERH` und `STRZUSTAND` liegen beide unter 0,03. Selbst das stärkste binäre Merkmal bleibt damit deutlich unter dem für starkes Klassifikationssignal üblichen Bereich von ~0,3–0,5; die binäre Reformulierung erhöht zwar die erreichbare Vorhersagegüte gegenüber der 3-Klassen-Formulierung (A³ §11), löst aber nicht das zugrundeliegende Problem schwacher Merkmalsassoziation.
 #
 # Diese SHAP-Analyse ergänzt eine dritte, unabhängige Sicht auf dieselbe Frage: die mittleren absoluten SHAP-Werte über die 5.000er-Stichprobe:
 
 # %%
-shap_importance.head(15)
+shap_importance.rename(humanize_feature_name).head(15)
 
 # %% [markdown]
 # Die global wichtigsten SHAP-Features sind `osm_way_count`, `IstKrad`, `UTYP1_1`, `osm_road_density`, `UART_2`, `IstPKW`, `UKREIS_target_enc`, `osm_maxspeed_mean`; eine Mischung aus OSM-Straßenkontext, Fahrzeugtyp-Flags und Unfalltyp-Kategorien, nicht eine einzelne dominante Variable. Das deckt sich mit A³ §20/§21: Der Champion stützt sich stärker auf OSM-Straßenkontext- und Geo-Features als primär auf die assoziationsstärksten `UART`/`UTYP1`-Codes; ein Modell, das schwaches Signal über viele Merkmale hinweg extrahiert, statt sich auf ein dominantes Prädiktor zu verlassen.
@@ -566,7 +602,7 @@ assert (PROCESSED_DIR / "a3_binary_best_model.joblib").exists()
 #
 # **Was erreicht wurde:**
 # - Systematischer Vergleich aller 10 Kandidaten aus dem A³-Suchlauf mit ROC/PR/Konfusionsmatrix für den Champion (§1).
-# - Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei `UART=1` (89,0 %), `UART=3` (74,1 %) und `UART=2` (71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %); Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).
+# - Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei Unfallart "Zzs. ruhendes Fz." (`UART=1`, 89,0 %), "Zzs. seitlich gleichfahrendes Fz." (`UART=3`, 74,1 %) und "Zzs. vorausfahrendes Fz." / Auffahrunfall (`UART=2`, 71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %); Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).
 # - Formale Gate-Validierung: **bestanden** gegen beide Q-Phase-Kriterien (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50) (§3).
 # - Gewichtete qualitative Bewertungsmatrix (macro-F1 0,600 vs. 0,518 vs. 0,500), die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet; inklusive eines empirisch geprüften, für alle drei Familien identischen Robustheits-Scores gegenüber fehlenden OSM/DWD-Features (§4).
 # - SHAP-Erklärbarkeit (global + 4 Fallbeispiele), konsistent mit der A³-Feature-Evidenz (§5).

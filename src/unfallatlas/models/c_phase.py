@@ -12,6 +12,90 @@ from datetime import UTC, datetime
 import numpy as np
 import pandas as pd
 
+# Human-readable labels for the coded categoricals shown in C-phase error-slice
+# and SHAP visualizations. Mirrors notebooks/02_U_Phase.py's "Human-readable
+# labels" section (source: Datensatzbeschreibung Unfallatlas, Stand
+# 10.06.2025) - duplicated rather than imported so the notebook-side module
+# stays self-contained, but the label text is the same codebook lookup.
+# Visualizations must decode these inline (never show a bare code like
+# "UART=2" next to a separate legend the reader has to cross-reference).
+ULICHTVERH_LABELS = {0: "Tageslicht", 1: "Dämmerung", 2: "Dunkelheit"}
+STRZUSTAND_LABELS = {0: "Trocken", 1: "Nass/feucht/schlüpfrig", 2: "Winterglatt"}
+UART_LABELS = {
+    0: "Anderer Art",
+    1: "Zzs. ruhendes Fz.",
+    2: "Zzs. vorausfahrendes Fz. (Auffahrunfall)",
+    3: "Zzs. seitlich gleichfahrendes Fz.",
+    4: "Zzs. Gegenverkehr",
+    5: "Zzs. einbiegendes/kreuzendes Fz.",
+    6: "Zzs. Fußgänger",
+    7: "Aufprall Fahrbahnhindernis",
+    8: "Abkommen nach rechts",
+    9: "Abkommen nach links",
+}
+UTYP1_LABELS = {
+    1: "Fahrunfall",
+    2: "Abbiegeunfall",
+    3: "Einbiegen/Kreuzen",
+    4: "Überschreiten",
+    5: "Ruhender Verkehr",
+    6: "Längsverkehr",
+    7: "Sonstiger Unfall",
+}
+COL_CODE_LABELS = {
+    "ULICHTVERH": ULICHTVERH_LABELS,
+    "STRZUSTAND": STRZUSTAND_LABELS,
+    "UART": UART_LABELS,
+    "UTYP1": UTYP1_LABELS,
+}
+COL_DISPLAY_NAMES = {
+    "UART": "Unfallart",
+    "UTYP1": "Unfalltyp",
+    "ULICHTVERH": "Lichtverhältnisse",
+    "STRZUSTAND": "Straßenzustand",
+    "osm_dominant_road_class": "Straßenklasse (OSM)",
+    "_precip_bucket": "Niederschlag",
+    "USTUNDE": "Uhrzeit",
+}
+
+
+def decode_slice_label(column: str, value: object) -> str:
+    """Human-readable "Spaltenname: Wertlabel" for one error-slice row.
+
+    Used for chart axis labels and table display so a reader never has to
+    cross-reference a raw code (e.g. "UART=2") against a separate legend.
+    """
+    display_name = COL_DISPLAY_NAMES.get(column, column)
+    codes = COL_CODE_LABELS.get(column)
+    if codes is not None:
+        label = codes.get(int(value), str(value))
+    elif column == "USTUNDE":
+        label = f"{int(value):02d}:00 Uhr"
+    else:
+        label = str(value)
+    return f"{display_name}: {label}"
+
+
+def humanize_feature_name(name: str) -> str:
+    """Decode a fitted-preprocessor output feature name for display.
+
+    The champion pipeline one-hot encodes UART/UTYP1/ULICHTVERH/STRZUSTAND,
+    so `ColumnTransformer.get_feature_names_out()` emits dummy columns
+    shaped "UART_2"; this decodes the trailing code via COL_CODE_LABELS
+    (e.g. "Unfallart: Zzs. vorausfahrendes Fz. (Auffahrunfall)") instead of
+    leaving the raw code for the reader to look up separately. Feature names
+    outside those four columns are already self-descriptive engineered-
+    column names and are returned unchanged.
+    """
+    for col, codes in COL_CODE_LABELS.items():
+        prefix = f"{col}_"
+        if name.startswith(prefix):
+            raw_value = name[len(prefix) :]
+            label = codes.get(int(raw_value), raw_value)
+            return f"{COL_DISPLAY_NAMES.get(col, col)}: {label}"
+    return name
+
+
 QUALITATIVE_MATRIX_WEIGHTS = {
     "macro_f1": 0.30,
     "recall_ksi": 0.30,

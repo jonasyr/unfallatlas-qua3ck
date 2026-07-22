@@ -4,6 +4,8 @@ from unfallatlas.models.c_phase import (
     build_inference_contract,
     build_qualitative_matrix,
     compute_error_slices,
+    decode_slice_label,
+    humanize_feature_name,
 )
 
 
@@ -142,3 +144,39 @@ def test_build_inference_contract_high_cardinality_column_gets_a_note():
     entry = contract["required_columns"][0]
     assert "categories" not in entry
     assert "60 unique values" in entry["note"]
+
+
+def test_decode_slice_label_decodes_coded_categorical():
+    assert decode_slice_label("UART", 2) == "Unfallart: Zzs. vorausfahrendes Fz. (Auffahrunfall)"
+
+
+def test_decode_slice_label_handles_string_valued_code():
+    # slice values arrive as whatever dtype the source column has (often str
+    # after groupby); decoding must not require the caller to pre-cast.
+    assert decode_slice_label("STRZUSTAND", "2") == "Straßenzustand: Winterglatt"
+
+
+def test_decode_slice_label_formats_hour_column():
+    assert decode_slice_label("USTUNDE", 7) == "Uhrzeit: 07:00 Uhr"
+
+
+def test_decode_slice_label_passes_through_uncoded_column():
+    assert decode_slice_label("osm_dominant_road_class", "residential") == (
+        "Straßenklasse (OSM): residential"
+    )
+
+
+def test_decode_slice_label_falls_back_to_raw_value_for_unknown_code():
+    assert decode_slice_label("UART", 999) == "Unfallart: 999"
+
+
+def test_humanize_feature_name_decodes_onehot_dummy():
+    assert humanize_feature_name("UART_2") == (
+        "Unfallart: Zzs. vorausfahrendes Fz. (Auffahrunfall)"
+    )
+    assert humanize_feature_name("UTYP1_1") == "Unfalltyp: Fahrunfall"
+
+
+def test_humanize_feature_name_passes_through_other_columns():
+    assert humanize_feature_name("osm_way_count") == "osm_way_count"
+    assert humanize_feature_name("IstKrad") == "IstKrad"
