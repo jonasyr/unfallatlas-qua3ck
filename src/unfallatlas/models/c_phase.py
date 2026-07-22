@@ -56,6 +56,36 @@ COL_DISPLAY_NAMES = {
     "osm_dominant_road_class": "Straßenklasse (OSM)",
     "_precip_bucket": "Niederschlag",
     "USTUNDE": "Uhrzeit",
+    "UMONAT": "Monat",
+    "UWOCHENTAG": "Wochentag",
+    "UKREIS": "Kreis",
+    "UREGBEZ": "Regierungsbezirk",
+}
+
+# Labels for the remaining feature columns the champion pipeline consumes
+# (src/unfallatlas/features/preprocessing.py PASSTHROUGH_COLUMNS/LOG1P_COLUMNS/
+# LOG_COLUMNS/PLAIN_NUMERIC_COLUMNS): the participant-type flags (Ist*) mirror
+# docs/dataset/DSB_Unfallatlas.md "Beteiligungen"; the dwd_*/osm_* labels
+# mirror notebooks/02_U_Phase.py's DWD_COL_LABELS plus the OSM road-context
+# columns C-phase adds on top of U-Phase's dictionary.
+FEATURE_LABELS = {
+    "IstRad": "Fahrradbeteiligung",
+    "IstPKW": "Pkw-Beteiligung",
+    "IstFuss": "Fußgängerbeteiligung",
+    "IstKrad": "Kraftradbeteiligung",
+    "IstGkfz": "Güterkraftfahrzeug-Beteiligung",
+    "IstSonstig": "Beteiligung sonstiges Verkehrsmittel",
+    "LON": "Längengrad",
+    "LAT": "Breitengrad",
+    "dwd_temp_air_2m": "Lufttemperatur (°C)",
+    "dwd_precip_mm": "Niederschlag (mm)",
+    "dwd_visibility_m": "Sichtweite (m)",
+    "dwd_wind_speed_ms": "Windgeschwindigkeit (m/s)",
+    "dwd_station_dist_km": "Entfernung zur DWD-Station (km)",
+    "osm_road_density": "Straßendichte (OSM)",
+    "osm_way_count": "Straßenanzahl (OSM)",
+    "osm_maxspeed_mean": "Höchstgeschwindigkeit, Mittel (OSM)",
+    "osm_maxspeed_max": "Höchstgeschwindigkeit, Maximum (OSM)",
 }
 
 
@@ -76,16 +106,21 @@ def decode_slice_label(column: str, value: object) -> str:
     return f"{display_name}: {label}"
 
 
+_OSM_ROAD_CLASS_PREFIX = "osm_dominant_road_class_"
+_TARGET_ENC_SUFFIX = "_target_enc"
+
+
 def humanize_feature_name(name: str) -> str:
     """Decode a fitted-preprocessor output feature name for display.
 
-    The champion pipeline one-hot encodes UART/UTYP1/ULICHTVERH/STRZUSTAND,
-    so `ColumnTransformer.get_feature_names_out()` emits dummy columns
-    shaped "UART_2"; this decodes the trailing code via COL_CODE_LABELS
-    (e.g. "Unfallart: Zzs. vorausfahrendes Fz. (Auffahrunfall)") instead of
-    leaving the raw code for the reader to look up separately. Feature names
-    outside those four columns are already self-descriptive engineered-
-    column names and are returned unchanged.
+    Covers every shape `ColumnTransformer.get_feature_names_out()` emits for
+    the champion pipeline (src/unfallatlas/features/preprocessing.py):
+    one-hot dummies for UART/UTYP1/ULICHTVERH/STRZUSTAND (e.g. "UART_2") and
+    for osm_dominant_road_class (e.g. "osm_dominant_road_class_residential"),
+    target-encoded columns ("UKREIS_target_enc"), cyclic sin/cos pairs
+    ("USTUNDE_sin"), and the plain passthrough/DWD/OSM numeric columns via
+    FEATURE_LABELS. Never leaves a raw code or column name for the reader to
+    look up separately.
     """
     for col, codes in COL_CODE_LABELS.items():
         prefix = f"{col}_"
@@ -93,7 +128,16 @@ def humanize_feature_name(name: str) -> str:
             raw_value = name[len(prefix) :]
             label = codes.get(int(raw_value), raw_value)
             return f"{COL_DISPLAY_NAMES.get(col, col)}: {label}"
-    return name
+    if name.startswith(_OSM_ROAD_CLASS_PREFIX):
+        value = name[len(_OSM_ROAD_CLASS_PREFIX) :]
+        return f"{COL_DISPLAY_NAMES['osm_dominant_road_class']}: {value}"
+    if name.endswith(_TARGET_ENC_SUFFIX):
+        col = name[: -len(_TARGET_ENC_SUFFIX)]
+        return f"{COL_DISPLAY_NAMES.get(col, col)} (zielcodiert)"
+    if name.endswith(("_sin", "_cos")):
+        col, component = name.rsplit("_", 1)
+        return f"{COL_DISPLAY_NAMES.get(col, col)} (zyklisch, {component})"
+    return FEATURE_LABELS.get(name, name)
 
 
 QUALITATIVE_MATRIX_WEIGHTS = {

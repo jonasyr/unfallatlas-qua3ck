@@ -177,6 +177,29 @@ def test_humanize_feature_name_decodes_onehot_dummy():
     assert humanize_feature_name("UTYP1_1") == "Unfalltyp: Fahrunfall"
 
 
-def test_humanize_feature_name_passes_through_other_columns():
-    assert humanize_feature_name("osm_way_count") == "osm_way_count"
-    assert humanize_feature_name("IstKrad") == "IstKrad"
+def test_humanize_feature_name_decodes_osm_road_class_dummy():
+    assert humanize_feature_name("osm_dominant_road_class_residential") == (
+        "Straßenklasse (OSM): residential"
+    )
+
+
+def test_humanize_feature_name_decodes_target_encoded_column():
+    assert humanize_feature_name("UKREIS_target_enc") == "Kreis (zielcodiert)"
+    assert humanize_feature_name("UREGBEZ_target_enc") == "Regierungsbezirk (zielcodiert)"
+
+
+def test_humanize_feature_name_decodes_cyclic_sin_cos():
+    assert humanize_feature_name("USTUNDE_sin") == "Uhrzeit (zyklisch, sin)"
+    assert humanize_feature_name("UWOCHENTAG_cos") == "Wochentag (zyklisch, cos)"
+
+
+def test_humanize_feature_name_decodes_passthrough_and_dwd_osm_columns():
+    assert humanize_feature_name("IstKrad") == "Kraftradbeteiligung"
+    assert humanize_feature_name("IstPKW") == "Pkw-Beteiligung"
+    assert humanize_feature_name("LAT") == "Breitengrad"
+    assert humanize_feature_name("osm_way_count") == "Straßenanzahl (OSM)"
+    assert humanize_feature_name("dwd_station_dist_km") == "Entfernung zur DWD-Station (km)"
+
+
+def test_humanize_feature_name_passes_through_unknown_columns():
+    assert humanize_feature_name("some_unmapped_column") == "some_unmapped_column"
