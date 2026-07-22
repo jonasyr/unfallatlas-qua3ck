@@ -184,7 +184,7 @@ button:active { transform: translateY(1px); }
 .output-cell { margin-top: 0.75rem; }
 .code-cell > summary, .output-cell > summary { padding: 0.75rem 1rem; color: var(--accent-dark); font-weight: 700; cursor: pointer; }
 .code-cell[open] > summary, .output-cell[open] > summary { border-bottom: 1px solid var(--border); background: var(--surface-muted); }
-.output-content { min-width: 0; padding: 1rem; }
+.output-content { min-width: 0; padding: 1rem; display: flex; flex-direction: column; gap: 0.85rem; }
 /* Code panels are a deliberately dark inset (One Dark Pro palette, injected
    per-export by CSSHTMLHeaderPreprocessor) inside the otherwise light page
    chrome - edge-to-edge under the light "Code" toggle bar, like a docs site
@@ -293,9 +293,15 @@ button:active { transform: translateY(1px); }
   .js .toc-trigger, .js .toc-close { display: inline-block; }
   .metadata-grid { grid-template-columns: 1fr; }
   .header-content { width: min(100% - 1rem, var(--content-width)); padding: 1.25rem 0; }
-  .presentation-toolbar { width: min(100% - 1rem, var(--content-width)); }
+  .presentation-toolbar {
+    width: min(100% - 1rem, var(--content-width));
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .presentation-toolbar button { flex: 1 1 auto; padding: 0.4rem 0.6rem; font-size: 0.85rem; }
   .output-content { padding: 0.65rem; }
   .highlight pre { padding: 0.65rem; }
+  .phase-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
