@@ -202,20 +202,43 @@ def compute_error_slices(
 
 
 def build_qualitative_matrix(rows: list[dict]) -> pd.DataFrame:
-    """Weighted multi-criteria comparison table, sorted best-first."""
+    """Rank candidates using only shared, measured, varying criteria.
+
+    The returned frame records used and excluded criteria in ``DataFrame.attrs``.
+    Missing and constant criteria remain visible to callers but cannot affect
+    the weighted ranking.
+    """
+    if not rows:
+        raise ValueError("At least one qualitative comparison row is required.")
     df = pd.DataFrame(rows).set_index("model")
 
     normalized = pd.DataFrame(index=df.index)
-    for col, weight in QUALITATIVE_MATRIX_WEIGHTS.items():
+    criteria_used = []
+    criteria_excluded = {}
+    for col in QUALITATIVE_MATRIX_WEIGHTS:
+        if not all(col in row and pd.notna(row[col]) for row in rows):
+            criteria_excluded[col] = "missing"
+            continue
+        if df[col].nunique(dropna=False) <= 1:
+            criteria_excluded[col] = "constant"
+            continue
+        criteria_used.append(col)
+
+    available_weight = sum(QUALITATIVE_MATRIX_WEIGHTS[col] for col in criteria_used)
+    for col in criteria_used:
+        weight = QUALITATIVE_MATRIX_WEIGHTS[col] / available_weight
         col_min, col_max = df[col].min(), df[col].max()
-        span = (col_max - col_min) or 1.0
+        span = col_max - col_min
         scaled = (df[col] - col_min) / span
         if col in _COST_TYPE_COLUMNS:
             scaled = 1.0 - scaled
         normalized[col] = scaled * weight
 
     df["weighted_score"] = normalized.sum(axis=1)
-    return df.reset_index().sort_values("weighted_score", ascending=False).reset_index(drop=True)
+    result = df.reset_index().sort_values("weighted_score", ascending=False).reset_index(drop=True)
+    result.attrs["criteria_used"] = criteria_used
+    result.attrs["criteria_excluded"] = criteria_excluded
+    return result
 
 
 def _infer_source(col: str) -> str:

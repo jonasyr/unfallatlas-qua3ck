@@ -66,6 +66,56 @@ def test_build_qualitative_matrix_orders_best_first():
     assert result.iloc[0]["weighted_score"] >= result.iloc[1]["weighted_score"]
 
 
+def test_build_qualitative_matrix_uses_only_shared_measured_criteria():
+    rows = [
+        {
+            "model": "random_forest",
+            "macro_f1": 0.60,
+            "recall_ksi": 0.52,
+            "latency_ms_per_1k": 50.0,
+        },
+        {
+            "model": "xgboost",
+            "macro_f1": 0.57,
+            "recall_ksi": 0.68,
+        },
+    ]
+
+    result = build_qualitative_matrix(rows)
+
+    assert result.attrs["criteria_used"] == ["macro_f1", "recall_ksi"]
+    assert result.attrs["criteria_excluded"]["latency_ms_per_1k"] == "missing"
+    assert result["weighted_score"].between(0.0, 1.0).all()
+
+
+def test_build_qualitative_matrix_reports_constant_criteria_without_ranking_on_them():
+    rows = [
+        {"model": "a", "macro_f1": 0.60, "recall_ksi": 0.50},
+        {"model": "b", "macro_f1": 0.55, "recall_ksi": 0.50},
+    ]
+
+    result = build_qualitative_matrix(rows)
+
+    assert result.attrs["criteria_used"] == ["macro_f1"]
+    assert result.attrs["criteria_excluded"]["recall_ksi"] == "constant"
+    assert result.iloc[0]["model"] == "a"
+    assert result.iloc[0]["weighted_score"] == 1.0
+    assert result.iloc[1]["weighted_score"] == 0.0
+
+
+def test_build_qualitative_matrix_reports_all_constant_criteria_as_a_tie():
+    rows = [
+        {"model": "a", "macro_f1": 0.5},
+        {"model": "b", "macro_f1": 0.5},
+    ]
+
+    result = build_qualitative_matrix(rows)
+
+    assert result.attrs["criteria_used"] == []
+    assert result.attrs["criteria_excluded"]["macro_f1"] == "constant"
+    assert result["weighted_score"].eq(0.0).all()
+
+
 def test_build_inference_contract_shape():
     model_card = {
         "optimal_threshold_val_2023": 0.4986,
