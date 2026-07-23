@@ -93,19 +93,34 @@
     "min_samples_leaf": 8
   },
   "optimal_threshold_val_2023": 0.49860217036273086,
-  "val_2023_macro_f1": 0.6072144262787248,
-  "test_2024_metrics": {
-    "macro_f1": 0.6025832651356028,
-    "recall_ksi": 0.5255441422688809,
-    "recall_slight": 0.7614757423513625,
+  "val_2023_macro_f1": 0.6082760769941715,
+  "val_2023_metrics": {
+    "macro_f1": 0.6082760769941715,
+    "recall_ksi": 0.505333594038541,
+    "recall_slight": 0.7760459871132056,
     "confusion_matrix": [
       [
-        23228,
-        20970
+        23260,
+        22769
       ],
       [
-        53506,
-        170815
+        49946,
+        173073
+      ]
+    ]
+  },
+  "test_2024_metrics": {
+    "macro_f1": 0.6038956179272812,
+    "recall_ksi": 0.5151138060545726,
+    "recall_slight": 0.7686930782227255,
+    "confusion_matrix": [
+      [
+        22767,
+        21431
+      ],
+      [
+        51887,
+        172434
       ]
     ]
   },
@@ -126,6 +141,7 @@
     "subsample_size_svm_linear_and_boosting_tuning": 500000,
     "subsample_size_svm_rbf": 8000,
     "run_at_utc": "2026-07-23T01:46:36.404269+00:00",
+    "metrics_reconciled_at_utc": "2026-07-23T16:04:52Z",
     "random_seed": 42
   },
   "checkpoint_id": "b1ea31e",
