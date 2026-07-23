@@ -28,7 +28,7 @@
 # ---
 
 # %% [markdown]
-# ## Position in the QUA³CK process
+# ### Position in the QUA³CK process
 #
 # | Phase | Notebook | Purpose | Status |
 # |:---|:---|:---|:---:|
@@ -61,17 +61,15 @@
 # %% [markdown]
 # ## 2 · Research question
 #
-# > **Welche raumzeitliche und infrastrukturelle Faktoren bestimmen die Schwere
-# > eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit
-# > interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten
-# > hinreichend zuverlässig vorhersagen, um Präventionsentscheidungen zu
-# > unterstützen?**
+# > **Which spatiotemporal, environmental, and infrastructure factors are associated
+# > with the severity of a road accident in Germany, and can interpretable
+# > machine-learning models predict a decision-relevant severity outcome reliably
+# > enough to support prevention planning?**
 #
-# The research question is intentionally open-ended; it motivates the project.
-# The Q phase operationalises it in the next section as a *prediction goal* that
-# can be tested, falsified, and accepted or rejected against a number.
-#
-# ---
+# The question begins with the original three-class severity outcome and remains
+# open to an evidence-driven operational reformulation if the public features cannot
+# separate the rarest class reliably. Sections 5 and 8 define that staged policy
+# before the report evaluates it.
 
 # %% [markdown]
 # ## 3 · Hypotheses
@@ -96,62 +94,76 @@
 #
 # ---
 #
-# **H3 — Model feasibility: gradient-boosted trees above literature baseline**
+# **H3 — Staged predictive feasibility**
 #
-# > A gradient-boosted tree model trained on spatiotemporal, infrastructural, and meteorological features will achieve macro-F1 ≥ 0.55 on the chronological test year 2024, materially exceeding the majority-class baseline (macro-F1 ≈ 0.30) and a logistic-regression benchmark. The temporal features (`USTUNDE`, `UMONAT`) and spatial features (`UKREIS`, `dwd_station_dist_km`) are expected to rank among the top SHAP contributors, consistent with the literature anchor in §11.
+# > Interpretable machine-learning models will outperform trivial and linear
+# > baselines under chronological evaluation. The original three-class target is
+# > tested first against macro-F1 ≥ 0.55 and fatal recall ≥ 0.50. If the public
+# > predictors cannot clear that gate for structural reasons, a model trained
+# > directly for KSI versus slight injury will clear the corresponding binary gate
+# > without changing the temporal split or leakage boundary.
 #
-# *Verifiable in:* A³ phase (model training and evaluation), C phase (benchmark comparison and SHAP analysis).
-#
-# ---
-
-# %% [markdown]
-# ## 4 · Prediction goal (operationalised)
-#
-# > For each personal-injury road accident in Germany 2016 – 2024 documented in
-# > the Unfallatlas, predict the recorded severity class **`UKATGEORIE`** —
-# > 1 = fatal, 2 = serious injury, 3 = minor injury — from the administratively
-# > recorded conditions available *at the time of the police report* (location,
-# > time, lighting, road condition, accident type and kind, transport modes
-# > involved). Acceptable performance is **macro-F1 ≥ 0.55** on the
-# > chronologically held-out test year 2024, with **recall for class 1 ≥ 0.50**,
-# > using a Gradient Boosting model interpretable via SHAP for downstream use by
-# > municipal road-safety planners.
-#
-# The prediction goal is the contract A³ will be evaluated against. It fixes the
-# target, the feature set's temporal availability, the evaluation protocol, the
-# metric, the threshold, the secondary metric, and the consumer.
+# *Verifiable in:* U phase (target viability), A³ phase (model search and gate
+# decision), and C phase (comparison, error analysis, and explanations).
 #
 # ---
 
 # %% [markdown]
-# ## 5 · Target definition
+# ## 4 · Prediction goal
 #
-# **Target column:** `UKATGEORIE` (note: misspelled in the source data; the
-# project adopts the source spelling without comment).
+# For each police-recorded personal-injury road accident in Germany from 2016 to
+# 2024, estimate severity from conditions available when the report is created:
+# location, time, lighting, road condition, accident type, transport modes, weather,
+# and road context. The model must be evaluated on the chronologically held-out
+# 2024 test year and remain interpretable for municipal road-safety planning.
 #
-# **Encoding:** ordinal, three levels with natural ordering.
+# The project initially asks for all three recorded severity classes. If that target
+# fails the feasibility gate for structural reasons, the staged policy in section 5
+# permits a pre-defined KSI-versus-slight operational target without changing the
+# features, split, or evaluation discipline.
+
+# %% [markdown]
+# ## 5 · Target definition and staged feasibility policy
 #
-# | Code | Label | Operational meaning |
+# **Source column:** `UKATGEORIE` (the source dataset uses this spelling).
+#
+# | Code | English label | Source label | Operational meaning |
+# |:---:|:---|:---|:---|
+# | 1 | Fatal | Getötet | At least one person died within 30 days of the accident |
+# | 2 | Serious injury | Schwer verletzt | At least one person required at least 24 hours of inpatient care |
+# | 3 | Slight injury | Leicht verletzt | Injuries required medical attention but met neither definition above |
+#
+# The label is finalised after the 30-day fatality window and is never used as an
+# input feature. All predictors must be observable when the police report is
+# created; U audits this leakage boundary.
+#
+# ### Stage 1 — original three-class research target
+#
+# The original question treats the three ordered levels separately. This is the
+# scientifically informative formulation because it tests whether the public data
+# can distinguish fatal from serious and slight outcomes. Both nominal multiclass
+# and ordinal models are therefore legitimate candidates.
+#
+# ### Stage 2 — evidence-driven operational revision
+#
+# The fallback target is defined in advance as **KSI versus slight injury**:
+#
+# | Binary value | Definition | Interpretation |
 # |:---:|:---|:---|
-# | 1 | Getötet | At least one person involved died within 30 days of the accident |
-# | 2 | Schwer verletzt | At least one person required ≥ 24 hours of in-patient care |
-# | 3 | Leicht verletzt | At least one person had injuries requiring medical attention but not the above |
+# | 1 | `UKATGEORIE ∈ {1, 2}` | Killed or seriously injured (KSI) |
+# | 0 | `UKATGEORIE = 3` | Slight injury |
 #
-# **Label source.** Police record at the scene, finalised after the 30-day
-# fatality window. Administered uniformly across Bundesländer per the Statistical
-# Office's catalogue.
+# The final evidence supports activating this fallback. Across 19 three-class
+# configurations, the best macro-F1 was 0.424 with fatal-class recall of 0.212;
+# none reached the original gate. U also found weak standalone associations
+# (maximum target-related Cramér's V about 0.13), while impact speed, occupant age,
+# seat-belt use, and vehicle mass are unavailable. Separating the roughly 1% fatal
+# class would require an implausible odds lift from the available predictors.
 #
-# **Label observability at prediction time.** The label is *not* available to
-# the model at inference. Features used must be observable at the moment the
-# police report is written; this is the temporal-leakage boundary the U-phase
-# will probe.
-#
-# **Ordinality.** The classes have a natural ordering (1 > 2 > 3 in severity).
-# This justifies both standard multi-class classification and ordinal
-# classification approaches in A³. The Q phase does not commit to either; the
-# choice is a modelling decision.
-#
-# ---
+# KSI is not an arbitrary relabel. Fatal and serious outcomes jointly define the
+# high-consequence road-safety group used for prevention decisions. The revision
+# therefore preserves the original three-class analysis as feasibility evidence and
+# uses the binary target for the operational model.
 
 # %% [markdown]
 # ## 6 · Unit of analysis and prediction horizon
@@ -188,42 +200,42 @@
 # ---
 
 # %% [markdown]
-# ## 8 · Success metrics
+# ## 8 · Success metrics and gates
 #
-# ### Primary metric
+# The evaluation policy is staged, but the chronological split and primary metric
+# remain fixed throughout.
 #
-# **macro-F1 on the held-out test year 2024.**
+# ### Shared evaluation rules
 #
-# macro-F1 is chosen because the target is severely imbalanced (~1 / 18 / 81).
-# Accuracy would reward predicting "minor" for everything (~81 %). Weighted F1
-# would still over-weight the dominant class. macro-F1 averages the per-class F1
-# without size weighting and is the standard metric for imbalanced multi-class
-# classification in the relevant literature.
+# - **Primary metric:** macro-F1 on the held-out 2024 test year, so each class
+#   contributes equally despite imbalance.
+# - **Selection data:** thresholds and model choices are made on 2023 validation
+#   data; Test-2024 is evaluated once after selection.
+# - **Interpretability:** the selected operational model must support global and
+#   case-level explanation in C.
 #
-# ### Acceptance threshold
+# ### Stage 1 — three-class feasibility gate
 #
-# | Threshold | macro-F1 (test 2024) | Interpretation |
-# |:---|:---:|:---|
-# | Baseline (majority class) | ~0.30 | Trivial; should be beaten by anything |
-# | Acceptable | ≥ 0.55 | Minimum to declare the project useful |
-# | Literature-realistic | 0.60 – 0.70 | Range reported in comparable studies |
+# **macro-F1 ≥ 0.55 and recall(fatal) ≥ 0.50.**
 #
-# ### Secondary metric
+# This gate protects the rarest, highest-consequence class from majority-class
+# collapse. It was not met: the best observed three-class macro-F1 was 0.424 and
+# fatal recall was 0.212. That result is retained as a negative finding rather than
+# hidden by the later reformulation.
 #
-# **Recall for class 1 (Getötet) ≥ 0.50.**
+# ### Stage 2 — operational KSI gate
 #
-# The cost asymmetry is strong: missing a fatal-severity prediction is worse
-# than over-predicting one. A model with high macro-F1 but recall 0.10 on class 1
-# is rejected.
+# **binary macro-F1 ≥ 0.55 and recall(KSI) ≥ 0.50.**
 #
-# ### Business metric (deferred to K)
+# This gate applies only after the three-class feasibility decision. It is
+# achievable with the same public predictors and supports the operational question:
+# which recorded accidents belong to the high-consequence KSI group?
 #
-# Number of high-risk corridor-hours identified by the SHAP-explained model that
-# trigger a documented safety intervention. The Q phase records this as the
-# real-world success measure even though it cannot be evaluated within the
-# project itself.
+# ### External impact metric
 #
-# ---
+# The downstream metric is the number of high-risk location-time profiles that
+# lead to a documented safety review or intervention. It is deferred to K because
+# the present dataset cannot observe municipal actions.
 
 # %% [markdown]
 # ## 9 · Constraints
@@ -323,7 +335,7 @@
 # ---
 
 # %% [markdown]
-# ## 11 · Feasibility check and literature anchor
+# ## 11 · Feasibility and literature anchor
 #
 # ### Data adequacy
 #
@@ -345,9 +357,12 @@
 # | MDPI *Sustainability* (2024) | CatBoost + threshold moving | best recall on minority class | Rare-class handling reference |
 # | BASt (2023), Unfallentwicklung auf deutschen Straßen | Descriptive statistics | — | Reference for sanity-checking model patterns |
 #
-# The reported macro-F1 range of 0.60 – 0.65 in comparable studies establishes
-# the realistic ceiling. A project target of 0.55 is achievable; a target of 0.85
-# would not be.
+# The published results motivated the provisional 0.55 gate, but they do not
+# guarantee that the three-class target is achievable here: target definitions,
+# features, and evaluation designs differ. The gate is therefore a falsifiable
+# feasibility test. The literature's frequent use of KSI versus slight injury also
+# supports the pre-defined fallback if the rare fatal class cannot be separated
+# with the public predictors.
 #
 # ---
 #
@@ -427,80 +442,22 @@
 # ---
 
 # %% [markdown]
-# ## 15 · Summary
+# ## 13 · Summary and U-phase handoff
 #
-# | Aspect | Specification |
+# | Aspect | Final specification |
 # |:---|:---|
-# | **Problem** | Predict the severity class of a recorded personal-injury accident |
-# | **Dataset** | Unfallatlas 2016 – 2024 · ~2.09 M rows · GovData / Datenlizenz Deutschland 2.0 |
-# | **Target** | `UKATGEORIE` ∈ {1=Getötet, 2=Schwer, 3=Leicht}; class imbalance ≈ 1 / 18 / 81 |
-# | **Unit** | One accident per row; severity is the worst recorded outcome of that accident |
-# | **Primary metric** | macro-F1 ≥ 0.55 on chronological test year 2024 |
-# | **Secondary metric** | Recall for class 1 ≥ 0.50 |
-# | **Baseline** | Majority class — macro-F1 ≈ 0.30 |
-# | **Hard constraints** | Interpretability via SHAP; full reproducibility; DL-DE 2.0 compatible |
-# | **Documented limitations** | No demographic features; no impact speed; ~8 % geocoding gap; reporting Dunkelziffer |
-# | **Out of scope** | Property-damage accidents, causal inference, individual targeting, cross-border generalisation |
-# | **Deployment target** | Streamlit risk-profile application with explainable predictions |
+# | **Problem** | Predict a decision-relevant severity outcome for a recorded personal-injury accident |
+# | **Dataset** | Unfallatlas 2016–2024 · about 2.09M rows · GovData · Data Licence Germany 2.0 |
+# | **Original target** | Three classes: fatal, serious injury, slight injury |
+# | **Operational target** | KSI (`UKATGEORIE ∈ {1, 2}`) versus slight injury (`UKATGEORIE = 3`) |
+# | **Unit** | One accident per row; the label is the worst recorded outcome |
+# | **Evaluation** | Chronological Train 2016–2022, Validation 2023, Test 2024 |
+# | **Gates** | Three-class feasibility: macro-F1 ≥ 0.55 and fatal recall ≥ 0.50; operational KSI: macro-F1 ≥ 0.55 and KSI recall ≥ 0.50 |
+# | **Hard constraints** | Interpretability, reproducibility, licence compliance, and no personal data |
+# | **Principal limitations** | No impact speed, occupant demographics, seat-belt use, or vehicle mass; geocoding and reporting bias |
+# | **Deployment target** | Explainable Streamlit risk-profile application |
 #
-# > **Transition.** The problem is defined and the handover checklist is drafted.
-# > Proceed to `02_U_Phase.ipynb` to verify these assumptions against the data
-# > and audit the dataset for quality, leakage, and preprocessing implications.
-
-# %% [markdown]
-# ## §N — Addendum: Gate-Revision after A³-Phase
-#
-# ### Original Goal (3-class classification)
-#
-# The original research question framed severity classification as a **3-class problem**:
-#
-# | Class | Meaning | Share |
-# |---|---|---|
-# | 1 | Getötet | ≈ 0.9 % |
-# | 2 | Schwerverletzt | ≈ 15.5 % |
-# | 3 | Leichtverletzt | ≈ 83.5 % |
-#
-# Original gate: **macro-F1 ≥ 0.55 AND Recall(Class 1) ≥ 0.50**
-#
-# ### Empirical Findings from the A³-Phase (§9)
-#
-# The A³-Phase produced the following evidence for a structural ceiling:
-#
-# 1. **Empirical**: Across 19 model configurations the maximum is macro-F1 = 0.424 — with
-#    Recall(1) = 0.212. Not a single point lies in the target quadrant (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50).
-#
-# 2. **Arithmetic**: F1(Class 1) = 0.46 (minimum for gate fulfilment) requires at 0.94 % base rate
-#    Precision ≈ 0.46 — a ~90× Odds-Lift. Features with Cramér's V ≤ 0.13 cannot achieve this.
-#
-# 3. **Feature analysis (U-Phase §6/§7)**: Severity shares are nearly uniform across all categories of
-#    Lichtverhältnisse, Straßenzustand, and DWD weather features (≈ 80 % / 18 % / 2 %).
-#
-# 4. **Missing causes**: The actual physical determinants of severity
-#    (impact speed, vehicle mass, occupant age, seatbelt use) are not present in the public
-#    Unfallatlas dataset. This is a **Bayes-ceiling**, not a tuning problem.
-#
-# ### Reformulation: Binary KSI Framing
-#
-# *Killed or Seriously Injured* (KSI) vs. *slight* is the methodological standard in the
-# road-safety ML literature (Santos 2022, Pakgohar 2021, Schlößler 2024) — precisely because the
-# ceiling problem of the three-class formulation has been known for years. Aggregating Class 1 + 2 to
-# KSI and Class 3 to *slight* is substantively justified: both KSI classes require more intensive
-# accident investigation, hospital treatment, and appear together in official KSI statistics.
-#
-# | Criterion | Value |
-# |---|---|
-# | `y_binary = 1` | KSI: `UKATGEORIE ∈ {1, 2}` — Killed or Severely Injured |
-# | `y_binary = 0` | slight: `UKATGEORIE = 3` — Slightly Injured |
-# | KSI share | ≈ 16.4 % (tractable; no longer a 1 %-extreme-case) |
-#
-# ### Revised Acceptance Gate (implemented in A³-Phase §10)
-#
-# **binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50**
-#
-# The revised gate is demonstrably achievable with the available data: naively relabelling the
-# 3-class champion predictions already yields binary macro-F1 = 0.552. The model trained directly for
-# binary KSI (A³-Phase §10) reaches the gate on the chronological Test-2024 split.
-#
-# *This revision is not a weakening of the scientific standard, but its sharpening:
-# a clearly achievable, empirically grounded gate is methodologically stronger than an arbitrarily
-# high, structurally unreachable target.*
+# > **U-phase handoff.** Audit whether the target shares are stable, quantify the
+# > association available in the public predictors, verify the chronological and
+# > leakage boundaries, and turn those findings into a target-independent
+# > preprocessing contract for A³.
