@@ -22,6 +22,7 @@ CHART_CALL_MARKERS = (
     "px.",
 )
 MARKDOWN_TASK_BOX_RE = re.compile(r"(?m)^\s*(?:[-*+]\s+)?\[[ xX]\]\s+\S")
+SENTENCE_DASH_RE = re.compile(r"(?:—|–|(?<=\S)\s+--?\s+(?=\S))")
 GERMAN_PRESENTATION_TERM_RE = re.compile(
     r"\b(?:"
     r"Stufe|Unfälle|Anzahl|Verkehrsmittel|Stunde|Wochentag|Schwere|tödlich|"
@@ -215,6 +216,23 @@ def test_no_development_checklists():
             violations.append(str(path))
 
     assert not violations, f"Development checklists remain in: {', '.join(violations)}"
+
+
+def test_no_sentence_level_dash_punctuation_in_markdown():
+    violations = []
+
+    for path in NOTEBOOKS:
+        notebook = read_notebook(path)
+        for index, cell in enumerate(notebook.cells):
+            if cell.cell_type != "markdown":
+                continue
+            for block in markdown_prose_blocks(cell.source):
+                prose = re.sub(r"(?m)^\s*[-*+]\s+", "", block)
+                if SENTENCE_DASH_RE.search(prose):
+                    excerpt = " ".join(block.split())[:140]
+                    violations.append(f"{path}: markdown cell {index}: {excerpt!r}")
+
+    assert not violations, "\n".join(violations[:30])
 
 
 def test_no_stale_c_phase_artifact_limitation():
