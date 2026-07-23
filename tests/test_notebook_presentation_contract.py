@@ -32,6 +32,14 @@ GERMAN_PRESENTATION_TERM_RE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+GERMAN_HEADING_TERM_RE = re.compile(
+    r"\b(?:"
+    r"Stufe|Position im|Systematischer|Fehleranalyse|Formale KPI-Validierung|"
+    r"Bewertungsmatrix|Erklärbarkeit|Abgleich|Limitationen|Modellentscheidung|"
+    r"Übergabe|Zusammenfassung"
+    r")\b",
+    re.IGNORECASE,
+)
 GERMAN_FUNCTION_WORD_RE = re.compile(
     r"\b(?:"
     r"aber|als|auch|auf|aus|bei|das|dass|dem|den|der|des|die|dies|diese|"
@@ -41,6 +49,49 @@ GERMAN_FUNCTION_WORD_RE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+SOURCE_TABLE_FIELDS = {
+    "citation",
+    "dataset",
+    "documentation",
+    "doi",
+    "license",
+    "publisher",
+    "reference",
+    "source",
+    "url",
+}
+PRESENTATION_CALL_NAMES = {
+    "Markdown",
+    "add_annotation",
+    "add_hline",
+    "add_vline",
+    "display",
+    "make_subplots",
+    "plot_binary_f1_recall_front",
+    "plot_confusion_matrix_heatmap",
+    "plot_f1_recall_front",
+    "plot_roc_pr_curves",
+    "print",
+    "update_layout",
+    "update_traces",
+    "update_xaxes",
+    "update_yaxes",
+}
+PRESENTATION_KEYWORDS = {
+    "annotation_text",
+    "colorbar",
+    "hovertemplate",
+    "labels",
+    "name",
+    "subplot_titles",
+    "text",
+    "ticktext",
+    "title",
+    "title_prefix",
+    "title_text",
+    "xaxis_title",
+    "yaxis_title",
+}
 
 
 def read_notebook(path: Path) -> nbformat.NotebookNode:
@@ -57,32 +108,84 @@ def notebook_text(path: Path, *, cell_type: str | None = None) -> str:
 
 
 def markdown_prose_blocks(source: str) -> list[str]:
-    prose_lines = []
+    prose_lines: list[str] = []
     in_fence = False
     for line in source.splitlines():
         if line.lstrip().startswith("```"):
             in_fence = not in_fence
             continue
-        if not in_fence:
+        if in_fence:
+            continue
+
+        stripped = line.strip()
+        if stripped.startswith("|") and stripped.endswith("|"):
+            cells = [re.sub(r"[*_]", "", cell).strip() for cell in stripped.strip("|").split("|")]
+            if cells and cells[0].casefold().rstrip(":") in SOURCE_TABLE_FIELDS:
+                continue
             prose_lines.append(line)
+            prose_lines.append("")
+            continue
+
+        if "http://" in line or "https://" in line or re.search(r"\bdoi\s*:", line, re.IGNORECASE):
+            line = re.sub(r"\[[^\]]+\]\([^)]+\)", "", line)
+            if not line.strip(" -*>"):
+                continue
+        prose_lines.append(line)
 
     without_inline_code = re.sub(r"`[^`]*`", "", "\n".join(prose_lines))
     return [block.strip() for block in re.split(r"\n\s*\n", without_inline_code) if block.strip()]
 
 
-def code_string_literals(source: str) -> list[str]:
-    tree = ast.parse(source)
+def call_name(node: ast.expr) -> str:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return f"{call_name(node.value)}.{node.attr}"
+    return ""
+
+
+def string_literals(node: ast.AST) -> list[str]:
     return [
-        node.value
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+        child.value
+        for child in ast.walk(node)
+        if isinstance(child, ast.Constant) and isinstance(child.value, str)
     ]
 
 
-def german_presentation_markers(text: str) -> list[str]:
+def code_presentation_literals(source: str) -> list[str]:
+    tree = ast.parse(source)
+    literals = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        qualified_name = call_name(node.func)
+        short_name = qualified_name.rsplit(".", maxsplit=1)[-1]
+        is_plotly_constructor = qualified_name.startswith(("go.", "px."))
+        if short_name not in PRESENTATION_CALL_NAMES and not is_plotly_constructor:
+            continue
+
+        if short_name in {"print", "display", "Markdown"}:
+            for argument in node.args:
+                literals.extend(string_literals(argument))
+
+        for keyword in node.keywords:
+            if keyword.arg in PRESENTATION_KEYWORDS:
+                literals.extend(string_literals(keyword.value))
+    return literals
+
+
+def german_presentation_markers(text: str, *, heading: bool = False) -> list[str]:
+    explicit_terms = GERMAN_HEADING_TERM_RE.findall(text) if heading else []
+    function_words = GERMAN_FUNCTION_WORD_RE.findall(text)
+    if explicit_terms or len(function_words) >= 2:
+        return sorted({*(term.lower() for term in explicit_terms), *function_words})
+    return []
+
+
+def german_code_presentation_markers(text: str) -> list[str]:
     explicit_terms = GERMAN_PRESENTATION_TERM_RE.findall(text)
     function_words = GERMAN_FUNCTION_WORD_RE.findall(text)
-    if explicit_terms or len(function_words) >= 3:
+    if explicit_terms or len(function_words) >= 2:
         return sorted({*(term.lower() for term in explicit_terms), *function_words})
     return []
 
@@ -135,13 +238,17 @@ def test_presentation_language_is_english():
         for index, cell in enumerate(notebook.cells):
             if cell.cell_type == "markdown":
                 presentation_strings = markdown_prose_blocks(cell.source)
+                marker_finder = lambda text: german_presentation_markers(  # noqa: E731
+                    text, heading=text.lstrip().startswith("#")
+                )
             elif cell.cell_type == "code":
-                presentation_strings = code_string_literals(cell.source)
+                presentation_strings = code_presentation_literals(cell.source)
+                marker_finder = german_code_presentation_markers
             else:
                 continue
 
             for text in presentation_strings:
-                matched = german_presentation_markers(text)
+                matched = marker_finder(text)
                 if matched:
                     excerpt = " ".join(text.split())[:120]
                     violations.append(
@@ -149,6 +256,45 @@ def test_presentation_language_is_english():
                     )
 
     assert not violations, "\n".join(violations[:30])
+
+
+def test_language_contract_allows_source_metadata_raw_labels_and_internal_docstrings():
+    markdown = """
+| Item | Value |
+|:---|:---|
+| **Dataset** | Unfallatlas Deutschland |
+| **Publisher** | Statistisches Bundesamt (Destatis) |
+
+[Straßenverkehrsunfälle in Deutschland](https://example.invalid/source)
+
+`UKATGEORIE=1` is the raw label `Getötet`.
+"""
+    assert not [
+        block
+        for block in markdown_prose_blocks(markdown)
+        if german_presentation_markers(block, heading=block.lstrip().startswith("#"))
+    ]
+
+    source = '''
+def helper():
+    """Internal Stufe description; die Werte werden nicht displayed."""
+    return "Wochentag"
+'''
+    assert code_presentation_literals(source) == []
+
+
+def test_language_contract_detects_headings_body_prose_and_chart_labels():
+    assert german_presentation_markers("## 3 — Stufe 0: baselines", heading=True)
+    assert german_presentation_markers(
+        "Die Fehler werden nach Unfalltyp und Straßenzustand verglichen."
+    )
+
+    source = """
+fig.update_layout(title="Höchste False-Negative-Raten nach Slice")
+"""
+    literals = code_presentation_literals(source)
+    assert literals == ["Höchste False-Negative-Raten nach Slice"]
+    assert german_code_presentation_markers(literals[0])
 
 
 def test_a3_multiclass_decision_precedes_binary_search():
