@@ -337,18 +337,23 @@ def test_index_separates_ready_wip_placeholder_stale_and_orphaned(tmp_path: Path
     write_manifest_and_index(manifest, output_root)
     index = (output_root / "index.html").read_text(encoding="utf-8")
 
-    assert "Bereit" in index
-    assert "In Arbeit" in index
-    assert "Platzhalter" in index
-    assert "Ungültig" in index
-    assert "Veraltet" in index
-    assert "Verwaist" in index
+    assert "Ready" in index
+    assert "Work in progress" in index
+    assert "Placeholder" in index
+    assert "Invalid" in index
+    assert "Outdated" in index
+    assert "Orphaned" in index
     assert 'href="notebooks/ready.html"' in index
     assert 'href="notebooks/work.html"' not in index
     assert "https://" not in index
     assert "http://" not in index
 
     soup = BeautifulSoup(index, "html.parser")
+    assert soup.html["lang"] == "en"
+    assert soup.title.get_text(strip=True) == "Unfallatlas – Notebook presentations"
+    assert soup.select_one(".index-header h1").get_text(strip=True) == "Notebook presentations"
+    assert "Export again to update it." in index
+    assert "no longer exists in the repository" in index
     memberships = {
         section.find("h2").get_text(strip=True): [
             item.find(class_="phase-row-title").get_text(strip=True)
@@ -357,14 +362,14 @@ def test_index_separates_ready_wip_placeholder_stale_and_orphaned(tmp_path: Path
         for section in soup.find_all("section")
     }
     expected_section = {
-        "Titel ready": "Bereit",
-        "Titel active": "In Arbeit",
-        "Titel work": "Veraltet",
-        "Titel stub": "Platzhalter",
-        "Titel stale": "Veraltet",
-        "Titel stale-work": "Veraltet",
-        "Titel gone": "Verwaist",
-        "Titel invalid": "Ungültig",
+        "Titel ready": "Ready",
+        "Titel active": "Work in progress",
+        "Titel work": "Outdated",
+        "Titel stub": "Placeholder",
+        "Titel stale": "Outdated",
+        "Titel stale-work": "Outdated",
+        "Titel gone": "Orphaned",
+        "Titel invalid": "Invalid",
     }
     all_members = [title for titles in memberships.values() for title in titles]
     for title, section in expected_section.items():

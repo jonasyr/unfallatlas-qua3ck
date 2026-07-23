@@ -319,7 +319,7 @@ def test_custom_template_renders_semantic_controls_metadata_and_outputs() -> Non
     soup = BeautifulSoup(html, "html.parser")
 
     assert soup.select_one("header.presentation-header")
-    assert soup.select_one('nav[aria-label="Inhaltsverzeichnis"]')
+    assert soup.select_one('nav[aria-label="Table of contents"]')
     assert [item["href"] for item in soup.select(".toc-link")] == [
         "#grossen-qualitat",
         "#grossen-qualitat-2",
@@ -351,11 +351,11 @@ def test_custom_template_renders_semantic_controls_metadata_and_outputs() -> Non
     assert "abc123d" not in metadata_text
     assert "15.07.2026, 10:30:00 CEST" in metadata_text
     assert "2 Markdown" in metadata_text
-    assert "1 Code" in metadata_text
-    assert "1 Fehlerausgabe" in metadata_text
+    assert "1 code" in metadata_text
+    assert "1 error output" in metadata_text
     assert "Status ready" in metadata_text
-    assert "Warnungen 1" in metadata_text
-    assert "Ausführungsstand Unvollständig" in metadata_text
+    assert "Warnings 1" in metadata_text
+    assert "Execution state Incomplete" in metadata_text
     provenance = soup.select_one("details.technical-provenance")
     assert provenance
     provenance_text = provenance.get_text(" ", strip=True)
@@ -377,6 +377,32 @@ def test_template_moves_git_state_into_technical_provenance() -> None:
     assert "Uncommitted changes" in details.get_text(" ", strip=True)
 
 
+def test_exporter_chrome_is_english() -> None:
+    html, _ = _render(_notebook())
+    soup = BeautifulSoup(html, "html.parser")
+
+    assert soup.html["lang"] == "en"
+    assert soup.select_one(".skip-link").get_text(strip=True) == "Skip to content"
+    assert soup.select_one(".back-link").get_text(" ", strip=True) == "← Back to overview"
+    assert soup.select_one('nav[aria-label="Table of contents"]')
+    assert soup.select_one(".toc-heading h2").get_text(strip=True) == "Contents"
+    assert soup.select_one('[data-action="show-all-code"]').get_text(strip=True) == "Show code"
+    assert soup.select_one('[data-action="hide-all-code"]').get_text(strip=True) == "Hide code"
+    assert soup.select_one('[data-action="show-all-output"]').get_text(strip=True) == "Show outputs"
+    assert soup.select_one('[data-action="hide-all-output"]').get_text(strip=True) == "Hide outputs"
+    assert soup.select_one('[data-action="print"]').get_text(strip=True) == "Print"
+    assert soup.select_one("details.output-cell summary").get_text(strip=True) == "Output"
+
+
+def test_static_exporter_chrome_is_english() -> None:
+    javascript = (STATIC_ROOT / "presentation.js").read_text(encoding="utf-8")
+
+    assert "The chart could not be loaded." in javascript
+    assert "Open GitHub repository (new tab)" in javascript
+    assert "Preparing charts for printing." in javascript
+    assert "Show full output" in javascript
+
+
 def test_toc_uses_semantically_nested_lists() -> None:
     notebook = nbformat.v4.new_notebook(
         cells=[
@@ -388,7 +414,7 @@ def test_toc_uses_semantically_nested_lists() -> None:
 
     html, _ = _render(notebook)
     soup = BeautifulSoup(html, "html.parser")
-    toc = soup.select_one('nav[aria-label="Inhaltsverzeichnis"]')
+    toc = soup.select_one('nav[aria-label="Table of contents"]')
 
     top_items = toc.select(":scope > ol > li")
     assert len(top_items) == 2
@@ -611,8 +637,8 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
     assert "notebooks/renderer-integration.ipynb" in header_text
     assert str(tmp_path) not in header_text
     assert "Status ready" in header_text
-    assert "Warnungen 0" in header_text
-    assert "Ausführungsstand Vollständig" in header_text
+    assert "Warnings 0" in header_text
+    assert "Execution state Complete" in header_text
     assert "Gespeicherter Text" in soup.get_text(" ", strip=True)
     assert "Gespeicherte Tabelle" in soup.get_text(" ", strip=True)
     plotly = soup.select_one(".plotly-output[data-payload-key][data-asset]")

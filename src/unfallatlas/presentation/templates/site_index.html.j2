@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>Unfallatlas – Notebook-Präsentationen</title>
+  <title>Unfallatlas – Notebook presentations</title>
   <link rel="stylesheet" href="{{ style_href }}">
   <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
   <script src="{{ script_src }}" defer></script>
@@ -13,8 +13,8 @@
   <header class="presentation-header index-header">
     <div class="header-content">
       <p class="document-kind">Unfallatlas QUA³CK</p>
-      <h1>Notebook-Präsentationen</h1>
-      {% if generated_at_local %}<p class="source-path">Stand: <time datetime="{{ manifest.generated_at | e }}">{{ generated_at_local }}</time></p>{% endif %}
+      <h1>Notebook presentations</h1>
+      {% if generated_at_local %}<p class="source-path">Updated: <time datetime="{{ manifest.generated_at | e }}">{{ generated_at_local }}</time></p>{% endif %}
     </div>
   </header>
   <main class="index-shell">
@@ -31,10 +31,10 @@
     <section class="phase-section" aria-labelledby="section-{{ loop.index }}">
       <div class="phase-section-heading">
         <h2 id="section-{{ loop.index }}">{{ title }}</h2>
-        {% if title == "Veraltet" %}
-        <p class="section-hint">Der Notebook-Inhalt hat sich seit dem letzten HTML-Export geändert; die unten verlinkte Ansicht zeigt noch den Stand des vorigen Exports. Erneut exportieren, um sie zu aktualisieren.</p>
-        {% elif title == "Verwaist" %}
-        <p class="section-hint">Für diesen Eintrag existiert keine Notebook-Quelldatei mehr im Repository.</p>
+        {% if title == "Outdated" %}
+        <p class="section-hint">The notebook content has changed since its last HTML export; the linked view still shows the previous export. Export again to update it.</p>
+        {% elif title == "Orphaned" %}
+        <p class="section-hint">The notebook source file for this entry no longer exists in the repository.</p>
         {% endif %}
       </div>
       <ol class="phase-list">
@@ -54,7 +54,7 @@
               <span class="state-pill" data-state="{{ row.state }}">{{ row.state }}</span>
             </p>
             {% if row.entry.exported_at_local %}
-            <p class="phase-row-export">Export: {{ row.entry.exported_at_local }}</p>
+            <p class="phase-row-export">Exported: {{ row.entry.exported_at_local }}</p>
             {% endif %}
           </div>
         </li>

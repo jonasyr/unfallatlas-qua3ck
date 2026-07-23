@@ -385,24 +385,24 @@ def _render_index(
         for entry in manifest.entries
     ]
     buckets: dict[str, list[dict[str, Any]]] = {
-        "Bereit": [],
-        "In Arbeit": [],
-        "Platzhalter": [],
-        "Ungültig": [],
-        "Veraltet": [],
-        "Verwaist": [],
+        "Ready": [],
+        "Work in progress": [],
+        "Placeholder": [],
+        "Invalid": [],
+        "Outdated": [],
+        "Orphaned": [],
     }
     status_sections = {
-        "ready": "Bereit",
-        "wip": "In Arbeit",
-        "placeholder": "Platzhalter",
-        "invalid": "Ungültig",
+        "ready": "Ready",
+        "wip": "Work in progress",
+        "placeholder": "Placeholder",
+        "invalid": "Invalid",
     }
     for row in rows:
         if row["state"] == "orphaned":
-            section = "Verwaist"
+            section = "Orphaned"
         elif row["state"] != "fresh":
-            section = "Veraltet"
+            section = "Outdated"
         else:
             section = status_sections[row["entry"].status]
         buckets[section].append(row)
