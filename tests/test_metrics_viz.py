@@ -1,9 +1,6 @@
-import matplotlib  # noqa: E402
-import pandas as pd
-
-matplotlib.use("Agg")  # headless backend for CI
-import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 import pytest
 
 from unfallatlas.viz.metrics_viz import (
@@ -26,38 +23,14 @@ def comparison_df():
     )
 
 
-def test_plot_f1_recall_front_returns_axes(comparison_df):
-    ax = plot_f1_recall_front(comparison_df)
-    assert isinstance(ax, plt.Axes)
-    plt.close("all")
+def test_plot_f1_recall_front_returns_interactive_plotly_figure(comparison_df):
+    fig = plot_f1_recall_front(comparison_df)
 
-
-def test_plot_f1_recall_front_accepts_external_ax(comparison_df):
-    _, ax = plt.subplots()
-    result = plot_f1_recall_front(comparison_df, ax=ax)
-    assert result is ax
-    plt.close("all")
-
-
-def test_plot_f1_recall_front_gate_lines_present(comparison_df):
-    ax = plot_f1_recall_front(comparison_df, gate_f1=0.55, gate_recall=0.50)
-    # Gate lines are drawn as axhline + axvline — check line xdata/ydata
-    h_lines = [
-        ln for ln in ax.lines if len(ln.get_ydata()) == 2 and ln.get_ydata()[0] == ln.get_ydata()[1]
-    ]
-    v_lines = [
-        ln for ln in ax.lines if len(ln.get_xdata()) == 2 and ln.get_xdata()[0] == ln.get_xdata()[1]
-    ]
-    assert len(h_lines) > 0, "Expected at least one horizontal gate line"
-    assert len(v_lines) > 0, "Expected at least one vertical gate line"
-    plt.close("all")
-
-
-def test_plot_f1_recall_front_all_models_plotted(comparison_df):
-    ax = plot_f1_recall_front(comparison_df)
-    # Each model gets a scatter point — check there are at least n scatter collections
-    assert ax.collections or ax.lines, "Expected scatter points in plot"
-    plt.close("all")
+    assert isinstance(fig, go.Figure)
+    assert len(fig.data) == 1
+    assert fig.data[0].type == "scatter"
+    assert len(fig.data[0].x) == len(comparison_df)
+    assert {shape.type for shape in fig.layout.shapes} == {"line", "rect"}
 
 
 @pytest.fixture()
@@ -76,60 +49,11 @@ def binary_comparison_df():
     )
 
 
-def test_plot_binary_f1_recall_front_returns_axes(binary_comparison_df):
-    ax = plot_binary_f1_recall_front(binary_comparison_df)
-    assert isinstance(ax, plt.Axes)
-    plt.close("all")
+def test_plot_binary_front_uses_recall_ksi(binary_comparison_df):
+    fig = plot_binary_f1_recall_front(binary_comparison_df)
 
-
-def test_plot_binary_f1_recall_front_accepts_external_ax(binary_comparison_df):
-    _, ax = plt.subplots()
-    result = plot_binary_f1_recall_front(binary_comparison_df, ax=ax)
-    assert result is ax
-    plt.close("all")
-
-
-def test_plot_binary_f1_recall_front_gate_lines_present(binary_comparison_df):
-    ax = plot_binary_f1_recall_front(binary_comparison_df, gate_f1=0.55, gate_recall=0.50)
-    h_lines = [
-        ln for ln in ax.lines if len(ln.get_ydata()) == 2 and ln.get_ydata()[0] == ln.get_ydata()[1]
-    ]
-    v_lines = [
-        ln for ln in ax.lines if len(ln.get_xdata()) == 2 and ln.get_xdata()[0] == ln.get_xdata()[1]
-    ]
-    assert len(h_lines) > 0
-    assert len(v_lines) > 0
-    plt.close("all")
-
-
-def test_plot_binary_f1_recall_front_uses_recall_ksi_not_recall_class_1(binary_comparison_df):
-    # Regression guard: this plot must read the binary-evaluation column name,
-    # not silently fall back to the 3-class 'recall_class_1' column.
-    ax = plot_binary_f1_recall_front(binary_comparison_df)
-    scatter_collections = [
-        coll for coll in ax.collections if isinstance(coll, matplotlib.collections.PathCollection)
-    ]
-    xdata = [pt[0] for coll in scatter_collections for pt in coll.get_offsets()]
-    assert sorted(xdata) == sorted(binary_comparison_df["recall_ksi"].tolist())
-    plt.close("all")
-
-
-def test_plot_f1_recall_front_unaffected_by_refactor(comparison_df):
-    """Existing 3-class plot must keep its exact title after the shared-helper refactor."""
-    ax = plot_f1_recall_front(comparison_df)
-    assert ax.get_title() == "Pareto Front: Macro-F1 vs. Recall(Killed) — all 19 configurations"
-    plt.close("all")
-
-
-def test_plot_f1_recall_front_legend_label_unchanged_by_refactor(comparison_df):
-    """Regression test for a real bug found in review: the shared-helper
-    refactor accidentally changed this function's vertical-gate legend text
-    from 'Gate: Recall(1) >= 0.5' to a longer axis-label-derived string.
-    plot_f1_recall_front must keep its exact original legend text."""
-    ax = plot_f1_recall_front(comparison_df, gate_recall=0.50)
-    legend_labels = [line.get_label() for line in ax.lines]
-    assert "Gate: Recall(1) ≥ 0.5" in legend_labels
-    plt.close("all")
+    assert list(fig.data[0].x) == list(binary_comparison_df["recall_ksi"])
+    assert list(fig.data[0].y) == list(binary_comparison_df["macro_f1"])
 
 
 def test_plot_roc_pr_curves_returns_two_plotly_figures():
