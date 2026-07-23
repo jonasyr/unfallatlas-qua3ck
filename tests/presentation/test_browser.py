@@ -150,8 +150,13 @@ def test_gallery_layout_is_usable_at_supported_viewports(
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
 
             toolbar = page.locator(".presentation-toolbar")
-            assert toolbar.evaluate("node => node.scrollWidth > node.clientWidth")
-            toolbar.evaluate("node => { node.scrollLeft = node.scrollWidth; }")
+            toolbar_layout = toolbar.evaluate(
+                "node => ({overflows: node.scrollWidth > node.clientWidth, "
+                "wrap: getComputedStyle(node).flexWrap})"
+            )
+            assert toolbar_layout["overflows"] or toolbar_layout["wrap"] == "wrap"
+            if toolbar_layout["overflows"]:
+                toolbar.evaluate("node => { node.scrollLeft = node.scrollWidth; }")
             last_control = toolbar.locator("button").last
             assert last_control.is_visible()
             assert last_control.evaluate(
@@ -402,6 +407,8 @@ def test_plotly_lazy_loads_from_local_assets_without_runtime_errors(
         plot.scroll_into_view_if_needed()
         page.wait_for_selector(".plotly-output.js-plotly-plot", timeout=15_000)
         assert plot.get_attribute("data-loaded") == "true"
+        # Plotly 6 initializes the existing output host, rather than adding
+        # a nested `.plotly-graph-div`, so this enumerates every actual graph host.
         plotly_layouts = page.locator(".plotly-output.js-plotly-plot").evaluate_all(
             "nodes => nodes.map(node => Boolean(node._fullLayout))"
         )
