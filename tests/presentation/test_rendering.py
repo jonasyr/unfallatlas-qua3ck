@@ -397,10 +397,15 @@ def test_exporter_chrome_is_english() -> None:
 def test_static_exporter_chrome_is_english() -> None:
     javascript = (STATIC_ROOT / "presentation.js").read_text(encoding="utf-8")
 
+    assert "Local assets could not be loaded." in javascript
     assert "The chart could not be loaded." in javascript
     assert "Open GitHub repository (new tab)" in javascript
+    assert "Toggle color theme" in javascript
+    assert "Math notation could not be rendered." in javascript
     assert "Preparing charts for printing." in javascript
     assert "Show full output" in javascript
+    assert "Sections expanded." in javascript
+    assert "Sections collapsed." in javascript
 
 
 def test_toc_uses_semantically_nested_lists() -> None:

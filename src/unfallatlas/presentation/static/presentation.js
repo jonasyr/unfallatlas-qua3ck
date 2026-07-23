@@ -24,7 +24,7 @@ window.UnfallatlasPresentation = (() => {
           script.src = src;
           script.onload = resolve;
           script.onerror = () =>
-            reject(new Error(`Lokales Asset konnte nicht geladen werden: ${src}`));
+            reject(new Error(`Local assets could not be loaded. ${src}`));
           document.head.append(script);
         }),
       );
@@ -112,7 +112,7 @@ window.UnfallatlasPresentation = (() => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "theme-toggle";
-    button.setAttribute("aria-label", "Farbschema umschalten (hell/dunkel)");
+    button.setAttribute("aria-label", "Toggle color theme (light/dark)");
     button.setAttribute("aria-pressed", String(currentTheme() === "dark"));
     button.innerHTML =
       '<svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>' +
@@ -161,7 +161,7 @@ window.UnfallatlasPresentation = (() => {
       const message = document.createElement("p");
       message.className = "output-load-error";
       message.textContent =
-        error instanceof Error ? error.message : "Formeln konnten nicht geladen werden.";
+        error instanceof Error ? error.message : "Math notation could not be rendered.";
       document.querySelector(".notebook-main")?.prepend(message);
     });
   }
@@ -216,7 +216,7 @@ window.UnfallatlasPresentation = (() => {
           details.querySelectorAll(".plotly-output").forEach(loadPlotly);
         }
       });
-      announce(open ? "Bereiche geöffnet." : "Bereiche geschlossen.");
+      announce(open ? "Sections expanded." : "Sections collapsed.");
     }
 
     function closeToc() {
