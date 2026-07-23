@@ -59,6 +59,7 @@ _RESOURCE_ATTRIBUTES = (
     ("audio", "src"),
 )
 _CSS_URL = re.compile(r"url\(\s*(['\"]?)(.*?)\1\s*\)", flags=re.IGNORECASE)
+_MARKDOWN_TABLE_DELIMITER = re.compile(r"(?m)^\s*\|?\s*:?-{3,}.*\|\s*$")
 _EXTERNAL_MAP_STYLES = {
     "basic",
     "carto-darkmatter",
@@ -95,6 +96,23 @@ def _finding(
         cell_index=cell_index,
         strict_blocker=strict,
     )
+
+
+def validate_rendered_html(html: str) -> tuple[Finding, ...]:
+    """Report Markdown table syntax that leaked into rendered content blocks."""
+    soup = BeautifulSoup(html, "html.parser")
+    findings: list[Finding] = []
+    for node in soup.select("p, li"):
+        text = node.get_text("\n", strip=True)
+        if "|" in text and _MARKDOWN_TABLE_DELIMITER.search(text):
+            findings.append(
+                _finding(
+                    "literal-markdown-table",
+                    Severity.ERROR,
+                    "Markdown table syntax was emitted as paragraph text.",
+                )
+            )
+    return tuple(findings)
 
 
 def _resource_finding(

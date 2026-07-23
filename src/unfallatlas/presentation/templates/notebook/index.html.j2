@@ -26,16 +26,21 @@
     <p class="source-path">{{ resources.presentation.source_path | e }}</p>
     <dl class="metadata-grid">
       <div><dt>Export</dt><dd>{{ resources.presentation.metadata.exported_at_local | e }}</dd></div>
-      <div><dt>Commit</dt><dd><code>{{ resources.presentation.metadata.git.short_commit | e }}</code></dd></div>
-      <div><dt>Branch</dt><dd>{{ resources.presentation.metadata.git.branch | e }}</dd></div>
-      <div><dt>Repository</dt><dd>{{ resources.presentation.metadata.git.repo_name | e }}</dd></div>
-      <div><dt>Arbeitsbaum</dt><dd>{% if resources.presentation.metadata.git.dirty %}Geändert{% else %}Sauber{% endif %}</dd></div>
       <div><dt>Status</dt><dd><span class="status-pill" data-status="{{ resources.presentation.status | e }}">{{ resources.presentation.status | e }}</span></dd></div>
       <div><dt>Warnungen</dt><dd>{{ resources.presentation.warning_count }}</dd></div>
       <div><dt>Ausführungsstand</dt><dd>{% if resources.presentation.execution_complete %}<span class="state-pill" data-state="fresh">Vollständig</span>{% else %}<span class="state-pill" data-state="stale">Unvollständig</span>{% endif %}</dd></div>
       <div><dt>Zellen</dt><dd>{{ resources.presentation.counts.markdown }} Markdown, {{ resources.presentation.counts.code }} Code</dd></div>
       <div><dt>Ausgaben</dt><dd>{{ resources.presentation.counts.code_with_output }} mit Ausgabe, {{ resources.presentation.counts.error_outputs }} Fehlerausgabe</dd></div>
     </dl>
+    <details class="technical-provenance">
+      <summary>Technical provenance</summary>
+      <dl>
+        <div><dt>Repository</dt><dd>{{ resources.presentation.metadata.git.repo_name | e }}</dd></div>
+        <div><dt>Commit</dt><dd><code>{{ resources.presentation.metadata.git.short_commit | e }}</code></dd></div>
+        <div><dt>Branch</dt><dd>{{ resources.presentation.metadata.git.branch | e }}</dd></div>
+        <div><dt>Uncommitted changes</dt><dd>{% if resources.presentation.metadata.git.dirty %}Yes{% else %}No{% endif %}</dd></div>
+      </dl>
+    </details>
     {% if resources.presentation.findings %}
     {% set has_error_finding = resources.presentation.findings | selectattr("severity", "equalto", "error") | list | length > 0 %}
     <details class="findings"{% if has_error_finding %} open{% endif %}>

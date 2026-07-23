@@ -30,7 +30,11 @@ from unfallatlas.presentation.models import (
     classify_html_output,
     nest_toc,
 )
-from unfallatlas.presentation.validation import _CSS_URL, _RESOURCE_ATTRIBUTES
+from unfallatlas.presentation.validation import (
+    _CSS_URL,
+    _RESOURCE_ATTRIBUTES,
+    validate_rendered_html,
+)
 
 PACKAGE_TEMPLATES_ROOT = Path(__file__).parent / "templates"
 
@@ -354,6 +358,7 @@ def render_notebook(
     output_root = Path(output_root)
     destination = output_root / "notebooks" / f"{analysis.source.stem}.html"
     assets: list[AssetRecord] = []
+    result_findings = analysis.findings
 
     try:
         if output_relative_path is not None:
@@ -434,6 +439,15 @@ def render_notebook(
             )
             if final_assets:
                 raise RuntimeError("final render unexpectedly republished local resources")
+            post_render_findings = validate_rendered_html(html)
+            result_findings = (*analysis.findings, *post_render_findings)
+            error_findings = [
+                finding for finding in post_render_findings if finding.severity.value == "error"
+            ]
+            if error_findings:
+                raise RuntimeError(
+                    "; ".join(f"{finding.code}: {finding.message}" for finding in error_findings)
+                )
         rendered = html.encode("utf-8")
         _write_html_atomic(destination, rendered)
     except Exception as exc:
@@ -441,7 +455,7 @@ def render_notebook(
             source=analysis.source,
             destination=destination,
             status=analysis.status,
-            findings=analysis.findings,
+            findings=result_findings,
             size_bytes=0,
             error=str(exc) or type(exc).__name__,
             assets=tuple(assets),
@@ -451,7 +465,7 @@ def render_notebook(
         source=analysis.source,
         destination=destination,
         status=analysis.status,
-        findings=analysis.findings,
+        findings=result_findings,
         size_bytes=len(rendered),
         error=None,
         assets=tuple(assets),

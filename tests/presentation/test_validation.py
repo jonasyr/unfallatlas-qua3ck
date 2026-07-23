@@ -28,6 +28,25 @@ def test_size_thresholds_are_five_and_one_hundred_mib() -> None:
     assert VERY_LARGE_NOTEBOOK_OUTPUT_BYTES == 100 * 1024 * 1024
 
 
+def test_validate_rendered_html_detects_literal_markdown_table() -> None:
+    from unfallatlas.presentation import validation
+
+    html = "<main><p>| A | B |\n|---|---|\n| 1 | 2 |</p></main>"
+
+    findings = validation.validate_rendered_html(html)
+
+    assert [finding.code for finding in findings] == ["literal-markdown-table"]
+    assert findings[0].severity is Severity.ERROR
+
+
+def test_validate_rendered_html_ignores_prose_with_a_pipe() -> None:
+    from unfallatlas.presentation import validation
+
+    findings = validation.validate_rendered_html("<main><p>A | B is ordinary prose.</p></main>")
+
+    assert findings == ()
+
+
 def test_markdown_only_notebook_is_ready(tmp_path: Path) -> None:
     path = write_notebook(
         tmp_path / "notebooks/intro.ipynb", [nbformat.v4.new_markdown_cell("# Intro")]

@@ -16,9 +16,11 @@ from unfallatlas.presentation import models
 from unfallatlas.presentation.models import (
     CellCounts,
     ExportMetadata,
+    Finding,
     GitMetadata,
     NotebookAnalysis,
     NotebookStatus,
+    Severity,
 )
 
 PACKAGE_ROOT = Path(__file__).parents[2] / "src" / "unfallatlas" / "presentation"
@@ -346,9 +348,7 @@ def test_custom_template_renders_semantic_controls_metadata_and_outputs() -> Non
     metadata = soup.select_one(".metadata-grid")
     assert metadata
     metadata_text = metadata.get_text(" ", strip=True)
-    assert "abc123d" in metadata_text
-    assert "Repository unfallatlas-qua3ck" in metadata_text
-    assert "Arbeitsbaum Geändert" in metadata_text
+    assert "abc123d" not in metadata_text
     assert "15.07.2026, 10:30:00 CEST" in metadata_text
     assert "2 Markdown" in metadata_text
     assert "1 Code" in metadata_text
@@ -356,7 +356,25 @@ def test_custom_template_renders_semantic_controls_metadata_and_outputs() -> Non
     assert "Status ready" in metadata_text
     assert "Warnungen 1" in metadata_text
     assert "Ausführungsstand Unvollständig" in metadata_text
+    provenance = soup.select_one("details.technical-provenance")
+    assert provenance
+    provenance_text = provenance.get_text(" ", strip=True)
+    assert "Repository unfallatlas-qua3ck" in provenance_text
+    assert "Commit abc123d" in provenance_text
+    assert "Uncommitted changes Yes" in provenance_text
     assert "Große Ausgabe" in soup.get_text(" ", strip=True)
+
+
+def test_template_moves_git_state_into_technical_provenance() -> None:
+    html, _ = _render(_notebook())
+    soup = BeautifulSoup(html, "html.parser")
+
+    visible_header = soup.select_one(".presentation-header").get_text(" ", strip=True)
+    assert "Arbeitsbaum" not in visible_header
+    assert "Working tree" not in visible_header
+    details = soup.select_one("details.technical-provenance")
+    assert details
+    assert "Uncommitted changes" in details.get_text(" ", strip=True)
 
 
 def test_toc_uses_semantically_nested_lists() -> None:
@@ -712,6 +730,31 @@ def test_render_notebook_preserves_previous_html_when_final_replace_fails(
     assert result.error == "final HTML replace failed"
     assert target.read_bytes() == b"old html"
     assert not [path for path in target.parent.iterdir() if path != target]
+
+
+def test_render_notebook_rejects_final_html_audit_errors(tmp_path: Path, monkeypatch) -> None:
+    import unfallatlas.presentation.rendering as rendering
+
+    finding = Finding(
+        code="literal-markdown-table",
+        severity=Severity.ERROR,
+        message="Markdown table syntax was emitted as paragraph text.",
+    )
+    monkeypatch.setattr(rendering, "validate_rendered_html", lambda html: (finding,), raising=False)
+
+    result = rendering.render_notebook(
+        _renderer_analysis(tmp_path),
+        _renderer_metadata(),
+        tmp_path / "site",
+        repo_root=tmp_path,
+    )
+
+    assert (
+        result.error
+        == "literal-markdown-table: Markdown table syntax was emitted as paragraph text."
+    )
+    assert result.findings[-1] == finding
+    assert not result.destination.exists()
 
 
 def test_render_notebook_publishes_and_rewrites_local_markdown_image(

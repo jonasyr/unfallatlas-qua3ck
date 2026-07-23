@@ -402,6 +402,11 @@ def test_plotly_lazy_loads_from_local_assets_without_runtime_errors(
         plot.scroll_into_view_if_needed()
         page.wait_for_selector(".plotly-output.js-plotly-plot", timeout=15_000)
         assert plot.get_attribute("data-loaded") == "true"
+        plotly_layouts = page.locator(".plotly-output.js-plotly-plot").evaluate_all(
+            "nodes => nodes.map(node => Boolean(node._fullLayout))"
+        )
+        assert plotly_layouts
+        assert all(plotly_layouts)
         metrics = plot.evaluate(
             "node => ({clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, "
             "overflowX: getComputedStyle(node).overflowX, "
