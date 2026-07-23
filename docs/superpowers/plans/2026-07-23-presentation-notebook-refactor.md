@@ -1003,3 +1003,94 @@ Capture:
 - export manifest status for all phases;
 - final `git status --short`;
 - confirmation that `notebooks/03_A3_Phase.ipynb` was never committed.
+
+---
+
+### Task 11: Update the AI disclosure and C-phase prompt record
+
+**Files:**
+- Modify: `docs/AI TOOL DISCLOSURE.md`
+- Modify: `docs/prompts/04_prompts_phase_c.md`
+- Modify: `tests/presentation/test_documentation.py`
+
+**Interfaces:**
+- Consumes: the final implemented notebook structure, measured C-phase results, verification
+  evidence, design specification, and implementation plan.
+- Produces: an accurate public record of the AI-assisted cross-phase refactor and the prompts and
+  scope decisions that shaped the finalized C phase.
+
+- [ ] **Step 1: Add a failing documentation provenance test**
+
+```python
+DISCLOSURE = REPO_ROOT / "docs" / "AI TOOL DISCLOSURE.md"
+C_PROMPTS = REPO_ROOT / "docs" / "prompts" / "04_prompts_phase_c.md"
+
+
+def test_cross_phase_refactor_is_disclosed_and_linked():
+    disclosure = DISCLOSURE.read_text(encoding="utf-8")
+    prompt_record = C_PROMPTS.read_text(encoding="utf-8")
+    assert "2026-07-23-presentation-notebook-refactor-design.md" in disclosure
+    assert "2026-07-23-presentation-notebook-refactor.md" in disclosure
+    assert "interactive Plotly" in disclosure
+    assert "Comprehensive project review and refactor" in prompt_record
+    assert "English-only" in prompt_record
+    assert "notebooks/03_A3_Phase.ipynb" in prompt_record
+```
+
+- [ ] **Step 2: Run the documentation test and verify failure**
+
+Run:
+`uv run pytest tests/presentation/test_documentation.py::test_cross_phase_refactor_is_disclosed_and_linked -q`
+
+Expected: failure because the completed session is not yet recorded.
+
+- [ ] **Step 3: Append the C-phase prompt-session record**
+
+Follow the existing dated-entry structure in `04_prompts_phase_c.md`. Record:
+
+- the original comprehensive review/refactor request;
+- the English-only decision;
+- the approved integrated narrative approach;
+- the requirement to retain intentional console evidence;
+- use of all available persisted candidate models on validation;
+- champion-only Test-2024 analysis;
+- preservation and non-commitment of `notebooks/03_A3_Phase.ipynb`;
+- final updates to this prompt record and the disclosure.
+
+Summarize implemented outcomes only after reading the final notebooks and HTML; do not copy planned
+outcomes that were not actually delivered.
+
+- [ ] **Step 4: Add the disclosure row**
+
+Add a July 2026 row covering Q/U/A³/C and presentation export. Identify the tool as Codex (GPT-5)
+and describe the delivered work: editorial restructuring, Plotly standardization, Markdown/HTML
+rendering fix, persisted-candidate C analysis, execution/export, and browser verification. Link:
+
+```markdown
+[C prompt record](prompts/04_prompts_phase_c.md);
+[Design spec](superpowers/specs/2026-07-23-presentation-notebook-refactor-design.md);
+[Implementation plan](superpowers/plans/2026-07-23-presentation-notebook-refactor.md)
+```
+
+- [ ] **Step 5: Run documentation and full final checks**
+
+Run:
+`uv run pytest tests/presentation/test_documentation.py -q`
+
+Run:
+`uv run pre-commit run --files "docs/AI TOOL DISCLOSURE.md" \
+docs/prompts/04_prompts_phase_c.md tests/presentation/test_documentation.py`
+
+Expected: all documentation tests and applicable hooks pass.
+
+- [ ] **Step 6: Commit the final provenance update**
+
+```bash
+git add "docs/AI TOOL DISCLOSURE.md" docs/prompts/04_prompts_phase_c.md \
+  tests/presentation/test_documentation.py
+git diff --cached --name-only
+git commit -m "docs: disclose presentation and c-phase refactor"
+```
+
+The staged-name check must not list `notebooks/03_A3_Phase.ipynb` or
+`notebooks/03_A3_Phase.py`.
