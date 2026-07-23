@@ -56,9 +56,9 @@
     {
       "model": "binary_catboost_balanced",
       "family": "catboost",
-      "macro_f1": 0.5649920951224464,
-      "recall_ksi": 0.686110930065828,
-      "recall_slight": 0.6238526762293796,
+      "macro_f1": 0.5649865163842573,
+      "recall_ksi": 0.6861326554997936,
+      "recall_slight": 0.6238347405378017,
       "n_train": 1554834.0
     },
     {
@@ -125,7 +125,92 @@
     "optuna_trials": 20,
     "subsample_size_svm_linear_and_boosting_tuning": 500000,
     "subsample_size_svm_rbf": 8000,
-    "run_at_utc": "2026-07-15T10:16:49.924825+00:00",
+    "run_at_utc": "2026-07-23T01:46:36.404269+00:00",
     "random_seed": 42
+  },
+  "checkpoint_id": "b1ea31e",
+  "candidate_artifacts": {
+    "candidates": {
+      "binary_random_guess": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_random_guess.joblib",
+        "sha256": "351595a2c74775d484f386fe4aafaf272fcec429757b08897444b54dc9246506",
+        "family": "binary_random_guess",
+        "n_train": null,
+        "score_interface": "predict_proba",
+        "evaluation_role": "baseline"
+      },
+      "binary_majority_class": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_majority_class.joblib",
+        "sha256": "92e1201c069bf5e88de025f39c99096966fd6f740efe85270d82af0d8392defe",
+        "family": "binary_majority_class",
+        "n_train": null,
+        "score_interface": "predict_proba",
+        "evaluation_role": "baseline"
+      },
+      "binary_logistic_regression": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_logistic_regression.joblib",
+        "sha256": "07b779c3f19ca79fb0eaf7fb1e6c234739c3f23cc1df744c46646601c7d8d1b8",
+        "family": "binary_logistic_regression",
+        "n_train": 1554834,
+        "score_interface": "predict_proba",
+        "evaluation_role": "candidate"
+      },
+      "binary_random_forest_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_random_forest_balanced.joblib",
+        "sha256": "058e8e30234d7ecb35f996281acec9a063f57ace13424c7ee58fd09e50ee49fe",
+        "family": "random_forest",
+        "n_train": 1554834,
+        "score_interface": "predict_proba",
+        "evaluation_role": "champion"
+      },
+      "binary_xgboost_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_xgboost_balanced.joblib",
+        "sha256": "ad128a145daef549206bb0cc55f6edbb531a0e0c97e9e1f5f1a95149a7f837a1",
+        "family": "xgboost",
+        "n_train": 1554834,
+        "score_interface": "predict_proba",
+        "evaluation_role": "finalist"
+      },
+      "binary_lightgbm_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_lightgbm_balanced.joblib",
+        "sha256": "c11d5a375dde2bb19db5a6b7ec28d783212a415d9df124a6392f439a477f5579",
+        "family": "lightgbm",
+        "n_train": 1554834,
+        "score_interface": "predict_proba",
+        "evaluation_role": "finalist"
+      },
+      "binary_catboost_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_catboost_balanced.joblib",
+        "sha256": "30a1043487037bb00bddc50a75e35949836df1fbb220509208956285653a67b3",
+        "family": "catboost",
+        "n_train": 1554834,
+        "score_interface": "predict_proba",
+        "evaluation_role": "finalist"
+      },
+      "binary_svm_linear_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_svm_linear_balanced.joblib",
+        "sha256": "8e1c034b0cb359b5a380df11739dc397ed2108ddfd0bc838dca987cf1848f1bf",
+        "family": "svm_linear",
+        "n_train": 500000,
+        "score_interface": "decision_function",
+        "evaluation_role": "candidate"
+      },
+      "binary_svm_sgd_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_svm_sgd_balanced.joblib",
+        "sha256": "714bb3c84a9b310b060ca097369e5e8bd6a73dfdd03583f9a6bb7ef255524066",
+        "family": "svm_sgd",
+        "n_train": 1554834,
+        "score_interface": "decision_function",
+        "evaluation_role": "candidate"
+      },
+      "binary_svm_rbf_balanced": {
+        "path": "data/processed/a3_checkpoints/b1ea31e/binary/binary_svm_rbf_balanced.joblib",
+        "sha256": "f4acc5f3b1d80b844a4ed3c1233da6f912fd93819482207a2cb70c80abbeb5e8",
+        "family": "svm_rbf",
+        "n_train": 8000,
+        "score_interface": "decision_function",
+        "evaluation_role": "candidate"
+      }
+    }
   }
 }
