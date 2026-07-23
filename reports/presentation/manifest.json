@@ -504,17 +504,57 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-83e6909e0af834ab.css",
-          "sha256": "83e6909e0af834abd40a8cf1c98711c2251fa27c9b2114b0127063931981649b",
-          "size_bytes": 8004
+          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
+          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-e441c0f491aa8ad4.js",
-          "sha256": "e441c0f491aa8ad4c6edc7a543fee35a42ef5e801924a9a76944c91b106574cb",
-          "size_bytes": 10281
+          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
+          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
+          "size_bytes": 14334
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-mono-latin-400-normal.woff2",
+          "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7",
+          "size_bytes": 14708
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-italic.woff2",
+          "sha256": "6de912e531b6c98084f1b2d5e5a91bad77be4e68bc4e396e43c46fc435e5f3d9",
+          "size_bytes": 24356
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-400-normal.woff2",
+          "sha256": "3b646991d30055a93a4ecc499713d4347953a74a947ecab435ab72070cbdab0e",
+          "size_bytes": 22588
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-600-normal.woff2",
+          "sha256": "8960851d691c054ed38e259bdcf1a6190d157b4203ed5bb32c632a863fb8ec2f",
+          "size_bytes": 24252
+        },
+        {
+          "cell_index": null,
+          "kind": "ui-font",
+          "media_type": "font/woff2",
+          "relative_path": "assets/vendor/fonts/ibm-plex-sans-latin-700-normal.woff2",
+          "sha256": "42e7b0c143c19df9d99fd896e76b48f846edf0902d200bc29796b34d12c33aa7",
+          "size_bytes": 22832
         },
         {
           "cell_index": 19,
@@ -528,9 +568,9 @@
           "cell_index": 34,
           "kind": "image",
           "media_type": "image/png",
-          "relative_path": "assets/notebooks/03_A3_Phase/image-c16d3045c05e6f0b.png",
-          "sha256": "c16d3045c05e6f0b0bf7ace574ed0ae9abb997d32627d227476e96dc0e987c8f",
-          "size_bytes": 57919
+          "relative_path": "assets/notebooks/03_A3_Phase/image-759a19b98662c8c9.png",
+          "sha256": "759a19b98662c8c962567bc7e0f2fd4d206ebfc13b900fba8648b79e28d3468c",
+          "size_bytes": 57955
         },
         {
           "cell_index": 54,
@@ -550,8 +590,8 @@
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-15T16:50:06+00:00",
-      "exported_at_local": "15.07.2026, 18:50:06 CEST",
+      "exported_at": "2026-07-23T10:02:11+00:00",
+      "exported_at_local": "23.07.2026, 12:02:11 CEST",
       "findings": [
         {
           "cell_index": 3,
@@ -590,17 +630,17 @@
         }
       ],
       "git": {
-        "branch": "feature/binary_classifaction",
-        "commit": "15de77510c0b7055f0af37db635cfb3c0a273b35",
+        "branch": "main",
+        "commit": "b1ea31e503cdc2b3a31b712ba5bef91433ef7035",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "15de77510c0b"
+        "short_commit": "b1ea31e503cd"
       },
       "output": "notebooks/03_A3_Phase.html",
-      "size_bytes": 420116,
-      "snapshot_sha256": "05e0840ed943c0fa291a119f4f79ffbd4227fed3d0ce899c84d7a078e69371bc",
+      "size_bytes": 467802,
+      "snapshot_sha256": "5c50eedcd6d98980ca52975fc4665432c8a8a2d48e6f5ff81ad2ed6f122e0403",
       "source": "notebooks/03_A3_Phase.ipynb",
-      "source_sha256": "6ad13e432334b63f2643f51109bdefdbb3db4e3aaa0752985bbbf1029678d943",
+      "source_sha256": "f2b86566956e858a42892fafff3324f38afe57fe52802945618e92cd4814d825",
       "status": "ready",
       "title": "Unfallatlas Deutschland A³ Phase"
     },
@@ -796,6 +836,6 @@
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-22T03:19:18+00:00",
+  "generated_at": "2026-07-23T10:02:11+00:00",
   "schema_version": 1
 }
