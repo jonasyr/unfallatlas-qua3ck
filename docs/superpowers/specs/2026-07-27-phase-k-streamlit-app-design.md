@@ -231,7 +231,7 @@ hardcoded as a constant, not re-queried per app run).
   through champion), sortable.
 - `st.plotly_chart(plot_binary_f1_recall_front(...))` (same figure as
   Overview's binary panel, or shared via cache so it's not recomputed).
-- `st.plotly_chart(plot_confusion_matrix_heatmap(model_card["test_2024_metrics"]["confusion_matrix"], labels=["slight","KSI"]))`.
+- `st.plotly_chart(plot_confusion_matrix_heatmap(model_card["test_2024_metrics"]["confusion_matrix"], labels=["KSI","slight"]))`.
 - Finalist comparison table from the contract's
   `decision_evidence.finalist_measurements` (Random Forest, XGBoost,
   LightGBM, CatBoost): macro_f1, recall_ksi, latency_ms_per_1k,
