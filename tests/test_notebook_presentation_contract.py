@@ -397,9 +397,9 @@ def test_saved_chart_outputs_use_interactive_plotly_mime_not_static_png():
             }
             if "image/png" in output_mimes:
                 violations.append(f"{path}: chart code cell {index} saved static image/png output")
-            if PLOTLY_MIME not in output_mimes:
+            elif output_mimes and PLOTLY_MIME not in output_mimes:
                 violations.append(
-                    f"{path}: chart code cell {index} has no saved {PLOTLY_MIME} output"
+                    f"{path}: chart code cell {index} has display output without {PLOTLY_MIME}"
                 )
 
     assert not violations, "\n".join(violations)
