@@ -1,13 +1,16 @@
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
+    build_input_row,
     get_column_spec,
     load_3class_comparison,
     load_binary_comparison,
     load_candidate_metrics,
     load_categorical_options,
+    load_champion_model,
     load_inference_contract,
     load_model_card,
     load_permutation_importance,
+    predict_ksi,
 )
 
 
@@ -86,3 +89,62 @@ def test_default_widget_values_cover_every_required_column():
     contract = load_inference_contract()
     required_names = {col["name"] for col in contract["required_columns"]}
     assert required_names.issubset(DEFAULT_WIDGET_VALUES.keys())
+
+
+class _FakePipeline:
+    """Tiny stand-in for the real 407 MB joblib pipeline, for fast unit tests."""
+
+    def predict_proba(self, row):
+        return [[0.3, 0.7]]
+
+
+def test_build_input_row_keeps_istgkfz_as_real_bool_like_its_siblings():
+    contract = load_inference_contract()
+    row = build_input_row(DEFAULT_WIDGET_VALUES, contract)
+    assert row.loc[0, "IstGkfz"] is False
+
+
+def test_build_input_row_keeps_real_bools_for_other_ist_columns():
+    contract = load_inference_contract()
+    row = build_input_row(DEFAULT_WIDGET_VALUES, contract)
+    assert row.loc[0, "IstPKW"] is True
+    assert row.loc[0, "IstRad"] is False
+
+
+def test_build_input_row_has_all_30_required_columns_in_contract_order():
+    contract = load_inference_contract()
+    row = build_input_row(DEFAULT_WIDGET_VALUES, contract)
+    expected_order = [col["name"] for col in contract["required_columns"]]
+    assert list(row.columns) == expected_order
+
+
+def test_build_input_row_raises_clear_keyerror_on_missing_widget_value():
+    contract = load_inference_contract()
+    incomplete_values = {k: v for k, v in DEFAULT_WIDGET_VALUES.items() if k != "UMONAT"}
+    try:
+        build_input_row(incomplete_values, contract)
+        assert False, "expected KeyError"
+    except KeyError as exc:
+        assert "UMONAT" in str(exc)
+
+
+def test_predict_ksi_applies_threshold_not_default_half():
+    row = build_input_row(DEFAULT_WIDGET_VALUES, load_inference_contract())
+    proba, prediction = predict_ksi(_FakePipeline(), row, threshold=0.75)
+    assert proba == 0.7
+    assert prediction == 0  # 0.7 < 0.75 threshold, even though 0.7 > sklearn's default 0.5
+
+    proba2, prediction2 = predict_ksi(_FakePipeline(), row, threshold=0.5)
+    assert prediction2 == 1  # 0.7 >= 0.5
+
+
+def test_load_champion_model_predicts_on_real_contract_row():
+    """End-to-end check that the committed joblib model, the committed
+    inference contract, and build_input_row/predict_ksi all agree - this is
+    the concrete proof that the app needs no notebook execution."""
+    contract = load_inference_contract()
+    model = load_champion_model()
+    row = build_input_row(DEFAULT_WIDGET_VALUES, contract)
+    proba, prediction = predict_ksi(model, row, contract["threshold"])
+    assert 0.0 <= proba <= 1.0
+    assert prediction in (0, 1)

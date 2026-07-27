@@ -13,8 +13,10 @@ import logging
 from pathlib import Path
 
 import duckdb
+import joblib
 import pandas as pd
 import streamlit as st
+from sklearn.pipeline import Pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +123,69 @@ def get_column_spec(contract: dict, name: str) -> dict:
         if col["name"] == name:
             return col
     raise KeyError(f"Column {name!r} not found in inference contract required_columns")
+
+
+@st.cache_resource
+def load_champion_model() -> Pipeline:
+    """Load the fitted champion pipeline referenced by the inference contract.
+
+    The returned Pipeline already includes preprocessing (encoding, scaling),
+    so callers only need to pass a raw-feature row matching required_columns.
+    """
+    contract = load_inference_contract()
+    return joblib.load(contract["model_path"])
+
+
+def build_input_row(widget_values: dict, contract: dict) -> pd.DataFrame:
+    """Assemble a one-row DataFrame matching the contract's required_columns.
+
+    IstGkfz's contract entry says dtype "object" with string categories
+    ["False", "True"], which looks like it wants a string cast - but verified
+    empirically against the real committed data/processed/a3_binary_best_model.joblib,
+    IstGkfz sits in the fitted ColumnTransformer's passthrough group alongside
+    its five Ist* sibling columns, which are all cast to float32 together. A
+    real bool converts fine (True -> 1.0); the string "False" raises
+    ValueError: could not convert string to float. The contract's recorded
+    deployment_model_sha256 also doesn't match the actual committed joblib's
+    sha256, so its dtype/categories metadata for this column appears to
+    describe a different artifact than the one actually deployed. IstGkfz is
+    therefore passed through unchanged here, exactly like its siblings.
+    """
+    row = {}
+    for col in contract["required_columns"]:
+        name = col["name"]
+        if name not in widget_values:
+            raise KeyError(
+                f"Missing value for required column {name!r} - the predictor form did not "
+                "supply this input (contract/widget schema drift)."
+            )
+        row[name] = widget_values[name]
+    ordered_columns = [col["name"] for col in contract["required_columns"]]
+    df = pd.DataFrame([row])[ordered_columns]
+    # Force just the bool-valued columns to stay as real Python bool objects.
+    # A whole-frame dtype=object cast preserves bool identity too, but it also
+    # turns numeric columns into object arrays, which breaks the champion
+    # pipeline's numpy-ufunc-based transforms (e.g. np.log1p on
+    # dwd_station_dist_km) - verified empirically via the real committed
+    # model. Scoping the object cast to only the bool columns keeps numeric
+    # columns as native float/int dtypes for the pipeline while still letting
+    # `row.loc[0, "IstPKW"] is True` hold, since plain pandas would otherwise
+    # coerce a bool column to numpy.bool_.
+    bool_cols = [name for name in ordered_columns if isinstance(row[name], bool)]
+    if bool_cols:
+        df[bool_cols] = df[bool_cols].astype(object)
+    return df
+
+
+def predict_ksi(model: Pipeline, row: pd.DataFrame, threshold: float) -> tuple[float, int]:
+    """Predict KSI probability and thresholded label for one input row.
+
+    Uses the contract's tuned decision threshold (0.4986), not sklearn's
+    default 0.5 - the champion was selected and evaluated at this threshold.
+    """
+    proba = float(model.predict_proba(row)[0][1])
+    prediction = int(proba >= threshold)
+    return proba, prediction
 
 
 @st.cache_data
