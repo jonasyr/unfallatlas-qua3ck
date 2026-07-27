@@ -391,10 +391,13 @@ class _FakePipeline:
         return [[0.3, 0.7]]
 
 
-def test_build_input_row_casts_istgkfz_to_string_bool():
+def test_build_input_row_keeps_istgkfz_as_real_bool_like_its_siblings():
+    """IstGkfz's contract dtype metadata ("object"/["False","True"]) looks like
+    it wants a string, but the real committed model requires a raw bool
+    (verified: string input raises ValueError inside the fitted pipeline)."""
     contract = load_inference_contract()
     row = build_input_row(DEFAULT_WIDGET_VALUES, contract)
-    assert row.loc[0, "IstGkfz"] == "False"
+    assert row.loc[0, "IstGkfz"] is False
 
 
 def test_build_input_row_keeps_real_bools_for_other_ist_columns():
@@ -474,10 +477,25 @@ def load_champion_model() -> Pipeline:
 def build_input_row(widget_values: dict, contract: dict) -> pd.DataFrame:
     """Assemble a one-row DataFrame matching the contract's required_columns.
 
-    IstGkfz is the one boolean-like column whose contract dtype is "object"
-    with string categories ["False", "True"] (not a real bool) - it must be
-    cast to its string form or the pipeline's categorical encoder will not
-    recognize the value.
+    Note on IstGkfz: the inference contract's required_columns entry for
+    IstGkfz declares dtype "object" with string categories ["False", "True"],
+    unlike its five Ist* sibling columns (dtype "bool"). This looks like it
+    should require a string cast, but verified empirically against the real
+    committed data/processed/a3_binary_best_model.joblib, it does not: the
+    fitted ColumnTransformer routes all six Ist* columns through the same
+    'passthrough' group into RandomForestClassifier, which casts the whole
+    array to float32 - a real bool converts cleanly (True/False -> 1.0/0.0),
+    but the string "False" raises "ValueError: could not convert string to
+    float: 'False'". The contract's recorded deployment_model_sha256 does not
+    match the actual committed joblib's sha256 either, so the contract's
+    dtype metadata for this column likely describes a different training
+    run/metadata-extraction artifact than the model actually deployed here.
+    IstGkfz is therefore treated identically to its five Ist* siblings: no
+    cast, pass the raw bool through unchanged.
+
+    dtype=object is passed to pd.DataFrame to preserve genuine Python bool
+    identity for the Ist* columns (without it, pandas infers numpy bool_ for
+    an all-bool column, and numpy.bool_(True) is True evaluates to False).
     """
     row = {}
     for col in contract["required_columns"]:
@@ -487,13 +505,9 @@ def build_input_row(widget_values: dict, contract: dict) -> pd.DataFrame:
                 f"Missing value for required column {name!r} - the predictor form did not "
                 "supply this input (contract/widget schema drift)."
             )
-        value = widget_values[name]
-        if col["dtype"] == "object" and col.get("categories") == ["False", "True"]:
-            row[name] = str(value)
-        else:
-            row[name] = value
+        row[name] = widget_values[name]
     ordered_columns = [col["name"] for col in contract["required_columns"]]
-    return pd.DataFrame([row])[ordered_columns]
+    return pd.DataFrame([row], dtype=object)[ordered_columns]
 
 
 def predict_ksi(model: Pipeline, row: pd.DataFrame, threshold: float) -> tuple[float, int]:
@@ -953,7 +967,7 @@ with st.expander("Limitations"):
 
 - [ ] **Step 2: Manual verification**
 
-Run: `uv run streamlit run app/streamlit_app.py`, open Risk Predictor. Submit the form with defaults unchanged. Confirm: a colored prediction result appears (green "Slight injury" or red "KSI" - both are valid outcomes depending on model behavior on the defaults), the probability metric shows a percentage with the threshold in its tooltip, and no exception is raised. Then change several categorical widgets (weekday, light conditions, road class, `IstGkfz` checkbox) and resubmit - confirm no exception (this specifically exercises the `IstGkfz` string-bool cast).
+Run: `uv run streamlit run app/streamlit_app.py`, open Risk Predictor. Submit the form with defaults unchanged. Confirm: a colored prediction result appears (green "Slight injury" or red "KSI" - both are valid outcomes depending on model behavior on the defaults), the probability metric shows a percentage with the threshold in its tooltip, and no exception is raised. Then change several categorical widgets (weekday, light conditions, road class, `IstGkfz` checkbox) and resubmit - confirm no exception (this specifically exercises the `IstGkfz` checkbox, which build_input_row passes through as a raw bool, same as its Ist* siblings).
 
 - [ ] **Step 3: Commit**
 
