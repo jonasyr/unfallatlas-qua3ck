@@ -18,6 +18,7 @@ from unfallatlas.viz.streamlit_app import (
     load_categorical_options,
     load_champion_model,
     load_inference_contract,
+    nearest_uregbez_ukreis,
     predict_ksi,
 )
 
@@ -30,11 +31,15 @@ st.caption(
 contract = load_inference_contract()
 defaults = DEFAULT_WIDGET_VALUES
 ukreis_options = load_categorical_options("UKREIS")
+uregbez_categories = get_column_spec(contract, "UREGBEZ")["categories"]
 
 lon_spec = get_column_spec(contract, "LON")
 lat_spec = get_column_spec(contract, "LAT")
 st.session_state.setdefault("picked_lat", defaults["LAT"])
 st.session_state.setdefault("picked_lon", defaults["LON"])
+st.session_state.setdefault("picked_uregbez", defaults["UREGBEZ"])
+st.session_state.setdefault("picked_ukreis", defaults["UKREIS"])
+st.session_state.setdefault("last_processed_click", None)
 
 st.subheader("Pick a location")
 st.caption(
@@ -50,44 +55,54 @@ folium.Marker(
 map_state = st_folium(picker_map, height=350, width=None, key="location_picker")
 
 if map_state and map_state.get("last_clicked"):
-    clicked_lat = map_state["last_clicked"]["lat"]
-    clicked_lon = map_state["last_clicked"]["lng"]
-    if (
-        lat_spec["min"] <= clicked_lat <= lat_spec["max"]
-        and lon_spec["min"] <= clicked_lon <= lon_spec["max"]
-    ):
-        st.session_state["picked_lat"] = clicked_lat
-        st.session_state["picked_lon"] = clicked_lon
-    else:
-        st.warning(
-            f"Clicked point ({clicked_lat:.4f}, {clicked_lon:.4f}) is outside the "
-            f"covered range (lat {lat_spec['min']:.2f}-{lat_spec['max']:.2f}, "
-            f"lon {lon_spec['min']:.2f}-{lon_spec['max']:.2f}) and was ignored."
-        )
+    clicked = (map_state["last_clicked"]["lat"], map_state["last_clicked"]["lng"])
+    # Only act the first time a given click is seen - st_folium keeps replaying
+    # the same last_clicked value on every later rerun (e.g. form submission),
+    # which would otherwise re-show a stale out-of-bounds warning forever.
+    if clicked != st.session_state["last_processed_click"]:
+        st.session_state["last_processed_click"] = clicked
+        clicked_lat, clicked_lon = clicked
+        if (
+            lat_spec["min"] <= clicked_lat <= lat_spec["max"]
+            and lon_spec["min"] <= clicked_lon <= lon_spec["max"]
+        ):
+            st.session_state["picked_lat"] = clicked_lat
+            st.session_state["picked_lon"] = clicked_lon
+            nearest_uregbez, nearest_ukreis = nearest_uregbez_ukreis(clicked_lat, clicked_lon)
+            if nearest_uregbez in uregbez_categories:
+                st.session_state["picked_uregbez"] = nearest_uregbez
+            if nearest_ukreis in ukreis_options:
+                st.session_state["picked_ukreis"] = nearest_ukreis
+        else:
+            st.warning(
+                f"Clicked point ({clicked_lat:.4f}, {clicked_lon:.4f}) is outside the "
+                f"covered range (lat {lat_spec['min']:.2f}-{lat_spec['max']:.2f}, "
+                f"lon {lon_spec['min']:.2f}-{lon_spec['max']:.2f}) and was ignored."
+            )
 
 st.caption(
     f"Selected: lat {st.session_state['picked_lat']:.4f}, lon {st.session_state['picked_lon']:.4f}"
 )
 
 with st.form("risk_predictor_form"):
-    st.subheader("When and where")
+    st.subheader("When, and administrative area")
     c1, c2, c3 = st.columns(3)
     with c1:
-        uregbez_categories = get_column_spec(contract, "UREGBEZ")["categories"]
         uregbez = st.selectbox(
             "Regierungsbezirk code (UREGBEZ)",
             options=uregbez_categories,
-            index=uregbez_categories.index(defaults["UREGBEZ"]),
+            key="picked_uregbez",
         )
         ukreis = st.selectbox(
             "Kreis code (UKREIS)",
             options=ukreis_options,
-            index=ukreis_options.index(defaults["UKREIS"]),
+            key="picked_ukreis",
         )
         st.caption(
-            "Dataset-internal codes, not official region names: the model's "
-            "feature set doesn't include the Bundesland key (ULAND) needed to "
-            "resolve these to an official Gemeindeschlüssel/region name."
+            "Auto-filled from the nearest recorded accident to your map click "
+            "above; edit manually if needed. These stay dataset-internal codes: "
+            "this dataset has no ULAND (Bundesland) column at all, so there is "
+            "no way to resolve them to official Gemeindeschlüssel/region names."
         )
     with c2:
         umonat_spec = get_column_spec(contract, "UMONAT")
