@@ -1,8 +1,13 @@
+import pandas as pd
 import pytest
 
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
+    FEATURE_DISPLAY_NAMES,
+    UART_LABELS,
     build_input_row,
+    decode_feature_value,
+    display_feature_name,
     get_column_spec,
     load_3class_comparison,
     load_binary_comparison,
@@ -12,6 +17,7 @@ from unfallatlas.viz.streamlit_app import (
     load_inference_contract,
     load_model_card,
     load_permutation_importance,
+    load_severity_grid,
     predict_ksi,
 )
 
@@ -157,3 +163,38 @@ def test_load_champion_model_predicts_on_real_contract_row():
     proba, prediction = predict_ksi(model, row, contract["threshold"])
     assert 0.0 <= proba <= 1.0
     assert prediction in (0, 1)
+
+
+def test_display_feature_name_maps_known_column():
+    assert display_feature_name("dwd_wind_speed_ms") == "Wind Speed (m/s)"
+
+
+def test_display_feature_name_falls_back_to_raw_name_for_unknown_column():
+    assert display_feature_name("some_future_column") == "some_future_column"
+
+
+def test_feature_display_names_covers_every_permutation_importance_feature():
+    importance_df = pd.read_csv("data/processed/c_phase_permutation_importance.csv")
+    all_features = set(importance_df["feature"].unique())
+    assert all_features.issubset(FEATURE_DISPLAY_NAMES.keys())
+
+
+def test_decode_feature_value_maps_uart_code_to_label():
+    assert decode_feature_value("UART", 6) == UART_LABELS[6]
+
+
+def test_decode_feature_value_passes_through_unmapped_column():
+    assert decode_feature_value("dwd_wind_speed_ms", 3.0) == 3.0
+
+
+def test_load_severity_grid_has_expected_columns_and_counts_agree():
+    df = load_severity_grid()
+    assert {"lat_bin", "lon_bin", "ksi_count", "slight_count", "total"}.issubset(df.columns)
+    assert len(df) > 0
+    assert (df["ksi_count"] + df["slight_count"] == df["total"]).all()
+
+
+def test_load_severity_grid_respects_precision_parameter():
+    coarse = load_severity_grid(precision=0.5)
+    fine = load_severity_grid(precision=0.1)
+    assert len(coarse) < len(fine)

@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import json
 import logging
+import math
 from pathlib import Path
 
 import duckdb
@@ -75,6 +76,59 @@ UTYP1_LABELS = {
     7: "Other accident",
 }
 
+FEATURE_DISPLAY_NAMES = {
+    "IstFuss": "Pedestrian Involved",
+    "IstGkfz": "Heavy Goods Vehicle Involved",
+    "IstKrad": "Motorcycle Involved",
+    "IstPKW": "Car Involved",
+    "IstRad": "Cyclist Involved",
+    "IstSonstig": "Other Vehicle Involved",
+    "LAT": "Latitude",
+    "LON": "Longitude",
+    "STRZUSTAND": "Road Condition",
+    "UART": "Accident Type",
+    "UKREIS": "Kreis Code",
+    "ULICHTVERH": "Light Conditions",
+    "UMONAT": "Month",
+    "UREGBEZ": "Regierungsbezirk Code",
+    "USTUNDE": "Hour of Day",
+    "UTYP1": "Accident Category",
+    "UWOCHENTAG": "Weekday",
+    "_precip_bucket": "Precipitation Bucket",
+    "dwd_precip_mm": "Precipitation (mm)",
+    "dwd_station_dist_km": "Weather Station Distance (km)",
+    "dwd_station_id": "Weather Station ID",
+    "dwd_temp_air_2m": "Air Temperature (C)",
+    "dwd_visibility_m": "Visibility (m)",
+    "dwd_wind_speed_ms": "Wind Speed (m/s)",
+    "h3_cell": "H3 Location Cell",
+    "osm_dominant_road_class": "Dominant Road Class",
+    "osm_maxspeed_max": "Max Speed Limit (km/h)",
+    "osm_maxspeed_mean": "Mean Speed Limit (km/h)",
+    "osm_road_density": "Road Density",
+    "osm_way_count": "Road Way Count",
+}
+
+
+def display_feature_name(name: str) -> str:
+    """Return a human-readable label for a contract column name, or the raw name if unmapped."""
+    return FEATURE_DISPLAY_NAMES.get(name, name)
+
+
+COLUMN_LABEL_MAPS = {
+    "UART": UART_LABELS,
+    "UTYP1": UTYP1_LABELS,
+    "STRZUSTAND": STRZUSTAND_LABELS,
+    "ULICHTVERH": LICHTVERH_LABELS,
+    "UWOCHENTAG": WEEKDAY_LABELS,
+}
+
+
+def decode_feature_value(feature: str, value):
+    """Return a human-readable value for a coded column (e.g. UART code -> label), else value unchanged."""
+    return COLUMN_LABEL_MAPS.get(feature, {}).get(value, value)
+
+
 DEFAULT_WIDGET_VALUES = {
     "UREGBEZ": "1",
     "UKREIS": "01",
@@ -135,6 +189,41 @@ def load_categorical_options(column: str) -> list[str]:
         return con.execute(query).df()[column].astype(str).tolist()
     except Exception:
         logger.exception(f"Failed to load categorical options for column {column!r}")
+        raise
+
+
+def precision_decimals(precision: float) -> int:
+    """Convert a grid precision like 0.1 or 0.5 into a ROUND() decimal-places argument."""
+    if precision <= 0:
+        raise ValueError(f"precision must be positive, got {precision}")
+    return max(0, -int(round(math.log10(precision))))
+
+
+@st.cache_data
+def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
+    """Aggregate accidents.parquet into a lat/lon grid with per-cell KSI/slight counts.
+
+    UKATGEORIE in (1, 2) is KSI, UKATGEORIE == 3 is slight (verified against
+    notebooks/01_Q_Phase.py lines 156-157; no invalid UKATGEORIE values exist
+    in this file). Aggregation happens entirely in DuckDB so the ~2.09M-row
+    parquet is never loaded into pandas row-by-row - only the grouped result
+    (a few thousand rows at precision=0.1) crosses into pandas.
+    """
+    try:
+        con = duckdb.connect()
+        query = f"""
+            SELECT
+                ROUND(LAT, {precision_decimals(precision)}) AS lat_bin,
+                ROUND(LON, {precision_decimals(precision)}) AS lon_bin,
+                SUM(CASE WHEN UKATGEORIE IN (1, 2) THEN 1 ELSE 0 END) AS ksi_count,
+                SUM(CASE WHEN UKATGEORIE = 3 THEN 1 ELSE 0 END) AS slight_count,
+                COUNT(*) AS total
+            FROM '{ACCIDENTS_PARQUET}'
+            GROUP BY 1, 2
+        """  # noqa: S608
+        return con.execute(query).df()
+    except Exception:
+        logger.exception("Failed to load severity grid")
         raise
 
 
