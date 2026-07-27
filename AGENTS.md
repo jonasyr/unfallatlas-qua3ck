@@ -11,7 +11,7 @@ This file provides guidance to AI coding agents when working with code in this r
 - Process model: **QUA³CK** (Frage → Untersuchung → Analyse → Auswertung → Kommunikation)
 - Class imbalance: ~1% / 18% / 81% — primary metric is macro-F1
 - Chronological split: Train 2016–2022, Val 2023, Test 2024 (no random splits)
-- Phase status: Q/U/A³ notebooks done; `notebooks/04_C_Phase.ipynb` (C phase) and `app/streamlit_app.py` / `src/unfallatlas/viz/streamlit_app.py` (K phase) are still empty stubs — SHAP/comparison and the Streamlit demo are not yet implemented
+- Phase status: Q/U/A³/C notebooks all done (`notebooks/04_C_Phase.ipynb` implements the full binary-champion comparison, permutation importance, and inference-contract handoff — not SHAP, which was dropped in favor of permutation importance); the Phase K Streamlit app (`app/streamlit_app.py`, `src/unfallatlas/viz/streamlit_app.py`) is implemented and runs fully from committed `data/processed/` artifacts with no notebook execution required
 - Includes a self-contained notebook-presentation exporter (`src/unfallatlas/presentation/`) that publishes executed notebooks as static HTML to GitHub Pages via `.github/workflows/pages.yml`
 
 <!-- END AUTO-MANAGED -->
@@ -57,8 +57,9 @@ uv run jupytext --sync notebooks/*.ipynb
 # Re-index Serena after notebook sync
 serena project index
 
-# Launch Streamlit demo (K phase — app/streamlit_app.py is currently an empty
-# stub, so this command does not yet produce a working app)
+# Launch the Phase K Streamlit demo (Overview, Risk Predictor, Why This
+# Prediction, Model Comparison — runs fully from committed data/processed/
+# artifacts, no notebook execution required)
 uv run streamlit run app/streamlit_app.py
 
 # Install package in editable mode
@@ -81,12 +82,12 @@ unfallatlas-qua3ck/
 │   ├── 01_Q_Phase.ipynb    # Research question & hypotheses (done)
 │   ├── 02_U_Phase.ipynb    # EDA & feature engineering (done)
 │   ├── 03_A3_Phase.ipynb   # Modelling & tuning, incl. binary-KSI champion search (done)
-│   └── 04_C_Phase.ipynb    # Comparison, SHAP, conclusions (TODO — empty stub)
+│   └── 04_C_Phase.ipynb    # Comparison, permutation importance, inference-contract handoff (done)
 ├── src/unfallatlas/        # Reusable production library
 │   ├── data/               # download.py (stub, empty), dwd.py (weather), osm.py (road network)
 │   ├── features/           # enrich.py (stub, empty), spatial.py (H3/OSM aggregation), temporal.py, preprocessing.py
 │   ├── models/              # baseline.py, boosting.py, evaluate.py, ordinal.py, imbalance.py, svm.py (linear/SGD-hinge/RBF SVM)
-│   ├── viz/                # geo.py (stub, empty), shap_plots.py (stub, empty), streamlit_app.py (stub, empty), metrics_viz.py
+│   ├── viz/                # geo.py (stub, empty), shap_plots.py (stub, empty — permutation importance used instead), streamlit_app.py (Phase K app loaders/helpers, done), metrics_viz.py
 │   └── presentation/       # Notebook → static-HTML exporter subsystem (~2.5k LOC)
 │       ├── assets.py       # Copies/hashes shared JS/CSS/vendor assets into reports/presentation/assets/
 │       ├── cli.py          # `scripts/export_notebooks.py` entry point (argparse)
@@ -99,7 +100,7 @@ unfallatlas-qua3ck/
 │       ├── static/         # presentation.css / presentation.js (shared UI chrome)
 │       ├── templates/      # Jinja2 templates (notebook/index.html.j2, site_index.html.j2)
 │       └── vendor/         # Vendored MathJax (offline rendering, no CDN)
-├── app/                    # Streamlit demo entry point (stub, empty — K phase not implemented)
+├── app/                    # Streamlit demo: entry point + pages/ (Overview, Risk Predictor, Why This Prediction, Model Comparison) — implemented, K phase done
 ├── data/
 │   ├── accidents.parquet   # Main dataset (Git LFS)
 │   ├── interim/            # Enriched intermediate parquet caches (weather, weather+spatial; Git LFS)
