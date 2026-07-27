@@ -1,3 +1,5 @@
+import pytest
+
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
     build_input_row,
@@ -28,6 +30,13 @@ def test_load_model_card_has_test_2024_metrics():
     metrics = card["test_2024_metrics"]
     assert metrics["macro_f1"] == 0.6038956179272812
     assert metrics["confusion_matrix"] == [[22767, 21431], [51887, 172434]]
+
+
+def test_confusion_matrix_row_order_matches_recall_ksi():
+    card = load_model_card()
+    cm = card["test_2024_metrics"]["confusion_matrix"]
+    recall_ksi_from_cm = cm[0][0] / sum(cm[0])
+    assert recall_ksi_from_cm == pytest.approx(card["test_2024_metrics"]["recall_ksi"])
 
 
 def test_load_binary_comparison_has_ten_candidates():

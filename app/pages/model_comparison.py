@@ -37,7 +37,7 @@ st.subheader("Champion confusion matrix (test 2024)")
 card = load_model_card()
 confusion_matrix = card["test_2024_metrics"]["confusion_matrix"]
 st.plotly_chart(
-    plot_confusion_matrix_heatmap(confusion_matrix, labels=["slight", "KSI"]),
+    plot_confusion_matrix_heatmap(confusion_matrix, labels=["KSI", "slight"]),
     use_container_width=True,
 )
 

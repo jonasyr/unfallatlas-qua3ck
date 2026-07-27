@@ -53,6 +53,27 @@ WEEKDAY_LABELS = {
 }
 LICHTVERH_LABELS = {0: "Daylight", 1: "Dusk/Dawn", 2: "Darkness"}
 STRZUSTAND_LABELS = {0: "Dry", 1: "Wet/Slippery", 2: "Wintry"}
+UART_LABELS = {
+    0: "Other accident",
+    1: "Collision with stationary vehicle",
+    2: "Collision with vehicle ahead",
+    3: "Collision with vehicle travelling alongside",
+    4: "Collision with oncoming vehicle",
+    5: "Collision while turning or crossing",
+    6: "Collision with pedestrian",
+    7: "Impact with road obstacle",
+    8: "Departure from road to the right",
+    9: "Departure from road to the left",
+}
+UTYP1_LABELS = {
+    1: "Loss-of-control accident",
+    2: "Turning accident",
+    3: "Crossing or entering accident",
+    4: "Pedestrian crossing accident",
+    5: "Stationary-traffic accident",
+    6: "Longitudinal-traffic accident",
+    7: "Other accident",
+}
 
 DEFAULT_WIDGET_VALUES = {
     "UREGBEZ": "1",

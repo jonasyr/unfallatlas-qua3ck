@@ -8,6 +8,8 @@ from unfallatlas.viz.streamlit_app import (
     LIMITATIONS_TEXT,
     SEVERITY_COLORS,
     STRZUSTAND_LABELS,
+    UART_LABELS,
+    UTYP1_LABELS,
     WEEKDAY_LABELS,
     build_input_row,
     get_column_spec,
@@ -69,7 +71,10 @@ with st.form("risk_predictor_form"):
         uart_spec = get_column_spec(contract, "UART")
         uart_options = list(range(int(uart_spec["min"]), int(uart_spec["max"]) + 1))
         uart = st.selectbox(
-            "Accident type (UART)", options=uart_options, index=uart_options.index(defaults["UART"])
+            "Accident type (UART)",
+            options=uart_options,
+            index=uart_options.index(defaults["UART"]),
+            format_func=lambda code: UART_LABELS.get(code, str(code)),
         )
         utyp1_spec = get_column_spec(contract, "UTYP1")
         utyp1_options = list(range(int(utyp1_spec["min"]), int(utyp1_spec["max"]) + 1))
@@ -77,6 +82,7 @@ with st.form("risk_predictor_form"):
             "Accident category (UTYP1)",
             options=utyp1_options,
             index=utyp1_options.index(defaults["UTYP1"]),
+            format_func=lambda code: UTYP1_LABELS.get(code, str(code)),
         )
     with c5:
         ulichtverh_label = st.selectbox(
@@ -154,13 +160,6 @@ with st.form("risk_predictor_form"):
             max_value=float(wind_spec["max"]),
             value=defaults["dwd_wind_speed_ms"],
         )
-    precip_bucket_categories = get_column_spec(contract, "_precip_bucket")["categories"]
-    precip_bucket = st.selectbox(
-        "Precipitation bucket",
-        options=precip_bucket_categories,
-        index=precip_bucket_categories.index(defaults["_precip_bucket"]),
-    )
-
     st.subheader("Road context (OpenStreetMap)")
     c13, c14, c15, c16 = st.columns(4)
     with c13:
@@ -205,6 +204,11 @@ with st.form("risk_predictor_form"):
     submitted = st.form_submit_button("Predict KSI risk")
 
 if submitted:
+    precip_bucket_categories = get_column_spec(contract, "_precip_bucket")["categories"]
+    dry_bucket = next(c for c in precip_bucket_categories if c.startswith("dry"))
+    light_bucket = next(c for c in precip_bucket_categories if c.startswith("light"))
+    precip_bucket = dry_bucket if dwd_precip_mm == 0 else light_bucket
+
     widget_values = {
         "UREGBEZ": uregbez,
         "UKREIS": ukreis,

@@ -42,8 +42,10 @@ already-committed artifact set in `data/processed/` (verified via
   `plot_binary_f1_recall_front`/`plot_f1_recall_front`'s expected
   `{model, macro_f1, recall_ksi}` / `{model, macro_f1, recall_class_1}`.
 - `a3_binary_model_card.json` — champion metrics incl. `val_2023_metrics`
-  and `test_2024_metrics`, each with a `confusion_matrix: [[tn, fp], [fn, tp]]`
-  2×2 list (verified via direct read — no recomputation needed).
+  and `test_2024_metrics`, each with a `confusion_matrix: [[tp, fn], [fp, tn]]`
+  2×2 list (row 0 = actual KSI: [predicted KSI correctly, predicted slight
+  incorrectly]; row 1 = actual slight: [predicted KSI incorrectly, predicted
+  slight correctly] — verified via direct read — no recomputation needed).
 - `data/processed/c_phase_candidate_scores.parquet` (2.69M rows × 10 models,
   columns `{model, row, score, prediction}`, **no `y_true`**) — deliberately
   **not used live**: recomputing ROC/PR curves would require re-deriving
