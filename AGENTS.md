@@ -79,8 +79,9 @@ This is a human action through Streamlit's web UI — no script or agent can com
 
 1. Go to https://share.streamlit.io and sign in with the GitHub account that owns/has access to this repo.
 2. Click "New app", select this repo, branch `main`, main file path `app/streamlit_app.py`.
-3. Deploy. Streamlit Community Cloud auto-detects `requirements.txt` at the repo root and Git LFS objects (`data/accidents.parquet`, `data/processed/a3_binary_best_model.joblib`) automatically - no extra LFS configuration is needed.
+3. Deploy. Streamlit Community Cloud auto-detects `requirements.txt` at the repo root. Its docs claim Git LFS objects (`data/accidents.parquet`, `data/processed/a3_binary_best_model.joblib`, `data/processed/a3_best_model.joblib`) are fetched automatically during the build - **this has not been empirically verified against a live deployment of this repo.** Treat it as unconfirmed until step 4b passes.
 4. Once live, replace the placeholder URL `REPLACE-WITH-REAL-STREAMLIT-CLOUD-URL.streamlit.app` in all 4 places it appears with the real `https://<app-name>.streamlit.app` URL: `README.md` (the "Live Deployment" section), `src/unfallatlas/presentation/templates/site_index.html.j2` (the header link), and the two allowlist assertions in `tests/presentation/test_manifest.py` that currently hardcode this placeholder string.
+4b. **Verify the LFS files actually arrived.** Open the deployed app's Overview/Risk Predictor/Model Comparison pages and confirm they render real data (not a crash on `joblib.load` or a DuckDB "file too small"/parse error). If a page errors out, open the app's build logs in the Streamlit Cloud dashboard and check whether the LFS objects downloaded as their real size or only as ~130-byte pointer stubs; if it's the latter, enable Git LFS explicitly under the app's Settings (or, if Community Cloud has no such toggle in your account tier, this deployment path is blocked and self-hosting is the fallback) before retrying.
 
 <!-- AUTO-MANAGED: architecture -->
 ## Architecture

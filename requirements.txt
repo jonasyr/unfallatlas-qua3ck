@@ -1,22 +1,27 @@
-catboost>=1.2
-duckdb>=1.1
-folium>=0.17
-holidays>=0.48
-imbalanced-learn>=0.12
-ipykernel>=6
-lightgbm>=4.3
-nbformat>=4.2
-optuna>=3.6
-pandas>=2.2
-pip>=23
-plotly>=5.22
-polars>=1
-pyarrow>=16
-requests>=2.32
-scikit-learn>=1.4
-scipy>=1.13
-shap>=0.45
-streamlit>=1.35
-streamlit-folium>=0.20
-tqdm>=4.66
-xgboost>=2
+# Pinned to the exact versions resolved in uv.lock (regenerate with the loop
+# in the deployment doc's verification step whenever uv.lock changes) so
+# Streamlit Community Cloud's plain `pip install -r requirements.txt` can't
+# silently drift onto a newer scikit-learn/etc. than the one the committed
+# joblib models were pickled with.
+catboost==1.2.10
+duckdb==1.5.2
+folium==0.20.0
+holidays==0.96
+imbalanced-learn==0.14.1
+ipykernel==7.2.0
+lightgbm==4.6.0
+nbformat==5.10.4
+optuna==4.8.0
+pandas==3.0.3
+pip==26.1.1
+plotly==6.7.0
+polars==1.40.1
+pyarrow==24.0.0
+requests==2.34.2
+scikit-learn==1.8.0
+scipy==1.17.1
+shap==0.51.0
+streamlit==1.57.0
+streamlit-folium==0.27.2
+tqdm==4.67.3
+xgboost==3.2.0
