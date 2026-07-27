@@ -22,17 +22,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
-          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "relative_path": "assets/ui/presentation-a2378fcbea46d674.css",
+          "sha256": "a2378fcbea46d67494d426e1de7a70099d8156938fd4e12d2ac738c19b8b187f",
           "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
-          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
-          "size_bytes": 14334
+          "relative_path": "assets/ui/presentation-7191953d6c9e4bae.js",
+          "sha256": "7191953d6c9e4bae87e1f238cc1224ceda681b81b12ab6b21485a3353618ca76",
+          "size_bytes": 14289
         },
         {
           "cell_index": null,
@@ -80,25 +80,25 @@
         "code_with_output": 0,
         "error_outputs": 0,
         "executed_without_output": 0,
-        "markdown": 16,
+        "markdown": 15,
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T03:18:47+00:00",
-      "exported_at_local": "22.07.2026, 05:18:47 CEST",
+      "exported_at": "2026-07-27T07:03:10+00:00",
+      "exported_at_local": "27.07.2026, 09:03:10 CEST",
       "findings": [],
       "git": {
-        "branch": "feat/presentation-design-audit",
-        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
+        "branch": "main",
+        "commit": "71f5cb6f9de1be2bde8c57dcf61c008c2bb25f7d",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "e4faa894648e"
+        "short_commit": "71f5cb6f9de1"
       },
       "output": "notebooks/01_Q_Phase.html",
-      "size_bytes": 54615,
-      "snapshot_sha256": "f84281641d77683e203ed16f03a2248dd738cf6b15546933a16ec04342e72e43",
+      "size_bytes": 51815,
+      "snapshot_sha256": "53f26bdc038dcbc589dd49431a9154dbb01582a4aabac26d0f17078b08e759d5",
       "source": "notebooks/01_Q_Phase.ipynb",
-      "source_sha256": "f84281641d77683e203ed16f03a2248dd738cf6b15546933a16ec04342e72e43",
+      "source_sha256": "53f26bdc038dcbc589dd49431a9154dbb01582a4aabac26d0f17078b08e759d5",
       "status": "ready",
       "title": "Unfallatlas Deutschland Q Phase"
     },
@@ -124,17 +124,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
-          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "relative_path": "assets/ui/presentation-a2378fcbea46d674.css",
+          "sha256": "a2378fcbea46d67494d426e1de7a70099d8156938fd4e12d2ac738c19b8b187f",
           "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
-          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
-          "size_bytes": 14334
+          "relative_path": "assets/ui/presentation-7191953d6c9e4bae.js",
+          "sha256": "7191953d6c9e4bae87e1f238cc1224ceda681b81b12ab6b21485a3353618ca76",
+          "size_bytes": 14289
         },
         {
           "cell_index": null,
@@ -196,33 +196,33 @@
           "cell_index": 37,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-87c23d6c9be1ed3a.js",
-          "sha256": "87c23d6c9be1ed3a23098473251de12ffaa1c1efe085cb548670e208892a9604",
-          "size_bytes": 8221
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-c5afe3b15220366c.js",
+          "sha256": "c5afe3b15220366c96a5e58573546d673418c6e9ec29f35c231800518c853940",
+          "size_bytes": 8187
         },
         {
           "cell_index": 40,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-04d8b4413b770601.js",
-          "sha256": "04d8b4413b77060143aa6bc5e8456d8bd4a4fbab0f7044f50d969d4833c6be5d",
-          "size_bytes": 8555
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-2b5a6a4940c46795.js",
+          "sha256": "2b5a6a4940c4679567cabccaa512ee287d842bb07d5f63ffe4c51fc3f0d04d42",
+          "size_bytes": 8558
         },
         {
           "cell_index": 43,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-78fe282d19197824.js",
-          "sha256": "78fe282d19197824abcb5031a030f5443849423b5e26e454a2653e04ff1aab77",
-          "size_bytes": 9389
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-8e9fcdb031bbb650.js",
+          "sha256": "8e9fcdb031bbb650f99d0fbc0d9fc7d3d965f8e000a2dea70b7df28bf019483e",
+          "size_bytes": 9542
         },
         {
           "cell_index": 45,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-ed82a3d27ab579ba.js",
-          "sha256": "ed82a3d27ab579bade9afe0a4f3de8a601bf082112b31a5702b50becf8d03550",
-          "size_bytes": 7612
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-ca310deae9766fb2.js",
+          "sha256": "ca310deae9766fb2cb4cb349af298d4864527e4b75558c00604c3987ae20c20a",
+          "size_bytes": 7610
         },
         {
           "cell_index": 47,
@@ -236,60 +236,52 @@
           "cell_index": 51,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-a62a4d6e52fdebc9.js",
-          "sha256": "a62a4d6e52fdebc9f8ce5cde203907d845f20fc7f88e7f0536b3670e2ef6eb36",
-          "size_bytes": 9961
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-41de02ad38fd8c1a.js",
+          "sha256": "41de02ad38fd8c1a82620c24df7143df1c62a4f0247d40d06d5d92d13d58e223",
+          "size_bytes": 9981
         },
         {
           "cell_index": 53,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-4d4b178613f0f35f.js",
-          "sha256": "4d4b178613f0f35f5ec24fda98cb13d9e21253a7ec99243930502a0f431a0939",
-          "size_bytes": 9350
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-d39be183269c00f2.js",
+          "sha256": "d39be183269c00f2b0e6b4936724b4d77ae3a585cca6ad0b700c1fa6ad02f435",
+          "size_bytes": 9335
         },
         {
           "cell_index": 57,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-26154ddffe98f5e8.js",
-          "sha256": "26154ddffe98f5e8ed269918103af3580d8520f3ed900c3fd8042eeef13fbb75",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-25485a4c26745cf7.js",
+          "sha256": "25485a4c26745cf781b3594289fd9da1d7719cbbaaed03baabf05b7c2830f2a2",
           "size_bytes": 8312
         },
         {
           "cell_index": 59,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-98b4d6a042bf236b.js",
-          "sha256": "98b4d6a042bf236b2222afdb9284d1f3f53a4784001a2a2b6166286ee8a07440",
-          "size_bytes": 11030
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-8456c86c8c350749.js",
+          "sha256": "8456c86c8c35074956a58e53025125ea20bd02cf3ad215a5f99698cf2b35ffc5",
+          "size_bytes": 11018
         },
         {
           "cell_index": 62,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-b3ebc68277960ddb.js",
-          "sha256": "b3ebc68277960ddb50e5fb58e232f95f8743c62ea7c90ceb94b50d408de701ad",
-          "size_bytes": 1074915
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-884c2928233dd0dd.js",
+          "sha256": "884c2928233dd0dd55e3f19dc3493c1de8ef0ac6b552f2c1c39617f647ca330a",
+          "size_bytes": 1075050
         },
         {
-          "cell_index": 65,
+          "cell_index": 68,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-8553724c7b4fc1cb.js",
-          "sha256": "8553724c7b4fc1cb562a38fc3a265f84633417dae9c4ae73e3adc72422acca8c",
-          "size_bytes": 10963
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-0883482eac5b7d61.js",
+          "sha256": "0883482eac5b7d619c984873c01652f3bf809b26af1489a0a5beafa3bf3fe9a5",
+          "size_bytes": 7697
         },
         {
-          "cell_index": 70,
-          "kind": "plotly",
-          "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-14a3184d8a669b04.js",
-          "sha256": "14a3184d8a669b04b7c639f7075c179bfe871b82fdb50eb405d5f7d56e82b62f",
-          "size_bytes": 7700
-        },
-        {
-          "cell_index": 71,
+          "cell_index": 69,
           "kind": "plotly",
           "media_type": "text/javascript",
           "relative_path": "assets/notebooks/02_U_Phase/plotly-a3f114538dc18963.js",
@@ -297,7 +289,7 @@
           "size_bytes": 22326726
         },
         {
-          "cell_index": 72,
+          "cell_index": 70,
           "kind": "plotly",
           "media_type": "text/javascript",
           "relative_path": "assets/notebooks/02_U_Phase/plotly-245493a810bc77fe.js",
@@ -305,7 +297,7 @@
           "size_bytes": 7844
         },
         {
-          "cell_index": 75,
+          "cell_index": 73,
           "kind": "plotly",
           "media_type": "text/javascript",
           "relative_path": "assets/notebooks/02_U_Phase/plotly-a80fc7188430307f.js",
@@ -313,23 +305,23 @@
           "size_bytes": 62043054
         },
         {
-          "cell_index": 77,
+          "cell_index": 75,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-573f3446633759da.js",
-          "sha256": "573f3446633759da0dbb4d6e1dc47dd75ffbfa4ca6854d59be213fb606eb4276",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-df3aad76048c4866.js",
+          "sha256": "df3aad76048c4866c0ba00a0a2f3d84872b5fd6d57a38e2caf9540445919b4d9",
           "size_bytes": 7941
         },
         {
-          "cell_index": 79,
+          "cell_index": 77,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-65ef975df954ff9c.js",
-          "sha256": "65ef975df954ff9cfcad053f707814f802e7cdc1c1c9cb86c06a344e0bbc3812",
-          "size_bytes": 8331
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-a511c0e1c7643a6d.js",
+          "sha256": "a511c0e1c7643a6deae871c7245abab38c8842623649762f96bb9f3b12d53fb8",
+          "size_bytes": 8367
         },
         {
-          "cell_index": 82,
+          "cell_index": 80,
           "kind": "plotly",
           "media_type": "text/javascript",
           "relative_path": "assets/notebooks/02_U_Phase/plotly-4dbb3cf531835bc4.js",
@@ -337,23 +329,23 @@
           "size_bytes": 40399877
         },
         {
+          "cell_index": 82,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-6577bac406ab96b0.js",
+          "sha256": "6577bac406ab96b0bb44def5f5a8c40389fec6ce20235e793f702f1c1b8a6ec2",
+          "size_bytes": 7654
+        },
+        {
           "cell_index": 84,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-7d6dba0f346db7b8.js",
-          "sha256": "7d6dba0f346db7b8f7f7db77637e0e5cf150b5d63de062075fdac291773b2a27",
-          "size_bytes": 7665
-        },
-        {
-          "cell_index": 86,
-          "kind": "plotly",
-          "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-7fe274d1b1353b24.js",
-          "sha256": "7fe274d1b1353b245944367f337b0356c6c45ab212ebc39799d355a1f284462a",
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-edfa33eeb34957ab.js",
+          "sha256": "edfa33eeb34957ab51a3749c86a6707ae01a38714afd207a1e1631f786b2a5fd",
           "size_bytes": 16130
         },
         {
-          "cell_index": 90,
+          "cell_index": 88,
           "kind": "plotly",
           "media_type": "text/javascript",
           "relative_path": "assets/notebooks/02_U_Phase/plotly-a714274ba26a1c0a.js",
@@ -361,7 +353,7 @@
           "size_bytes": 23092126
         },
         {
-          "cell_index": 91,
+          "cell_index": 89,
           "kind": "plotly",
           "media_type": "text/javascript",
           "relative_path": "assets/notebooks/02_U_Phase/plotly-1e2e82e03cd35b48.js",
@@ -369,25 +361,25 @@
           "size_bytes": 22326378
         },
         {
-          "cell_index": 95,
+          "cell_index": 93,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/02_U_Phase/plotly-9219b945a49ac875.js",
-          "sha256": "9219b945a49ac87525c40446a2985f4f469d5cc87775df00d134030b2b4e342a",
-          "size_bytes": 7783
+          "relative_path": "assets/notebooks/02_U_Phase/plotly-358b36a03ce00f59.js",
+          "sha256": "358b36a03ce00f59642e8d1529a0cfde4ac0b08b7620864830dea288565bb4b3",
+          "size_bytes": 7795
         }
       ],
       "cell_counts": {
-        "code": 55,
-        "code_with_output": 52,
+        "code": 53,
+        "code_with_output": 50,
         "error_outputs": 0,
         "executed_without_output": 3,
-        "markdown": 56,
+        "markdown": 55,
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T03:19:03+00:00",
-      "exported_at_local": "22.07.2026, 05:19:03 CEST",
+      "exported_at": "2026-07-27T07:03:19+00:00",
+      "exported_at_local": "27.07.2026, 09:03:19 CEST",
       "findings": [
         {
           "cell_index": 3,
@@ -418,42 +410,35 @@
           "strict_blocker": false
         },
         {
-          "cell_index": 62,
-          "code": "EXTERNAL_MAP_TILES",
-          "message": "Plotly map requires external tile resources.",
-          "severity": "error",
-          "strict_blocker": true
-        },
-        {
-          "cell_index": 71,
+          "cell_index": 69,
           "code": "LARGE_OUTPUT",
           "message": "Stored output is 22326683 bytes.",
           "severity": "warning",
           "strict_blocker": false
         },
         {
-          "cell_index": 75,
+          "cell_index": 73,
           "code": "LARGE_OUTPUT",
           "message": "Stored output is 62043011 bytes.",
           "severity": "warning",
           "strict_blocker": false
         },
         {
-          "cell_index": 82,
+          "cell_index": 80,
           "code": "LARGE_OUTPUT",
           "message": "Stored output is 40399834 bytes.",
           "severity": "warning",
           "strict_blocker": false
         },
         {
-          "cell_index": 90,
+          "cell_index": 88,
           "code": "LARGE_OUTPUT",
           "message": "Stored output is 23092083 bytes.",
           "severity": "warning",
           "strict_blocker": false
         },
         {
-          "cell_index": 91,
+          "cell_index": 89,
           "code": "LARGE_OUTPUT",
           "message": "Stored output is 22326335 bytes.",
           "severity": "warning",
@@ -462,23 +447,23 @@
         {
           "cell_index": null,
           "code": "VERY_LARGE_NOTEBOOK_OUTPUT",
-          "message": "Notebook stores 216670195 output bytes in total.",
+          "message": "Notebook stores 216655895 output bytes in total.",
           "severity": "warning",
           "strict_blocker": false
         }
       ],
       "git": {
-        "branch": "feat/presentation-design-audit",
-        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
+        "branch": "main",
+        "commit": "71f5cb6f9de1be2bde8c57dcf61c008c2bb25f7d",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "e4faa894648e"
+        "short_commit": "71f5cb6f9de1"
       },
       "output": "notebooks/02_U_Phase.html",
-      "size_bytes": 409172,
-      "snapshot_sha256": "ef0b83e0bd423f4cdee32f66411d724a126e85b03c305652aa48aa36acb40aec",
+      "size_bytes": 391387,
+      "snapshot_sha256": "ea754511b6f26f083f641b869011a9a36e81c303f0add2c352936f6d7d8d1fc4",
       "source": "notebooks/02_U_Phase.ipynb",
-      "source_sha256": "b3b38caaf248ff916d6b8948c96eefa842ca07a050a000813fdaf16884791591",
+      "source_sha256": "50f42c94cc79cbdc87395a1d51305411d101697b6c9cf002cbd042cd58c32af3",
       "status": "ready",
       "title": "Unfallatlas Deutschland U Phase"
     },
@@ -504,17 +489,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
-          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "relative_path": "assets/ui/presentation-a2378fcbea46d674.css",
+          "sha256": "a2378fcbea46d67494d426e1de7a70099d8156938fd4e12d2ac738c19b8b187f",
           "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
-          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
-          "size_bytes": 14334
+          "relative_path": "assets/ui/presentation-7191953d6c9e4bae.js",
+          "sha256": "7191953d6c9e4bae87e1f238cc1224ceda681b81b12ab6b21485a3353618ca76",
+          "size_bytes": 14289
         },
         {
           "cell_index": null,
@@ -557,41 +542,81 @@
           "size_bytes": 22832
         },
         {
-          "cell_index": 19,
+          "cell_index": 20,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/03_A3_Phase/plotly-9fa0ed8d489473ed.js",
-          "sha256": "9fa0ed8d489473ed79d9a2cfe27d605940adc39ea2fd9d00759eb2cf8c00de4f",
-          "size_bytes": 7968
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-0cdd7c7fa3da80b4.js",
+          "sha256": "0cdd7c7fa3da80b4745cbf4fc44bf1652baddafd1442975ec1f42cd36a1b8b43",
+          "size_bytes": 8265
+        },
+        {
+          "cell_index": 24,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-582bd07447d8abfd.js",
+          "sha256": "582bd07447d8abfdfe867b0b81789e0f0df846524b84f9f53cbb8610f78a82ce",
+          "size_bytes": 8081
+        },
+        {
+          "cell_index": 29,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-cca1dbefa58d1ad5.js",
+          "sha256": "cca1dbefa58d1ad593d0e6fa6886e9be9a51681847ee8e25e97498ce4d738262",
+          "size_bytes": 7633
         },
         {
           "cell_index": 34,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/03_A3_Phase/image-759a19b98662c8c9.png",
-          "sha256": "759a19b98662c8c962567bc7e0f2fd4d206ebfc13b900fba8648b79e28d3468c",
-          "size_bytes": 57955
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-4d40e1c0727ce81c.js",
+          "sha256": "4d40e1c0727ce81c3887249ed17a4adb2eeb1f7a382f6c08766c65d338c280d2",
+          "size_bytes": 8923
         },
         {
-          "cell_index": 54,
-          "kind": "image",
-          "media_type": "image/png",
-          "relative_path": "assets/notebooks/03_A3_Phase/image-191d2b081707f1f6.png",
-          "sha256": "191d2b081707f1f670042c639b0441446fa1cfe80607d389f8253c757c0bca8c",
-          "size_bytes": 49286
+          "cell_index": 48,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-9207ca4f7f5617e5.js",
+          "sha256": "9207ca4f7f5617e58a1f36f61b61bc6c947deb325e33f15d9f06c4f3ae7e82fe",
+          "size_bytes": 8244
+        },
+        {
+          "cell_index": 55,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-299cb1aa9c97643f.js",
+          "sha256": "299cb1aa9c97643f719c6fdf62827a31a5d27c04ab789c611884f3ff891b0d1a",
+          "size_bytes": 7540
+        },
+        {
+          "cell_index": 57,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-0e3b7e09cf8369a4.js",
+          "sha256": "0e3b7e09cf8369a4723c199ea0c638ecbe6d12185a92a8f40d862e6d1c6accda",
+          "size_bytes": 7490
+        },
+        {
+          "cell_index": 58,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/03_A3_Phase/plotly-b92a45635a8d1982.js",
+          "sha256": "b92a45635a8d1982fa3e5a36a7f5fba66800c366023013acaad039fd9bec42c2",
+          "size_bytes": 7803
         }
       ],
       "cell_counts": {
-        "code": 31,
-        "code_with_output": 28,
+        "code": 32,
+        "code_with_output": 30,
         "error_outputs": 0,
-        "executed_without_output": 3,
-        "markdown": 29,
+        "executed_without_output": 2,
+        "markdown": 31,
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-23T10:02:11+00:00",
-      "exported_at_local": "23.07.2026, 12:02:11 CEST",
+      "exported_at": "2026-07-27T07:03:26+00:00",
+      "exported_at_local": "27.07.2026, 09:03:26 CEST",
       "findings": [
         {
           "cell_index": 3,
@@ -606,41 +631,20 @@
           "message": "Code cell was executed and legitimately stored no output.",
           "severity": "info",
           "strict_blocker": false
-        },
-        {
-          "cell_index": 8,
-          "code": "EXECUTED_NO_OUTPUT",
-          "message": "Code cell was executed and legitimately stored no output.",
-          "severity": "info",
-          "strict_blocker": false
-        },
-        {
-          "cell_index": 47,
-          "code": "WIDGET_UNSUPPORTED",
-          "message": "Interactive widget output is unsupported; using a stored static fallback.",
-          "severity": "warning",
-          "strict_blocker": false
-        },
-        {
-          "cell_index": 51,
-          "code": "WIDGET_UNSUPPORTED",
-          "message": "Interactive widget output is unsupported; using a stored static fallback.",
-          "severity": "warning",
-          "strict_blocker": false
         }
       ],
       "git": {
         "branch": "main",
-        "commit": "b1ea31e503cdc2b3a31b712ba5bef91433ef7035",
+        "commit": "71f5cb6f9de1be2bde8c57dcf61c008c2bb25f7d",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "b1ea31e503cd"
+        "short_commit": "71f5cb6f9de1"
       },
       "output": "notebooks/03_A3_Phase.html",
-      "size_bytes": 467802,
-      "snapshot_sha256": "5c50eedcd6d98980ca52975fc4665432c8a8a2d48e6f5ff81ad2ed6f122e0403",
+      "size_bytes": 193408,
+      "snapshot_sha256": "245e0379a5ed50742af586221e2133e6ecafd2de9208f29417622412b25ffe41",
       "source": "notebooks/03_A3_Phase.ipynb",
-      "source_sha256": "f2b86566956e858a42892fafff3324f38afe57fe52802945618e92cd4814d825",
+      "source_sha256": "49158fd3cf8011844246270664ecc69dc9f5abc243544ef2beec235df15c6fa4",
       "status": "ready",
       "title": "Unfallatlas Deutschland A³ Phase"
     },
@@ -666,17 +670,17 @@
           "cell_index": null,
           "kind": "ui-style",
           "media_type": "text/css",
-          "relative_path": "assets/ui/presentation-8e59b5743466f14b.css",
-          "sha256": "8e59b5743466f14b4c8a6822ea84031bb02e1490281cd11e4167832ac0510061",
+          "relative_path": "assets/ui/presentation-a2378fcbea46d674.css",
+          "sha256": "a2378fcbea46d67494d426e1de7a70099d8156938fd4e12d2ac738c19b8b187f",
           "size_bytes": 25021
         },
         {
           "cell_index": null,
           "kind": "ui-script",
           "media_type": "text/javascript",
-          "relative_path": "assets/ui/presentation-236ee78fcbebc8f0.js",
-          "sha256": "236ee78fcbebc8f0f4c833b8f18b31d3c083d73c68b1ef6eb0962590fd1219d1",
-          "size_bytes": 14334
+          "relative_path": "assets/ui/presentation-7191953d6c9e4bae.js",
+          "sha256": "7191953d6c9e4bae87e1f238cc1224ceda681b81b12ab6b21485a3353618ca76",
+          "size_bytes": 14289
         },
         {
           "cell_index": null,
@@ -719,123 +723,239 @@
           "size_bytes": 22832
         },
         {
-          "cell_index": 5,
+          "cell_index": 2,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-cdbeb3478efed916.js",
-          "sha256": "cdbeb3478efed916e965757dc67608a73daf7d9d37b6d900c540b87cb8ca5dab",
-          "size_bytes": 1457259
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-e9c94c3618977910.js",
+          "sha256": "e9c94c361897791005e92330c6da6d2cce621347ea5f07c75bc5924050901b58",
+          "size_bytes": 7859
         },
         {
           "cell_index": 5,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-175c097da5da3230.js",
-          "sha256": "175c097da5da323091a4612cfae5f22bbc9849cbd3ad195e1bfa3da83d584f00",
-          "size_bytes": 5732363
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-2fc30c4d1091429c.js",
+          "sha256": "2fc30c4d1091429cc35512bdedd7442212a9cce4c8e2ecff3cdb0429efe26df6",
+          "size_bytes": 7787
         },
         {
-          "cell_index": 6,
+          "cell_index": 5,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-a033fa25900e1a63.js",
-          "sha256": "a033fa25900e1a63874526d279e262967d0c033f2808a0bd24412805944bed67",
-          "size_bytes": 7550
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-260776c5af501f4a.js",
+          "sha256": "260776c5af501f4af415866d556359ab964595ff4b5beef9ef90617f56900c0d",
+          "size_bytes": 8198
         },
         {
-          "cell_index": 9,
+          "cell_index": 8,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-bf6ab871ad82ece1.js",
-          "sha256": "bf6ab871ad82ece1307e0fbc5589580a0fca9a4f41017c9df509428883809032",
-          "size_bytes": 7881
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-a81ef7cd7720c50d.js",
+          "sha256": "a81ef7cd7720c50dbaf45ffb8d5d8373e64daef3e2f72b65c4065c7f48bf3c65",
+          "size_bytes": 12163135
+        },
+        {
+          "cell_index": 8,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-acf10a6ed6cfdcb8.js",
+          "sha256": "acf10a6ed6cfdcb8377ccd26107b4f32d203f5fd10869ea4b31e02566b638bf9",
+          "size_bytes": 45845635
+        },
+        {
+          "cell_index": 11,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-518e552d4525a5d3.js",
+          "sha256": "518e552d4525a5d3eb1f13c40fedf5a5772b0e99af0af3d1b7e80c69a964186c",
+          "size_bytes": 7572
+        },
+        {
+          "cell_index": 11,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-d7bed2530582ef6e.js",
+          "sha256": "d7bed2530582ef6e331d6a9f62d175072d973cf5c434da778fc56f49860a23d9",
+          "size_bytes": 7362
+        },
+        {
+          "cell_index": 11,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-787c8fc6bc2e0dea.js",
+          "sha256": "787c8fc6bc2e0dea15be0a72e8a95551703257d1e5ecae61db17c8cc5bb07665",
+          "size_bytes": 7649
+        },
+        {
+          "cell_index": 12,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-a61fe260088aba00.js",
+          "sha256": "a61fe260088aba00007d46e9f0d7c9eb94beac1d0399f3b8492a41dbe9c6563a",
+          "size_bytes": 7934
+        },
+        {
+          "cell_index": 13,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-dfea3c340d384e6f.js",
+          "sha256": "dfea3c340d384e6f32e88bef45f31ffc7c3c4ef765d65a3e2abe14890c62c291",
+          "size_bytes": 7944
+        },
+        {
+          "cell_index": 14,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-36b370b894702ce8.js",
+          "sha256": "36b370b894702ce81c73993b045d2f4523867c222ba17999773ad59d973a3c91",
+          "size_bytes": 7462
+        },
+        {
+          "cell_index": 17,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-47a5d6594b6d5bee.js",
+          "sha256": "47a5d6594b6d5beefc873cc8d3a0e8082f568f16b12d24f2325fb2d126e276ad",
+          "size_bytes": 7584
+        },
+        {
+          "cell_index": 17,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-fb77d3ee472dba87.js",
+          "sha256": "fb77d3ee472dba878259f4b30a7c85121ab748921d549a6063f04de5fa751c7f",
+          "size_bytes": 7235
         },
         {
           "cell_index": 20,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-3a6c4482d0db1a0a.js",
-          "sha256": "3a6c4482d0db1a0a85262b3ba19ae37e92541dbe2e66ca2a7022761bd13e6e28",
-          "size_bytes": 3219699
-        },
-        {
-          "cell_index": 21,
-          "kind": "plotly",
-          "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-576b753289dbae60.js",
-          "sha256": "576b753289dbae6050932da989ddf0ba7b2e908cfc2d2286781ec8229b69380e",
-          "size_bytes": 7701
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-abb693ff0a75f05f.js",
+          "sha256": "abb693ff0a75f05fa79d326bce2eacf4d4dfc6cf896528599e38f946dc950a2d",
+          "size_bytes": 8410
         },
         {
           "cell_index": 24,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-97b5571b8b6c365d.js",
-          "sha256": "97b5571b8b6c365d518db710ea5e77b2e47c794c4d014b3501c8173c4df621b4",
-          "size_bytes": 8011
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-98575a4e4b5b2ca1.js",
+          "sha256": "98575a4e4b5b2ca1a9202bf01085e9d688ab907425cb2e0412e9481f3c2dc802",
+          "size_bytes": 3219581
         },
         {
-          "cell_index": 24,
+          "cell_index": 25,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-4aad531946a991ef.js",
-          "sha256": "4aad531946a991ef1b49f38fea1f55a1f0dcb4498f3ecc3abc5f05e578134c8a",
-          "size_bytes": 8000
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-a20578aad0ed6af3.js",
+          "sha256": "a20578aad0ed6af30eeffc06b91cb3f3fa65e148248b989505c6b5b028812a4d",
+          "size_bytes": 7744
         },
         {
-          "cell_index": 24,
+          "cell_index": 26,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-b61a806566921c9f.js",
-          "sha256": "b61a806566921c9f7bdc80f2af4d7ec1bc62f52b5179ab4a46bc0e5031f9d0e5",
-          "size_bytes": 7990
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-6e11d3a2f0ef18b9.js",
+          "sha256": "6e11d3a2f0ef18b99c326046b477ed7d9ae90729cc1ef8c65be1b5b7f6d95226",
+          "size_bytes": 7942
         },
         {
-          "cell_index": 24,
+          "cell_index": 26,
           "kind": "plotly",
           "media_type": "text/javascript",
-          "relative_path": "assets/notebooks/04_C_Phase/plotly-84ded4013973ff95.js",
-          "sha256": "84ded4013973ff95db756f37bfb1a9c3795b4b4e428f06a82c84534c9cefec46",
-          "size_bytes": 7976
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-3920184f49a320b0.js",
+          "sha256": "3920184f49a320b02b7391d60b526159c17c4b40cd5317ffb4a164dc858c9c0c",
+          "size_bytes": 7935
+        },
+        {
+          "cell_index": 26,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-ac7a77d4f797c9d6.js",
+          "sha256": "ac7a77d4f797c9d6886b569138c90060a22156ee4a2462589eac557a4c8f5735",
+          "size_bytes": 7919
+        },
+        {
+          "cell_index": 26,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-56c2a8353d99eb90.js",
+          "sha256": "56c2a8353d99eb90ca130827ddd3143a6af040c4f99be0ceeb3385bb92840daa",
+          "size_bytes": 7943
+        },
+        {
+          "cell_index": 30,
+          "kind": "plotly",
+          "media_type": "text/javascript",
+          "relative_path": "assets/notebooks/04_C_Phase/plotly-78f55d1496f4a0bd.js",
+          "sha256": "78f55d1496f4a0bdbdac58e4aeca6cce6eb93b69c54a6d0ab4a57715928da4a1",
+          "size_bytes": 7552
         }
       ],
       "cell_counts": {
-        "code": 18,
-        "code_with_output": 18,
+        "code": 16,
+        "code_with_output": 13,
         "error_outputs": 0,
-        "executed_without_output": 0,
+        "executed_without_output": 3,
         "markdown": 16,
         "raw": 0,
         "unexecuted_code": 0
       },
-      "exported_at": "2026-07-22T03:19:18+00:00",
-      "exported_at_local": "22.07.2026, 05:19:18 CEST",
+      "exported_at": "2026-07-27T07:03:30+00:00",
+      "exported_at_local": "27.07.2026, 09:03:30 CEST",
       "findings": [
         {
-          "cell_index": 5,
+          "cell_index": 1,
+          "code": "EXECUTED_NO_OUTPUT",
+          "message": "Code cell was executed and legitimately stored no output.",
+          "severity": "info",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 3,
+          "code": "EXECUTED_NO_OUTPUT",
+          "message": "Code cell was executed and legitimately stored no output.",
+          "severity": "info",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 8,
           "code": "LARGE_OUTPUT",
-          "message": "Stored output is 5732320 bytes.",
+          "message": "Stored output is 12163092 bytes.",
           "severity": "warning",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 8,
+          "code": "LARGE_OUTPUT",
+          "message": "Stored output is 45845592 bytes.",
+          "severity": "warning",
+          "strict_blocker": false
+        },
+        {
+          "cell_index": 23,
+          "code": "EXECUTED_NO_OUTPUT",
+          "message": "Code cell was executed and legitimately stored no output.",
+          "severity": "info",
           "strict_blocker": false
         }
       ],
       "git": {
-        "branch": "feat/presentation-design-audit",
-        "commit": "e4faa894648e3b2c3cea6fadf367541d0ee96e42",
+        "branch": "main",
+        "commit": "71f5cb6f9de1be2bde8c57dcf61c008c2bb25f7d",
         "dirty": true,
         "repo_name": "unfallatlas-qua3ck",
-        "short_commit": "e4faa894648e"
+        "short_commit": "71f5cb6f9de1"
       },
       "output": "notebooks/04_C_Phase.html",
-      "size_bytes": 151265,
-      "snapshot_sha256": "ed77da89842f9e5ec306274b28c873ff26e0e96a12fe244e5483af68f8e293bb",
+      "size_bytes": 266393,
+      "snapshot_sha256": "6bfa92f6c49203f41da3a1d71724b7ab3587372e0ee714e6d2101c54b4c8d88e",
       "source": "notebooks/04_C_Phase.ipynb",
-      "source_sha256": "a5490511bbdc5b7ae3114201f86b98c0f1f25fe57d27bac73827cc4088733fca",
+      "source_sha256": "4395d6ac33dbe869085e432ab3e3244560ffa51c7f56c42babfd0599b5e2018e",
       "status": "ready",
-      "title": "Unfallatlas Deutschland C Phase"
+      "title": "Unfallatlas Germany C Phase"
     }
   ],
   "exporter_version": "1",
-  "generated_at": "2026-07-23T10:02:11+00:00",
+  "generated_at": "2026-07-27T07:03:30+00:00",
   "schema_version": 1
 }

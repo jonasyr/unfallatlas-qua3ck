@@ -36,7 +36,7 @@ __all__ = [
     "VARIABLES",
 ]
 
-DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC" "/observations_germany/climate/hourly"
+DWD_BASE = "https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/hourly"
 
 VARIABLES: dict[str, dict[str, str]] = {
     "TU": {
@@ -61,9 +61,7 @@ VARIABLES: dict[str, dict[str, str]] = {
     },
 }
 
-STATION_LIST_URL = (
-    f"{DWD_BASE}/air_temperature/recent/" "TU_Stundenwerte_Beschreibung_Stationen.txt"
-)
+STATION_LIST_URL = f"{DWD_BASE}/air_temperature/recent/TU_Stundenwerte_Beschreibung_Stationen.txt"
 
 _DWD_SENTINELS = {-999.0, -9999.0}
 
@@ -239,7 +237,7 @@ def download_station_data(
         # discovered from the directory listing (fetched once, cached in memory).
         if period == "recent":
             candidate_urls = [
-                f"{DWD_BASE}/{var_name}/{period}" f"/stundenwerte_{variable_code}_{sid}_akt.zip",
+                f"{DWD_BASE}/{var_name}/{period}/stundenwerte_{variable_code}_{sid}_akt.zip",
             ]
         else:
             dir_index = _fetch_dir_index(var_name, variable_code, period)

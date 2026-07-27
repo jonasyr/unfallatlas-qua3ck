@@ -579,6 +579,10 @@ def test_render_notebook_code_cell_linenos_table_is_not_html_escaped(
     from unfallatlas.presentation.rendering import render_notebook
 
     analysis = _renderer_analysis(tmp_path)
+    analysis.notebook.cells[0].source += "\n![Current](current.png)"
+    current_image = analysis.source.parent / "current.png"
+    current_image.parent.mkdir(parents=True, exist_ok=True)
+    current_image.write_bytes(b"current")
     output_root = tmp_path / "site"
     monkeypatch.setattr(subprocess, "run", _fail_if_called)
     monkeypatch.setattr(NotebookClient, "execute", _fail_if_called)
@@ -661,6 +665,45 @@ def test_render_notebook_publishes_saved_outputs_and_local_assets_without_execut
         (result.destination.parent / reference).resolve().is_file()
         for reference in local_references
     )
+
+
+def test_render_notebook_prunes_only_obsolete_assets_after_successful_publication(
+    tmp_path: Path,
+) -> None:
+    from unfallatlas.presentation.rendering import render_notebook
+
+    analysis = _renderer_analysis(tmp_path)
+    output_root = tmp_path / "site"
+    stale_notebook_asset = (
+        output_root / "assets" / "notebooks" / "renderer-integration" / "plotly-obsolete000000.js"
+    )
+    stale_ui_asset = output_root / "assets" / "ui" / "presentation-obsolete000000.js"
+    stale_local_asset = (
+        output_root
+        / "assets"
+        / "notebooks"
+        / "renderer-integration"
+        / "local"
+        / "resource-obsolete000000.png"
+    )
+    unrelated_asset = output_root / "assets" / "notebooks" / "other-phase" / "keep.js"
+    for path in (stale_notebook_asset, stale_ui_asset, stale_local_asset, unrelated_asset):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"old")
+
+    result = render_notebook(
+        analysis,
+        _renderer_metadata(),
+        output_root,
+        repo_root=tmp_path,
+    )
+
+    assert result.error is None
+    assert not stale_notebook_asset.exists()
+    assert not stale_ui_asset.exists()
+    assert not stale_local_asset.exists()
+    assert unrelated_asset.read_bytes() == b"old"
+    assert all((output_root / asset.relative_path).is_file() for asset in result.assets)
 
 
 def test_render_notebook_accepts_nested_relative_output_path(tmp_path: Path) -> None:

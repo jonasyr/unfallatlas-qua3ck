@@ -150,7 +150,7 @@ Ein lokaler HTTP-Server ist für den vorgesehenen `file://`-Betrieb nicht erford
 
 ## PDF
 
-Nutze in der Präsentation die Schaltfläche „Drucken“ und anschließend die PDF-Funktion
+Nutze in der Präsentation die Schaltfläche „Print“ und anschließend die PDF-Funktion
 des Browsers. Die Schaltfläche lädt Plotly-Grafiken vor dem Druck; auch der
 Browser-Druck-Event öffnet Code- und Outputbereiche. Navigation und Bedienelemente werden
 in der Druckansicht ausgeblendet, Tabellenbegrenzungen aufgehoben und Grafiken auf die

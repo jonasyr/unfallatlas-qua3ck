@@ -133,7 +133,12 @@ def markdown_prose_blocks(source: str) -> list[str]:
                 continue
         prose_lines.append(line)
 
-    without_inline_code = re.sub(r"`[^`]*`", "", "\n".join(prose_lines))
+    prose = "\n".join(prose_lines)
+    prose = re.sub(r"\$\$.*?\$\$", "", prose, flags=re.DOTALL)
+    prose = re.sub(r"\\\[.*?\\\]", "", prose, flags=re.DOTALL)
+    prose = re.sub(r"(?<!\$)\$[^$\n]+\$", "", prose)
+    prose = re.sub(r"\\\(.*?\\\)", "", prose)
+    without_inline_code = re.sub(r"`[^`]*`", "", prose)
     return [block.strip() for block in re.split(r"\n\s*\n", without_inline_code) if block.strip()]
 
 
@@ -205,6 +210,56 @@ def test_no_matplotlib_or_seaborn_chart_code():
                 violations.append(f"{path}: code cell {index} contains {matched}")
 
     assert not violations, "\n".join(violations)
+
+
+def test_u_phase_visualizations_do_not_require_external_map_tiles():
+    notebook = read_notebook(Path("notebooks/02_U_Phase.ipynb"))
+    map_cells = [
+        cell.source
+        for cell in notebook.cells
+        if cell.cell_type == "code" and "08_geo_density_map" in cell.source
+    ]
+
+    assert len(map_cells) == 1
+    source = map_cells[0]
+    assert "fig = px.scatter(" in source
+    assert 'render_mode="webgl"' in source
+    assert 'save_fig(fig, "08_geo_density_map")' in source
+    assert "fig.show()" in source
+    for forbidden in ("mapbox", "scatter_map(", "go.Scattermap", "open-street-map"):
+        assert forbidden not in source
+
+
+def test_u_phase_does_not_infer_federal_state_from_state_local_district_code():
+    source = notebook_text(Path("notebooks/02_U_Phase.ipynb"))
+    markdown = notebook_text(Path("notebooks/02_U_Phase.ipynb"), cell_type="markdown")
+
+    for invalid_contract in (
+        "BL_NAMES",
+        "bl_sorted",
+        "pct_fatal_by_bundesland",
+        "SUBSTR(UKREIS",
+        "Share of fatal accidents (class 1) by federal state",
+    ):
+        assert invalid_contract not in source
+    assert "does not retain `ULAND`" in markdown
+    assert "state-local district code" in markdown
+
+
+def test_spatial_hypothesis_and_u_interpretation_match_available_evidence():
+    q_markdown = notebook_text(Path("notebooks/01_Q_Phase.ipynb"), cell_type="markdown")
+    u_markdown = notebook_text(Path("notebooks/02_U_Phase.ipynb"), cell_type="markdown")
+
+    assert "vary across federal states and districts" not in q_markdown
+    assert "location and spatial-context signal" in q_markdown.casefold()
+    assert "descriptive location coverage" in " ".join(u_markdown.split())
+    assert "finding is consistent with H2" not in u_markdown
+
+
+def test_sentence_dash_contract_ignores_mathematical_minus():
+    blocks = markdown_prose_blocks("$$\\text{reduction} = 1 - \\frac{H(Y \\mid X)}{H(Y)}$$")
+
+    assert not any(SENTENCE_DASH_RE.search(block) for block in blocks)
 
 
 def test_no_development_checklists():

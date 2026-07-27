@@ -13,6 +13,8 @@ TEMPLATE = (
     REPO_ROOT / "src" / "unfallatlas" / "presentation" / "templates" / "notebook" / "index.html.j2"
 )
 GITATTRIBUTES = REPO_ROOT / ".gitattributes"
+DISCLOSURE = REPO_ROOT / "docs" / "AI TOOL DISCLOSURE.md"
+C_PROMPTS = REPO_ROOT / "docs" / "prompts" / "04_prompts_phase_c.md"
 
 INSTALL_COMMAND = "uv sync --extra presentation"
 EXPORT_COMMANDS = (
@@ -205,3 +207,73 @@ def test_freshness_section_rejects_missing_and_empty_manifests(guide_text: str) 
 
     assert re.search(r"manifest.*fehlt.*exit-code `1`", section, flags=re.DOTALL)
     assert re.search(r"manifest.*keine einträge.*exit-code `1`", section, flags=re.DOTALL)
+
+
+def test_cross_phase_refactor_is_disclosed_and_linked() -> None:
+    disclosure = DISCLOSURE.read_text(encoding="utf-8")
+    prompt_record = C_PROMPTS.read_text(encoding="utf-8")
+
+    assert "2026-07-23-presentation-notebook-refactor-design.md" in disclosure
+    assert "2026-07-23-presentation-notebook-refactor.md" in disclosure
+    assert "interactive Plotly" in disclosure
+    assert "Comprehensive project review and refactor" in prompt_record
+    assert "English-only" in prompt_record
+    for notebook_name in (
+        "notebooks/01_Q_Phase.ipynb",
+        "notebooks/02_U_Phase.ipynb",
+        "notebooks/03_A3_Phase.ipynb",
+        "notebooks/04_C_Phase.ipynb",
+    ):
+        assert notebook_name in prompt_record
+    assert "all ten persisted candidates" in prompt_record
+    assert "Random Forest, XGBoost, LightGBM, and CatBoost" in prompt_record
+    assert "one confirmation" in prompt_record
+    assert "2026-07-23-presentation-notebook-refactor-design.md" in prompt_record
+    assert "2026-07-23-presentation-notebook-refactor.md" in prompt_record
+    assert "matching `.py` mirrors" in prompt_record
+
+
+def _markdown_prose(document: str) -> str:
+    prose_lines: list[str] = []
+    in_fence = False
+
+    for line in document.splitlines():
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        line = re.sub(r"^\s*(?:>\s*)+", "", line)
+        if line.startswith(("    ", "\t")):
+            continue
+        line = re.sub(r"`[^`]*`", "", line)
+        line = re.sub(r"^\s*[-*+]\s+", "", line)
+        prose_lines.append(line)
+
+    return "\n".join(prose_lines)
+
+
+def test_markdown_prose_ignores_non_prose_dash_syntax() -> None:
+    markdown = """\
+- top-level item
+  - nested item
+> - quoted item
+`a - b`
+    a - b
+```
+a - b
+```
+"""
+
+    assert " - " not in _markdown_prose(markdown)
+
+
+@pytest.mark.parametrize("document", [DISCLOSURE, C_PROMPTS])
+def test_updated_ai_provenance_markdown_avoids_sentence_dash_punctuation(
+    document: Path,
+) -> None:
+    text = _markdown_prose(document.read_text(encoding="utf-8"))
+
+    assert "—" not in text
+    assert "–" not in text
+    assert not re.search(r"[ \t]-[ \t]", text)

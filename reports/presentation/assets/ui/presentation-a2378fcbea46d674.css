@@ -1,0 +1,616 @@
+/* IBM Plex is vendored (assets/vendor/fonts/, published by
+   copy_shared_assets) so the presentation renders identically on any
+   machine - system-ui made every laptop/beamer combination look
+   different. Latin subsets only; German diacritics (äöüß) are covered. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/fonts/ibm-plex-sans-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../vendor/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../vendor/fonts/ibm-plex-sans-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+  --page: #f7f9fb;
+  --surface: #ffffff;
+  --surface-muted: #edf2f6;
+  --text: #17212b;
+  --muted: #52616f;
+  --border: #c8d2dc;
+  --accent: #315f7d;
+  --accent-dark: #24475f;
+  --warning: #6f4d00;
+  --error: #8a2f2f;
+  --success: #1f6f4a;
+  --radius: 0.65rem;
+  --content-width: 68.75rem;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+  font-family: "IBM Plex Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.55;
+  scroll-behavior: smooth;
+}
+
+/* Dark theme - same token names, no selector outside :root needs to change.
+   Applies when the user has explicitly picked dark (data-theme="dark"), or
+   when the system prefers dark and the user has not explicitly picked
+   light. The code panels (One Dark Pro) are already dark regardless of
+   page theme, so dark mode is the more visually coherent default for them
+   - this palette keeps the same hue family (blue accent, warm-neutral text)
+   as light mode rather than introducing a new brand feel. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #10151c;
+  --surface: #171e27;
+  --surface-muted: #1f2831;
+  --text: #e7edf3;
+  --muted: #93a2b1;
+  --border: #2d3944;
+  --accent: #7cabce;
+  --accent-dark: #a9cbe6;
+  --warning: #e3b34c;
+  --error: #e78187;
+  --success: #6fcf9c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #10151c;
+    --surface: #171e27;
+    --surface-muted: #1f2831;
+    --text: #e7edf3;
+    --muted: #93a2b1;
+    --border: #2d3944;
+    --accent: #7cabce;
+    --accent-dark: #a9cbe6;
+    --warning: #e3b34c;
+    --error: #e78187;
+    --success: #6fcf9c;
+  }
+}
+
+* { box-sizing: border-box; }
+/* The accent rule at the very top is the page's one signature gesture -
+   a classic academic-print device (title-page rule line), deliberately
+   quiet: no gradients, no glow, just the brand blue as a hairline of ink. */
+body { margin: 0; border-top: 0.25rem solid var(--accent); color: var(--text); background: var(--page); }
+button, summary, a { font: inherit; }
+a { color: var(--accent-dark); text-underline-offset: 0.2em; }
+code, kbd, samp, pre { font-family: var(--mono); }
+button {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent-dark);
+  background: var(--surface);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+button:hover { background: var(--surface-muted); }
+button:active { transform: translateY(1px); }
+:focus-visible, .focus-visible {
+  outline: 0.2rem solid var(--accent);
+  outline-offset: 0.2rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.skip-link {
+  position: fixed;
+  inset: 0.5rem auto auto 0.5rem;
+  z-index: 3;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  color: var(--surface);
+  background: var(--accent-dark);
+  transform: translateY(-160%);
+}
+.skip-link:focus { transform: translateY(0); }
+
+.presentation-header { border-bottom: 1px solid var(--border); background: var(--surface); }
+.header-content { width: min(100% - 2rem, var(--content-width)); margin-inline: auto; padding: 2rem 0; }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.back-link:hover, .back-link:focus-visible { color: var(--accent-dark); text-decoration: underline; }
+/* Small-caps micro-label, same voice as .toc-heading h2 and the findings
+   summary - one consistent label style across the page instead of three. */
+.document-kind {
+  margin: 0 0 0.5rem;
+  color: var(--accent-dark);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.presentation-header h1 {
+  max-width: 24ch;
+  margin: 0;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.source-path { margin: 0.65rem 0 1.5rem; color: var(--muted); font-family: var(--mono); font-size: 0.85rem; overflow-wrap: anywhere; }
+.metadata-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.8rem 1.5rem; margin: 0; }
+.metadata-grid div { min-width: 0; }
+.metadata-grid dt { color: var(--muted); font-size: 0.875rem; font-weight: 600; }
+.metadata-grid dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+/* Muted neutral card with a colored left bar, not a solid bright fill - the
+   solid-yellow treatment fought the rest of the page's restrained palette
+   (see the same reasoning for .stderr-output below). Foldable like the
+   Code/Ausgabe disclosures instead of always taking up header space; opens
+   by default only when an error-severity finding needs immediate attention. */
+.findings {
+  margin-top: 1.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-muted);
+  border-left: 0.2rem solid var(--warning);
+  overflow: clip;
+}
+.findings summary {
+  padding: 0.85rem 1.15rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  cursor: pointer;
+}
+.findings ul { margin: 0; padding: 0 1.15rem 1rem 2.3rem; color: var(--text); }
+.findings li { margin: 0.3rem 0; }
+.findings li[data-severity="error"] { color: var(--error); }
+
+/* ── Landing page (reports/presentation/index.html) ─────────────────────── */
+/* The index is the audience's title page: a hero plus one ordered list of
+   QUA³CK phases. The phases have an inherent narrative order (Q → U → A³ →
+   C), so a numbered vertical list tells the story better than a card grid
+   that scattered three small tiles into a mostly empty viewport. */
+.index-header .header-content { width: min(100% - 2rem, 56rem); padding: 3.25rem 0 2.75rem; }
+.index-shell {
+  width: min(100% - 2rem, 56rem);
+  margin: 2.5rem auto 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+}
+.phase-section-heading { margin-bottom: 1.1rem; }
+.phase-section-heading h2 { margin: 0 0 0.35rem; font-size: 1.35rem; letter-spacing: -0.015em; }
+.section-hint { margin: 0; max-width: 65ch; color: var(--muted); font-size: 0.9rem; text-wrap: pretty; }
+.phase-list { display: flex; flex-direction: column; gap: 0.85rem; margin: 0; padding: 0; list-style: none; }
+.phase-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 1.1rem 1.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.phase-row:has(a:hover), .phase-row:has(a:focus-visible) {
+  border-color: var(--accent);
+  box-shadow: 0 0.35rem 1rem -0.5rem rgba(23, 33, 43, 0.35);
+}
+.phase-mark {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: calc(var(--radius) - 0.15rem);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-dark);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.phase-row-title { margin: 0; font-size: 1.08rem; line-height: 1.3; }
+.phase-row-title a { text-decoration: none; }
+.phase-row-title a:hover, .phase-row-title a:focus-visible { text-decoration: underline; }
+/* Stretched link: the whole row is the click target, not just the title -
+   a large, forgiving target when driving the presentation live. */
+.phase-row-title a::after { content: ""; position: absolute; inset: 0; }
+.phase-row-meta { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+.phase-row-meta .phase-source { font-family: var(--mono); font-size: 0.8rem; }
+.phase-row-side { display: flex; flex-direction: column; gap: 0.45rem; align-items: flex-end; text-align: right; }
+.phase-row-export { margin: 0; color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.phase-card-badges { display: flex; gap: 0.4rem; margin: 0; }
+.status-pill, .state-pill {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.status-pill { color: var(--accent-dark); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.state-pill[data-state="fresh"] { color: var(--success); background: color-mix(in srgb, var(--success) 14%, transparent); }
+.state-pill[data-state="stale"],
+.state-pill[data-state="missing-export"] { color: var(--warning); background: color-mix(in srgb, var(--warning) 16%, transparent); }
+.state-pill[data-state="orphaned"],
+.state-pill[data-state="invalid-source"] { color: var(--error); background: color-mix(in srgb, var(--error) 14%, transparent); }
+
+/* One segmented control, not six loose outlined buttons floating in a row -
+   matches the single-card language the rest of the page uses (phase-card,
+   cell-card). Sticky so the view controls stay reachable in a long
+   notebook - the one motivated use of position:sticky on this page. Lives
+   as a full-width row inside .presentation-shell's grid (not a separate,
+   independently-centered element above it) so it lines up with the TOC +
+   content columns instead of drifting to a different width/center. */
+.presentation-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.15rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 1.75rem;
+  padding: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0.6rem 1.4rem -1.1rem rgba(23, 33, 43, 0.3);
+  position: sticky;
+  top: 0.75rem;
+  z-index: 2;
+}
+.presentation-toolbar button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.75rem;
+  border: 0;
+  border-radius: calc(var(--radius) - 0.2rem);
+  background: transparent;
+  font-size: 0.88rem;
+}
+.presentation-toolbar button:hover { background: var(--surface-muted); }
+.toc-trigger, .toc-close { display: none; }
+.presentation-shell {
+  display: grid;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+  gap: 2rem;
+  /* 15rem TOC + 2rem gap + 68.75rem content column: sized so the content
+     column meets --content-width with no dead band on a 1920px display. */
+  width: min(100% - 2rem, 86rem);
+  margin: 1.75rem auto 5rem;
+  align-items: start;
+}
+/* A light nav rail, not a boxed panel - a hairline on the left instead of a
+   full border/background keeps it from competing with the cell-card/
+   phase-card boxes as if it were "just another box" on the page. */
+.toc { padding-left: 1rem; border-left: 1px solid var(--border); }
+.toc-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.toc-heading h2 { margin: 0; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.toc ol { margin: 0.85rem 0 0; padding: 0; list-style: none; }
+.toc ol ol { margin: 0.3rem 0 0; padding-left: 0.85rem; }
+.toc li + li { margin-top: 0.3rem; }
+.toc-link {
+  display: block;
+  padding: 0.2rem 0 0.2rem 0.7rem;
+  border-left: 0.15rem solid transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+.toc-link:hover { color: var(--text); }
+.toc-link[aria-current="location"] { color: var(--accent-dark); border-left-color: var(--accent); font-weight: 700; }
+
+.notebook-main { width: min(100%, var(--content-width)); min-width: 0; }
+.notebook-cell { margin: 0 0 2.25rem; }
+.markdown-cell { max-width: 76ch; }
+.markdown-cell h1, .markdown-cell h2, .markdown-cell h3, .markdown-cell h4 {
+  margin-top: 2.5em;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.markdown-cell h1 { font-size: 1.9rem; letter-spacing: -0.02em; }
+.markdown-cell h2 { font-size: 1.45rem; }
+.markdown-cell h3 { font-size: 1.15rem; }
+.markdown-cell p, .markdown-cell li { text-wrap: pretty; }
+/* scroll-margin-top clears the sticky toolbar (top 0.75rem + ~3rem height)
+   so TOC jumps land the heading below it instead of underneath it. */
+.heading-anchor { display: block; position: relative; top: -1rem; visibility: hidden; scroll-margin-top: 5rem; }
+/* nbconvert's mistune renderer appends a literal pilcrow permalink
+   (`<a class="anchor-link">&#182;</a>`) after every heading; unstyled, it
+   renders as a visible "¶" glued onto every single heading in the document.
+   Standard docs-site treatment: hide it until the heading is hovered/focused. */
+.markdown-cell .anchor-link {
+  margin-left: 0.4em;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.markdown-cell h1:hover .anchor-link,
+.markdown-cell h2:hover .anchor-link,
+.markdown-cell h3:hover .anchor-link,
+.markdown-cell h4:hover .anchor-link,
+.markdown-cell h5:hover .anchor-link,
+.markdown-cell h6:hover .anchor-link,
+.markdown-cell .anchor-link:focus-visible {
+  opacity: 1;
+}
+/* One card per logical cell (code + its output, if any) - previously these
+   were two independently-bordered boxes with a visible gap between them,
+   reading as visual clutter ("boxes everywhere"). Now the card chrome lives
+   once on the wrapper; code/output sections inside it are divided by a
+   hairline instead of a second full border. */
+.cell-card { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: clip; }
+.code-cell, .output-cell { display: block; }
+.output-cell { border-top: 1px solid var(--border); }
+.code-cell > summary, .output-cell > summary { padding: 0.75rem 1rem; color: var(--accent-dark); font-weight: 700; cursor: pointer; }
+.code-cell[open] > summary, .output-cell[open] > summary { border-bottom: 1px solid var(--border); background: var(--surface-muted); }
+.output-content { min-width: 0; padding: 1rem; display: flex; flex-direction: column; gap: 0.85rem; }
+/* Code panels are a deliberately dark inset (One Dark Pro palette, injected
+   per-export by CSSHTMLHeaderPreprocessor) inside the otherwise light page
+   chrome - edge-to-edge under the light "Code" toggle bar, like a docs site
+   embedding a syntax-highlighted snippet. */
+.code-content { min-width: 0; padding: 0; }
+.input_area, .highlight { min-width: 0; margin: 0; }
+.highlight { overflow-x: auto; border-radius: 0 0 var(--radius) var(--radius); }
+.highlight pre {
+  margin: 0;
+  padding: 1rem;
+  white-space: pre;
+  overflow-wrap: normal;
+  word-break: normal;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  font-family: var(--mono);
+}
+/* linenos="table": Pygments emits its own <table> with a numbers gutter
+   (td.linenos) and a code column (td.code) - style the gutter, leave the
+   token colors to the injected Pygments stylesheet. */
+.highlight table { width: 100%; border-collapse: collapse; }
+.highlight td.linenos { user-select: none; border-right: 1px solid rgba(255, 255, 255, 0.08); }
+.highlight td.linenos pre { padding-right: 0.75rem; padding-left: 0.75rem; opacity: 0.7; }
+.highlight td.code { width: 100%; }
+.highlight td.code pre { overflow-x: auto; }
+.output_area, .output_subarea { max-width: 100%; }
+/* Shrink-wrap to the table's own size (most notebook tables are far
+   narrower than the output column) instead of always stretching to the
+   full output width; still caps at 100% and scrolls for wide/tall tables. */
+.table-scroll {
+  display: inline-block;
+  max-width: 100%;
+  max-height: 32rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  vertical-align: top;
+}
+.table-scroll table {
+  width: auto;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.table-scroll th, .table-scroll td {
+  padding: 0.5rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-muted);
+  color: var(--accent-dark);
+  font-weight: 700;
+  border-bottom: 2px solid var(--border);
+}
+.table-scroll tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-muted) 45%, transparent); }
+.table-scroll tbody tr:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.table-scroll tbody tr:last-child td { border-bottom: 0; }
+.text-output { max-height: 28rem; overflow: auto; border-radius: var(--radius); background: var(--surface-muted); }
+.text-output pre, .error-output pre { margin: 0; padding: 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* stderr is routine (progress logs, deprecation warnings), not a failure -
+   an alarming red box on every such cell reads as "something is broken"
+   when nothing is; keep it visually distinct but muted, and reserve red
+   for actual exceptions/tracebacks (.error-output, .output-load-error). */
+.stderr-output { color: var(--muted); background: var(--surface-muted); border-left: 0.2rem solid var(--border); }
+.error-output, .output-load-error { color: var(--error); background: color-mix(in srgb, var(--error) 12%, var(--surface)); }
+.plotly-output { min-height: 20rem; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+/* Gentle pulse while a lazy chart loads - the reduced-motion block below
+   zeroes animation-duration, so this respects that preference for free. */
+.plotly-output:not([data-loaded]) {
+  display: grid;
+  place-items: center;
+  animation: output-loading 1.8s ease-in-out infinite;
+}
+.plotly-output[data-loaded] { display: block; animation: none; }
+@keyframes output-loading {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.output-placeholder { color: var(--muted); }
+.output-image { margin: 0; }
+.output-image img, .notebook-main img, .notebook-main svg { display: block; max-width: 100%; height: auto; }
+.sandboxed-output { width: 100%; min-height: 24rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.expand-output { margin-top: 0.5rem; }
+.table-scroll.is-expanded, .text-output.is-expanded { max-height: none; }
+.back-to-top {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  background: var(--surface);
+  transition: opacity 0.2s ease, background-color 0.15s ease;
+}
+.back-to-top[data-visible="true"] { opacity: 1; pointer-events: auto; }
+
+/* Injected by presentation.js on every page (index + all notebooks) so the
+   toggle only needs to be written once. Fixed top-right, matching
+   .back-to-top's fixed-corner-button treatment for the other persistent
+   page control. */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  padding: 0;
+  background: var(--surface);
+  box-shadow: 0 0.4rem 1rem -0.6rem rgba(23, 33, 43, 0.35);
+}
+.theme-toggle svg { width: 1.1rem; height: 1.1rem; stroke: var(--accent-dark); fill: none; stroke-width: 1.8; }
+.theme-toggle .icon-moon { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
+:root[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: none; }
+  :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: block; }
+}
+
+/* GitHub link to the repository, left of the theme toggle - same fixed
+   corner-control language (surface pill, accent stroke, soft shadow). */
+.repo-link {
+  position: fixed;
+  top: 1rem;
+  right: 4rem;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 0.4rem 1rem -0.6rem rgba(23, 33, 43, 0.35);
+  transition: background-color 0.15s ease;
+}
+.repo-link:hover, .repo-link:focus-visible { background: var(--surface-muted); }
+.repo-link svg { width: 1.15rem; height: 1.15rem; fill: var(--accent-dark); }
+
+@media (min-width: 47.5625rem) {
+  /* top offset clears the sticky toolbar above it (top: 0.75rem + its own
+     ~2.975rem height) plus a small gap, so the two sticky elements never
+     overlap as the page scrolls. */
+  .toc { position: sticky; top: 4.5rem; max-height: calc(100vh - 5.5rem); overflow: auto; }
+}
+
+@media (max-width: 47.5rem) {
+  .presentation-shell { display: block; width: min(100% - 1rem, var(--content-width)); }
+  .js .toc {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    width: 100%;
+    max-height: 100dvh;
+    overflow: auto;
+    border: 0;
+    background: var(--surface);
+    padding: 1.25rem;
+  }
+  .js .toc[data-open="true"] { display: block; }
+  .js .toc-trigger, .js .toc-close { display: inline-block; }
+  /* Two columns instead of one: ten stacked label/value pairs consumed a
+     full phone screen before any notebook content appeared. */
+  .metadata-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .header-content { width: min(100% - 1rem, var(--content-width)); padding: 1.25rem 0; }
+  .presentation-toolbar { width: min(100% - 1rem, var(--content-width)); }
+  .presentation-toolbar button { flex: 1 1 auto; padding: 0.4rem 0.6rem; font-size: 0.85rem; }
+  .output-content { padding: 0.65rem; }
+  .highlight pre { padding: 0.65rem; }
+  .phase-row { grid-template-columns: 3rem minmax(0, 1fr); }
+  .phase-row-side { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+@media print {
+  @page { margin: 1.5cm; }
+  /* Printed pages are always light, regardless of the on-screen theme -
+     paper doesn't have a "dark mode" and forcing dark backgrounds through
+     would waste ink / fail on strict printer color settings. */
+  :root {
+    print-color-adjust: economy;
+    -webkit-print-color-adjust: economy;
+    --page: #f7f9fb;
+    --surface: #ffffff;
+    --surface-muted: #edf2f6;
+    --text: #17212b;
+    --muted: #52616f;
+    --border: #c8d2dc;
+  }
+  body { border-top: 0; background: var(--surface); font-size: 10pt; }
+  .presentation-toolbar, .toc, .back-to-top, .theme-toggle, .repo-link, .skip-link, button, summary { display: none !important; }
+  .presentation-shell { display: block; width: 100%; margin: 0; }
+  .presentation-header { border: 0; }
+  .header-content, .notebook-main { width: 100%; max-width: none; }
+  details > :not(summary) { display: block !important; }
+  .cell-card { break-inside: avoid; border-color: #b7b7b7; }
+  /* The One Dark code panel is deliberately dark on screen; on paper that
+     wastes ink and can clip under strict printer color settings, so force
+     it back to plain light text-on-white for the printed page only. */
+  .highlight, .highlight pre, .highlight td.linenos {
+    background: var(--surface) !important;
+    color: #000 !important;
+  }
+  .highlight span { color: inherit !important; background: none !important; }
+  .highlight td.linenos { border-right-color: var(--border) !important; }
+  .table-scroll, .text-output { max-height: none; overflow: visible; }
+  .plotly-output { min-height: 0; break-inside: avoid; }
+  img, svg, .plotly-output { max-height: 18cm; max-width: 100%; }
+  thead { display: table-header-group; }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid; }
+}

@@ -450,6 +450,14 @@ def render_notebook(
                 )
         rendered = html.encode("utf-8")
         _write_html_atomic(destination, rendered)
+        store.prune_namespace(
+            f"notebooks/{analysis.source.stem}",
+            tuple(asset.relative_path for asset in assets),
+        )
+        store.prune_namespace(
+            "ui",
+            tuple(asset.relative_path for asset in shared_assets),
+        )
     except Exception as exc:
         return ExportResult(
             source=analysis.source,

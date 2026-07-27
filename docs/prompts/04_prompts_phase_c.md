@@ -1,4 +1,4 @@
-# AI Prompt Records — Phase C
+# AI Prompt Records: Phase C
 
 Each record preserves the available prompt or planning context. Detailed
 implementation instructions live only in the linked plan files.
@@ -47,9 +47,9 @@ before any file changes were made.
 > end but fully do this on your own
 
 This second message authorized unattended execution for the remainder of
-the session — the plan below was executed inline (not via subagent
-dispatch, since the analysis is a single tightly-sequential notebook build)
-without further check-ins, including the disclosure-update step.
+the session. The plan below was executed inline without subagent dispatch
+because the analysis was a single tightly sequential notebook build. No
+further check-ins were required, including for the disclosure update.
 
 > but keep the cramers v from the a phase at the end with binary
 > classification in binary classification in general
@@ -66,8 +66,9 @@ the binary/3-class distinction implicit.
 `EnergyCast-App/docs/course-material/` were compared unit-by-unit (word
 counts, heading structure, and content depth). The friend's notes
 consistently included a table of contents, a "Key terms" glossary, and a
-"Source and validation check" section in all 7 units — none of my notes had
-any of these — and were 44% longer on the most complex unit (SVM). My notes
+"Source and validation check" section in all 7 units. None of my notes had
+any of these features. The other notes were 44% longer on the most complex
+unit (SVM). My notes
 were replaced with the friend's set; a supplementary note with no equivalent
 in the friend's repo (`Master Data Analysis with ChatGPT.md`) was kept
 unchanged.
@@ -96,8 +97,8 @@ computed numbers.
 
 One implementation-time correction: the initial SHAP `TreeExplainer` call
 did not terminate within 10 minutes on the champion's very deep trees (180
-trees, depth 23, ~7.4M total leaves) — confirmed via a standalone benchmark
-script rather than assumed. Switching to `approximate=True` (Saabas
+trees, depth 23, ~7.4M total leaves). A standalone benchmark confirmed this
+instead of leaving it as an assumption. Switching to `approximate=True` (Saabas
 algorithm) reduced a 500-row run to 0.11 seconds; this was adopted and the
 reasoning (with the empirical timing) was documented directly in the
 notebook's §5 markdown rather than silently applied.
@@ -105,3 +106,59 @@ notebook's §5 markdown rather than silently applied.
 The final notebook execution passed a placeholder scan (no `[PLACEHOLDER`,
 `[to be filled`, or `TBD` markers remaining) and the full project test
 suite (317 tests).
+
+## Comprehensive project review and refactor
+
+**Tool:** Codex (GPT-5)<br>
+**Model family/runtime:** GPT-5 family, current Codex runtime<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)<br>
+**Design spec:** [2026-07-23-presentation-notebook-refactor-design.md](../superpowers/specs/2026-07-23-presentation-notebook-refactor-design.md)<br>
+**Implementation plan:** [2026-07-23-presentation-notebook-refactor.md](../superpowers/plans/2026-07-23-presentation-notebook-refactor.md)
+
+### Recorded prompt and scope decisions
+
+The session began with a request for a comprehensive review and refactor of
+the complete notebook presentation, with particular attention to the A³ and
+C phases. The request covered Markdown and HTML consistency, replacement of
+unhelpful raw value displays with presentation quality visualizations,
+interactive Plotly output, narrative continuity, the transition from
+three-class severity modelling to binary KSI classification, and a complete
+C-phase comparison using all available persisted models.
+
+The language decision was English-only. A bilingual glossary was considered
+but rejected because it would increase maintenance without improving the
+report itself. German presenter notes remain a separate future task.
+
+The integrated narrative approach was approved. The three-class work is
+retained as the documented feasibility investigation that motivates the
+binary KSI target. It is no longer presented as a parallel final solution.
+The U phase prepares that decision, A³ establishes the modelling funnel, and
+C evaluates the frozen binary candidate registry before the K-phase handoff.
+
+Intentional console evidence remains in the notebooks when it supports the
+audit trail. The refactor does not hide printed evidence. It adds interactive
+Plotly views where a visual comparison communicates the same values more
+clearly.
+
+The C phase validates all ten persisted candidates on Val 2023 and gives
+Random Forest, XGBoost, LightGBM, and CatBoost the detailed finalist
+comparison. This includes operating point metrics, threshold free curves,
+latency, missing feature robustness, prediction disagreement, and
+cross-model permutation importance. SHAP remains champion specific. Test
+2024 is reserved for one confirmation of the preselected Random Forest
+champion at its validation threshold.
+
+All notebook source files and Jupytext mirrors are intentionally kept out of
+Codex commits and pushes. This includes `notebooks/01_Q_Phase.ipynb`,
+`notebooks/02_U_Phase.ipynb`, `notebooks/03_A3_Phase.ipynb`,
+`notebooks/04_C_Phase.ipynb`, and their matching `.py` mirrors. The owner will
+commit them manually after preserving the executed outputs needed for HTML
+export.
+
+This record and the linked disclosure describe the implemented source,
+analysis, and verification contracts. The final checks completed with 370
+non-browser tests and 9 browser tests passing. All four HTML exports were
+fresh, and all 53 Plotly charts loaded without browser errors or external
+requests.

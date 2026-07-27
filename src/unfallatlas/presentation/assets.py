@@ -94,6 +94,28 @@ class AssetStore:
         write_atomic(self._target_for(relative_path), data)
         return AssetRecord(relative_path, digest, len(data), media_type, kind, None)
 
+    def prune_namespace(self, namespace: str, keep: tuple[Path, ...]) -> None:
+        namespace_path = Path("assets") / namespace
+        namespace_root = self._target_for(namespace_path)
+        keep_targets = {
+            self._target_for(relative_path)
+            for relative_path in keep
+            if relative_path.is_relative_to(namespace_path)
+        }
+        if not namespace_root.is_dir():
+            return
+
+        for candidate in namespace_root.rglob("*"):
+            if candidate.is_file() and candidate.resolve(strict=False) not in keep_targets:
+                candidate.unlink()
+        for directory in sorted(
+            namespace_root.rglob("*"),
+            key=lambda path: len(path.parts),
+            reverse=True,
+        ):
+            if directory.is_dir() and not any(directory.iterdir()):
+                directory.rmdir()
+
 
 def _compact_json_bytes(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode(

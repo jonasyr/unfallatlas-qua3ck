@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
 <meta content="light dark" name="color-scheme"/>
 <title>Unfallatlas Deutschland Q Phase</title>
-<link href="../assets/ui/presentation-8e59b5743466f14b.css" rel="stylesheet"/>
+<link href="../assets/ui/presentation-a2378fcbea46d674.css" rel="stylesheet"/>
 <style>pre { line-height: 125%; }
 td.linenos .normal { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
 span.linenos { color: inherit; background-color: transparent; padding-left: 5px; padding-right: 5px; }
@@ -94,59 +94,69 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .highlight .il { color: #D19A66 } /* Literal.Number.Integer.Long */</style>
 <script>(function(){try{var t=localStorage.getItem("unfallatlas-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 </head>
-<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="f84281641d77683e203ed16f03a2248dd738cf6b15546933a16ec04342e72e43">
-<a class="skip-link" href="#notebook-content">Zum Inhalt springen</a>
+<body data-mathjax-runtime="../assets/vendor/mathjax-3.2.2-tex-svg-full.js" data-plotly-runtime="../assets/vendor/plotly-6.7.0.min.js" data-snapshot-sha256="53f26bdc038dcbc589dd49431a9154dbb01582a4aabac26d0f17078b08e759d5">
+<a class="skip-link" href="#notebook-content">Skip to content</a>
 <header class="presentation-header">
 <div class="header-content">
-<a class="back-link" href="../index.html">← Zur Übersicht</a>
+<a class="back-link" href="../index.html">← Back to overview</a>
 <p class="document-kind">Unfallatlas Notebook</p>
 <h1>Unfallatlas Deutschland Q Phase</h1>
 <p class="source-path">notebooks/01_Q_Phase.ipynb</p>
 <dl class="metadata-grid">
-<div><dt>Export</dt><dd>22.07.2026, 05:18:47 CEST</dd></div>
-<div><dt>Commit</dt><dd><code>e4faa894648e</code></dd></div>
-<div><dt>Branch</dt><dd>feat/presentation-design-audit</dd></div>
-<div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
-<div><dt>Arbeitsbaum</dt><dd>Geändert</dd></div>
+<div><dt>Exported</dt><dd>27.07.2026, 09:03:10 CEST</dd></div>
 <div><dt>Status</dt><dd><span class="status-pill" data-status="ready">ready</span></dd></div>
-<div><dt>Warnungen</dt><dd>0</dd></div>
-<div><dt>Ausführungsstand</dt><dd><span class="state-pill" data-state="fresh">Vollständig</span></dd></div>
-<div><dt>Zellen</dt><dd>16 Markdown, 0 Code</dd></div>
-<div><dt>Ausgaben</dt><dd>0 mit Ausgabe, 0 Fehlerausgabe</dd></div>
+<div><dt>Warnings</dt><dd>0</dd></div>
+<div><dt>Execution state</dt><dd><span class="state-pill" data-state="fresh">Complete</span></dd></div>
+<div><dt>Cells</dt><dd>15 Markdown, 0 code</dd></div>
+<div><dt>Outputs</dt><dd>0 output, 0 error output</dd></div>
 </dl>
+<details class="technical-provenance">
+<summary>Technical provenance</summary>
+<dl>
+<div><dt>Repository</dt><dd>unfallatlas-qua3ck</dd></div>
+<div><dt>Commit</dt><dd><code>71f5cb6f9de1</code></dd></div>
+<div><dt>Branch</dt><dd>main</dd></div>
+<div><dt>Uncommitted changes</dt><dd>Yes</dd></div>
+</dl>
+</details>
 </div>
 </header>
 <div class="presentation-shell">
-<div aria-label="Ansichtssteuerung" class="presentation-toolbar">
-<button aria-controls="presentation-toc" aria-expanded="false" class="toc-trigger" data-action="toggle-toc" type="button">Inhalt</button>
-<button data-action="show-all-code" type="button">Code öffnen</button>
-<button data-action="hide-all-code" type="button">Code schließen</button>
-<button data-action="show-all-output" type="button">Ausgaben öffnen</button>
-<button data-action="hide-all-output" type="button">Ausgaben schließen</button>
-<button data-action="print" type="button">Drucken</button>
+<div aria-label="View controls" class="presentation-toolbar">
+<button aria-controls="presentation-toc" aria-expanded="false" class="toc-trigger" data-action="toggle-toc" type="button">Contents</button>
+<button data-action="show-all-code" type="button">Show code</button>
+<button data-action="hide-all-code" type="button">Hide code</button>
+<button data-action="show-all-output" type="button">Show outputs</button>
+<button data-action="hide-all-output" type="button">Hide outputs</button>
+<button data-action="print" type="button">Print</button>
 </div>
-<nav aria-label="Inhaltsverzeichnis" class="toc" id="presentation-toc">
+<nav aria-label="Table of contents" class="toc" id="presentation-toc">
 <div class="toc-heading">
-<h2>Inhalt</h2>
-<button class="toc-close" data-action="close-toc" type="button">Schließen</button>
+<h2>Contents</h2>
+<button class="toc-close" data-action="close-toc" type="button">Close</button>
 </div>
 <ol>
-<li><a class="toc-link" href="#unfallatlas-deutschland--q-phase">"Unfallatlas Deutschland" — Q-Phase</a>
+<li><a class="toc-link" href="#unfallatlas-deutschland-q-phase">"Unfallatlas Deutschland": Q-Phase</a>
 <ol>
 <li><a class="toc-link" href="#position-in-the-qua3ck-process">Position in the QUA³CK process</a></li>
 <li><a class="toc-link" href="#1--problem-context">1 · Problem context</a></li>
 <li><a class="toc-link" href="#2--research-question">2 · Research question</a></li>
 <li><a class="toc-link" href="#3--hypotheses">3 · Hypotheses</a></li>
-<li><a class="toc-link" href="#4--prediction-goal-operationalised">4 · Prediction goal (operationalised)</a></li>
-<li><a class="toc-link" href="#5--target-definition">5 · Target definition</a></li>
+<li><a class="toc-link" href="#4--prediction-goal">4 · Prediction goal</a></li>
+<li><a class="toc-link" href="#5--target-definition-and-staged-feasibility-policy">5 · Target definition and staged feasibility policy</a>
+<ol>
+<li><a class="toc-link" href="#stage-1-original-three-class-research-target">Stage 1: original three-class research target</a></li>
+<li><a class="toc-link" href="#stage-2-evidence-driven-operational-revision">Stage 2: evidence-driven operational revision</a></li>
+</ol>
+</li>
 <li><a class="toc-link" href="#6--unit-of-analysis-and-prediction-horizon">6 · Unit of analysis and prediction horizon</a></li>
 <li><a class="toc-link" href="#7--stakeholders-and-decision-context">7 · Stakeholders and decision context</a></li>
-<li><a class="toc-link" href="#8--success-metrics">8 · Success metrics</a>
+<li><a class="toc-link" href="#8--success-metrics-and-gates">8 · Success metrics and gates</a>
 <ol>
-<li><a class="toc-link" href="#primary-metric">Primary metric</a></li>
-<li><a class="toc-link" href="#acceptance-threshold">Acceptance threshold</a></li>
-<li><a class="toc-link" href="#secondary-metric">Secondary metric</a></li>
-<li><a class="toc-link" href="#business-metric-deferred-to-k">Business metric (deferred to K)</a></li>
+<li><a class="toc-link" href="#shared-evaluation-rules">Shared evaluation rules</a></li>
+<li><a class="toc-link" href="#stage-1-three-class-feasibility-gate">Stage 1: three-class feasibility gate</a></li>
+<li><a class="toc-link" href="#stage-2-operational-ksi-gate">Stage 2: operational KSI gate</a></li>
+<li><a class="toc-link" href="#external-impact-metric">External impact metric</a></li>
 </ol>
 </li>
 <li><a class="toc-link" href="#9--constraints">9 · Constraints</a>
@@ -161,12 +171,12 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li><a class="toc-link" href="#primary-source">Primary source</a></li>
 <li><a class="toc-link" href="#provenance-note">Provenance note</a></li>
 <li><a class="toc-link" href="#project-storage-unfallatlas">Project storage (Unfallatlas)</a></li>
-<li><a class="toc-link" href="#secondary-source--dwd-climate-data-center-cdc">Secondary source — DWD Climate Data Center (CDC)</a></li>
+<li><a class="toc-link" href="#secondary-source-dwd-climate-data-center-cdc">Secondary source: DWD Climate Data Center (CDC)</a></li>
 <li><a class="toc-link" href="#role-in-this-project">Role in this project</a></li>
 <li><a class="toc-link" href="#project-storage-dwd">Project storage (DWD)</a></li>
 </ol>
 </li>
-<li><a class="toc-link" href="#11--feasibility-check-and-literature-anchor">11 · Feasibility check and literature anchor</a>
+<li><a class="toc-link" href="#11--feasibility-and-literature-anchor">11 · Feasibility and literature anchor</a>
 <ol>
 <li><a class="toc-link" href="#data-adequacy">Data adequacy</a></li>
 <li><a class="toc-link" href="#literature-anchor">Literature anchor</a></li>
@@ -179,25 +189,17 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 <li><a class="toc-link" href="#ethical-framing">Ethical framing</a></li>
 </ol>
 </li>
-<li><a class="toc-link" href="#15--summary">15 · Summary</a></li>
-<li><a class="toc-link" href="#n--addendum-gate-revision-after-a3-phase">§N — Addendum: Gate-Revision after A³-Phase</a>
-<ol>
-<li><a class="toc-link" href="#original-goal-3-class-classification">Original Goal (3-class classification)</a></li>
-<li><a class="toc-link" href="#empirical-findings-from-the-a3-phase-9">Empirical Findings from the A³-Phase (§9)</a></li>
-<li><a class="toc-link" href="#reformulation-binary-ksi-framing">Reformulation: Binary KSI Framing</a></li>
-<li><a class="toc-link" href="#revised-acceptance-gate-implemented-in-a3-phase-10">Revised Acceptance Gate (implemented in A³-Phase §10)</a></li>
-</ol>
-</li>
+<li><a class="toc-link" href="#13--summary-and-u-phase-handoff">13 · Summary and U-phase handoff</a></li>
 </ol>
 </li>
 </ol>
 </nav>
 <main class="notebook-main" id="notebook-content" tabindex="-1">
 <section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="unfallatlas-deutschland--q-phase"></span></p>
-<h1 id="%22Unfallatlas-Deutschland%22-%E2%80%94-Q-Phase">"Unfallatlas Deutschland" — Q-Phase<a class="anchor-link" href="#%22Unfallatlas-Deutschland%22-%E2%80%94-Q-Phase">¶</a></h1><p><strong>Phase:</strong> Question (Q) · 1 of 5 · QUA³CK
+<p><span aria-hidden="true" class="heading-anchor" id="unfallatlas-deutschland-q-phase"></span></p>
+<h1 id="%22Unfallatlas-Deutschland%22:-Q-Phase">"Unfallatlas Deutschland": Q-Phase<a class="anchor-link" href="#%22Unfallatlas-Deutschland%22:-Q-Phase">¶</a></h1><p><strong>Phase:</strong> Question (Q) · 1 of 5 · QUA³CK
 <strong>Goal of this notebook:</strong> define the problem, the target, the success criteria,
-the constraints, and the data context — <em>before any data is opened or any model
+the constraints, and the data context: <em>before any data is opened or any model
 is trained</em>. The output is a written, testable problem definition that the
 remaining QUA³CK phases can build against.</p>
 <blockquote>
@@ -208,7 +210,7 @@ downstream of this document.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="position-in-the-qua3ck-process"></span></p>
-<h2 id="Position-in-the-QUA%C2%B3CK-process">Position in the QUA³CK process<a class="anchor-link" href="#Position-in-the-QUA%C2%B3CK-process">¶</a></h2><table>
+<h3 id="Position-in-the-QUA%C2%B3CK-process">Position in the QUA³CK process<a class="anchor-link" href="#Position-in-the-QUA%C2%B3CK-process">¶</a></h3><table>
 <thead>
 <tr>
 <th style="text-align:left">Phase</th>
@@ -219,31 +221,31 @@ downstream of this document.</p>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left"><strong>Q</strong> — Question</td>
+<td style="text-align:left"><strong>Q</strong>: Question</td>
 <td style="text-align:left"><code>01_Q_Phase.ipynb</code></td>
 <td style="text-align:left">Problem definition, target, metrics, constraints</td>
 <td style="text-align:center">✓</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>U</strong> — Understanding</td>
+<td style="text-align:left"><strong>U</strong>: Understanding</td>
 <td style="text-align:left"><code>02_U_Phase.ipynb</code></td>
 <td style="text-align:left">Schema audit, EDA, quality, leakage probes, preprocessing decisions</td>
 <td style="text-align:center">→ next</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>A³</strong> — Algorithm / Adapt / Adjust</td>
+<td style="text-align:left"><strong>A³</strong>: Algorithm / Adapt / Adjust</td>
 <td style="text-align:left"><code>03_A3_Phase.ipynb</code></td>
 <td style="text-align:left">Baselines, boosting models, imbalance strategies, tuning</td>
 <td style="text-align:center">pending</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>C</strong> — Conclude &amp; Compare</td>
+<td style="text-align:left"><strong>C</strong>: Conclude &amp; Compare</td>
 <td style="text-align:left"><code>04_C_Phase.ipynb</code></td>
 <td style="text-align:left">SHAP, model comparison, limitations</td>
 <td style="text-align:center">pending</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>K</strong> — Knowledge Transfer</td>
+<td style="text-align:left"><strong>K</strong>: Knowledge Transfer</td>
 <td style="text-align:left"><code>app/streamlit_app.py</code></td>
 <td style="text-align:left">Interactive risk-profile application</td>
 <td style="text-align:center">pending</td>
@@ -257,9 +259,9 @@ downstream of this document.</p>
 <h2 id="1-%C2%B7-Problem-context">1 · Problem context<a class="anchor-link" href="#1-%C2%B7-Problem-context">¶</a></h2><p>Each year, German police record roughly <strong>270,000 road accidents with personal
 injury</strong>. About 1 % of these are fatal, 18 % cause serious injury, and 81 %
 cause only minor injury. The Statistisches Bundesamt publishes every one of
-these accidents — georeferenced, hour-stamped, with administrative codes for
-road condition, lighting, accident type, and the transport modes involved — as
-the <strong>Unfallatlas Deutschland</strong>, an open dataset spanning 2016 – 2024.</p>
+these accidents: georeferenced, hour-stamped, with administrative codes for
+road condition, lighting, accident type, and the transport modes involved. The result is
+the <strong>Unfallatlas Deutschland</strong>, an open dataset spanning 2016-2024.</p>
 <p>Despite this rich data infrastructure, road-safety decisions at the municipal
 level (intersection redesign, lighting, speed-limit revision) are typically
 made on aggregate statistics. A natural question follows: can the
@@ -270,101 +272,136 @@ can such a model be made interpretable enough to inform prevention?</p>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="2--research-question"></span></p>
 <h2 id="2-%C2%B7-Research-question">2 · Research question<a class="anchor-link" href="#2-%C2%B7-Research-question">¶</a></h2><blockquote>
-<p><strong>Welche raumzeitliche und infrastrukturelle Faktoren bestimmen die Schwere
-eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit
-interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten
-hinreichend zuverlässig vorhersagen, um Präventionsentscheidungen zu
-unterstützen?</strong></p>
+<p><strong>Which spatiotemporal, environmental, and infrastructure factors are associated
+with the severity of a road accident in Germany, and can interpretable
+machine-learning models predict a decision-relevant severity outcome reliably
+enough to support prevention planning?</strong></p>
 </blockquote>
-<p>The research question is intentionally open-ended; it motivates the project.
-The Q phase operationalises it in the next section as a <em>prediction goal</em> that
-can be tested, falsified, and accepted or rejected against a number.</p>
-<hr/>
+<p>The question begins with the original three-class severity outcome and remains
+open to an evidence-driven operational reformulation if the public features cannot
+separate the rarest class reliably. Sections 5 and 8 define that staged policy
+before the report evaluates it.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="3--hypotheses"></span></p>
-<h2 id="3-%C2%B7-Hypotheses">3 · Hypotheses<a class="anchor-link" href="#3-%C2%B7-Hypotheses">¶</a></h2><p>Three testable predictions derived from the research question. Each is evaluated against evidence in the U phase (EDA) or the A³ phase (model results). A hypothesis is <em>not</em> a prior commitment to what A³ will find — it is a structured expectation that can be confirmed, weakened, or falsified by the data.</p>
+<h2 id="3-%C2%B7-Hypotheses">3 · Hypotheses<a class="anchor-link" href="#3-%C2%B7-Hypotheses">¶</a></h2><p>Three testable predictions derived from the research question. Each is evaluated against evidence in the U phase (EDA) or the A³ phase (model results). A hypothesis is <em>not</em> a prior commitment to what A³ will find. It is a structured expectation that can be confirmed, weakened, or falsified by the data.</p>
 <hr/>
-<p><strong>H1 — Temporal-environmental severity shift</strong></p>
+<p><strong>H1: Temporal and environmental severity shift</strong></p>
 <blockquote>
-<p>Night-time accidents (22:00 – 05:00) and accidents recorded under adverse meteorological conditions (precipitation &gt; 0 mm, visibility &lt; 2 000 m, or icy/snow road surface) will show a statistically higher share of fatal and serious-injury outcomes (<code>UKATGEORIE</code> ∈ {1, 2}) compared to daytime, dry-road accidents. The association between darkness, adverse weather, and severity will persist after controlling for transport mode and accident type.</p>
+<p>Night-time accidents (22:00-05:00) and accidents recorded under adverse meteorological conditions (precipitation &gt; 0 mm, visibility &lt; 2 000 m, or icy or snowy road surface) will show a statistically higher share of fatal and serious-injury outcomes (<code>UKATGEORIE</code> ∈ {1, 2}) than daytime accidents on dry roads. The association between darkness, adverse weather, and severity will persist after controlling for transport mode and accident type.</p>
 </blockquote>
-<p><em>Verifiable in:</em> U phase §7 (hourly severity profile), §8.6 (weather distributions), §8.7 (Cramér's V weather × UKATGEORIE).</p>
+<p><em>Verifiable in:</em> U phase §7 (hourly severity profile), §8.6 (weather distributions), and §8.7 (weather associations with <code>UKATGEORIE</code>).</p>
 <hr/>
-<p><strong>H2 — Rural infrastructure and fatal-severity concentration</strong></p>
+<p><strong>H2: Location and spatial-context signal</strong></p>
 <blockquote>
-<p>Accidents in rural Bundesländer (proxied by higher <code>dwd_station_dist_km</code> and lower population density per Kreis) will exhibit significantly higher fatal-accident rates than urban accidents. The effect is attributed to higher travel speeds on rural roads, lower infrastructure quality, and longer emergency-response times — none of which are directly measurable in the dataset, but whose aggregate footprint is detectable at the spatial-aggregate level.</p>
+<p>Location and spatial-context features, including coordinates, distance to the assigned weather station, and OSM road features, will add measurable predictive signal after controlling for accident type and transport mode.</p>
 </blockquote>
-<p><em>Verifiable in:</em> U phase §8 (Bundesland fatal-share analysis), §9.4 (rural-proxy probe on <code>dwd_station_dist_km</code>).</p>
+<p>U tests the observable geographic concentration and proxy associations only. Higher travel speed, infrastructure quality, and emergency response time remain plausible mechanisms, but this dataset does not measure them and the report does not claim to identify them.</p>
+<p><em>Verifiable in:</em> U phase §8 (geographic coverage and spatial proxies), A³ §12 (persisted champion feature evidence), and C §6 (cross-model permutation and SHAP evidence).</p>
 <hr/>
-<p><strong>H3 — Model feasibility: gradient-boosted trees above literature baseline</strong></p>
+<p><strong>H3: Staged predictive feasibility</strong></p>
 <blockquote>
-<p>A gradient-boosted tree model trained on spatiotemporal, infrastructural, and meteorological features will achieve macro-F1 ≥ 0.55 on the chronological test year 2024, materially exceeding the majority-class baseline (macro-F1 ≈ 0.30) and a logistic-regression benchmark. The temporal features (<code>USTUNDE</code>, <code>UMONAT</code>) and spatial features (<code>UKREIS</code>, <code>dwd_station_dist_km</code>) are expected to rank among the top SHAP contributors, consistent with the literature anchor in §11.</p>
+<p>Interpretable machine-learning models will outperform trivial and linear
+baselines under chronological evaluation. The original three-class target is
+tested first against macro-F1 ≥ 0.55 and fatal recall ≥ 0.50. If the public
+predictors cannot clear that gate for structural reasons, a model trained
+directly for KSI versus slight injury will be evaluated against the
+corresponding binary gate without changing the temporal split or leakage
+boundary.</p>
 </blockquote>
-<p><em>Verifiable in:</em> A³ phase (model training and evaluation), C phase (benchmark comparison and SHAP analysis).</p>
+<p><em>Verifiable in:</em> U phase (target viability warning), A³ phase (model search and
+gate decision), and C phase (comparison, error analysis, and explanations).</p>
 <hr/>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="4--prediction-goal-operationalised"></span></p>
-<h2 id="4-%C2%B7-Prediction-goal-(operationalised)">4 · Prediction goal (operationalised)<a class="anchor-link" href="#4-%C2%B7-Prediction-goal-(operationalised)">¶</a></h2><blockquote>
-<p>For each personal-injury road accident in Germany 2016 – 2024 documented in
-the Unfallatlas, predict the recorded severity class <strong><code>UKATGEORIE</code></strong> —
-1 = fatal, 2 = serious injury, 3 = minor injury — from the administratively
-recorded conditions available <em>at the time of the police report</em> (location,
-time, lighting, road condition, accident type and kind, transport modes
-involved). Acceptable performance is <strong>macro-F1 ≥ 0.55</strong> on the
-chronologically held-out test year 2024, with <strong>recall for class 1 ≥ 0.50</strong>,
-using a Gradient Boosting model interpretable via SHAP for downstream use by
-municipal road-safety planners.</p>
-</blockquote>
-<p>The prediction goal is the contract A³ will be evaluated against. It fixes the
-target, the feature set's temporal availability, the evaluation protocol, the
-metric, the threshold, the secondary metric, and the consumer.</p>
-<hr/>
+<p><span aria-hidden="true" class="heading-anchor" id="4--prediction-goal"></span></p>
+<h2 id="4-%C2%B7-Prediction-goal">4 · Prediction goal<a class="anchor-link" href="#4-%C2%B7-Prediction-goal">¶</a></h2><p>For each police-recorded personal-injury road accident in Germany from 2016 to
+2024, estimate severity from conditions available when the report is created:
+location, time, lighting, road condition, accident type, transport modes, weather,
+and road context. The model must be evaluated on the chronologically held-out
+2024 test year and remain interpretable for municipal road-safety planning.</p>
+<p>The project initially asks for all three recorded severity classes. If that target
+fails the feasibility gate for structural reasons, the staged policy in section 5
+permits a pre-defined KSI-versus-slight operational target without changing the
+features, split, or evaluation discipline.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="5--target-definition"></span></p>
-<h2 id="5-%C2%B7-Target-definition">5 · Target definition<a class="anchor-link" href="#5-%C2%B7-Target-definition">¶</a></h2><p><strong>Target column:</strong> <code>UKATGEORIE</code> (note: misspelled in the source data; the
-project adopts the source spelling without comment).</p>
-<p><strong>Encoding:</strong> ordinal, three levels with natural ordering.</p>
+<p><span aria-hidden="true" class="heading-anchor" id="5--target-definition-and-staged-feasibility-policy"></span></p>
+<h2 id="5-%C2%B7-Target-definition-and-staged-feasibility-policy">5 · Target definition and staged feasibility policy<a class="anchor-link" href="#5-%C2%B7-Target-definition-and-staged-feasibility-policy">¶</a></h2><p><strong>Source column:</strong> <code>UKATGEORIE</code> (the source dataset uses this spelling).</p>
 <table>
 <thead>
 <tr>
 <th style="text-align:center">Code</th>
-<th style="text-align:left">Label</th>
+<th style="text-align:left">English label</th>
+<th style="text-align:left">Source label</th>
 <th style="text-align:left">Operational meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:center">1</td>
+<td style="text-align:left">Fatal</td>
 <td style="text-align:left">Getötet</td>
-<td style="text-align:left">At least one person involved died within 30 days of the accident</td>
+<td style="text-align:left">At least one person died within 30 days of the accident</td>
 </tr>
 <tr>
 <td style="text-align:center">2</td>
+<td style="text-align:left">Serious injury</td>
 <td style="text-align:left">Schwer verletzt</td>
-<td style="text-align:left">At least one person required ≥ 24 hours of in-patient care</td>
+<td style="text-align:left">At least one person required at least 24 hours of inpatient care</td>
 </tr>
 <tr>
 <td style="text-align:center">3</td>
+<td style="text-align:left">Slight injury</td>
 <td style="text-align:left">Leicht verletzt</td>
-<td style="text-align:left">At least one person had injuries requiring medical attention but not the above</td>
+<td style="text-align:left">Injuries required medical attention but met neither definition above</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Label source.</strong> Police record at the scene, finalised after the 30-day
-fatality window. Administered uniformly across Bundesländer per the Statistical
-Office's catalogue.</p>
-<p><strong>Label observability at prediction time.</strong> The label is <em>not</em> available to
-the model at inference. Features used must be observable at the moment the
-police report is written; this is the temporal-leakage boundary the U-phase
-will probe.</p>
-<p><strong>Ordinality.</strong> The classes have a natural ordering (1 &gt; 2 &gt; 3 in severity).
-This justifies both standard multi-class classification and ordinal
-classification approaches in A³. The Q phase does not commit to either; the
-choice is a modelling decision.</p>
-<hr/>
+<p>The label is finalised after the 30-day fatality window and is never used as an
+input feature. All predictors must be observable when the police report is
+created; U audits this leakage boundary.</p>
+<p><span aria-hidden="true" class="heading-anchor" id="stage-1-original-three-class-research-target"></span></p>
+<h3 id="Stage-1:-original-three-class-research-target">Stage 1: original three-class research target<a class="anchor-link" href="#Stage-1:-original-three-class-research-target">¶</a></h3><p>The original question treats the three ordered levels separately. This is the
+scientifically informative formulation because it tests whether the public data
+can distinguish fatal from serious and slight outcomes. Both nominal multiclass
+and ordinal models are therefore legitimate candidates.</p>
+<p><span aria-hidden="true" class="heading-anchor" id="stage-2-evidence-driven-operational-revision"></span></p>
+<h3 id="Stage-2:-evidence-driven-operational-revision">Stage 2: evidence-driven operational revision<a class="anchor-link" href="#Stage-2:-evidence-driven-operational-revision">¶</a></h3><p>The fallback target is defined in advance as <strong>KSI versus slight injury</strong>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Binary value</th>
+<th style="text-align:left">Definition</th>
+<th style="text-align:left">Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1</td>
+<td style="text-align:left"><code>UKATGEORIE ∈ {1, 2}</code></td>
+<td style="text-align:left">Killed or seriously injured (KSI)</td>
+</tr>
+<tr>
+<td style="text-align:center">0</td>
+<td style="text-align:left"><code>UKATGEORIE = 3</code></td>
+<td style="text-align:left">Slight injury</td>
+</tr>
+</tbody>
+</table>
+<p>The fallback is specified here before modelling. U later assesses whether
+the available predictors make the original target doubtful, and A³ makes the
+formal activation decision after the three-class search.</p>
+<p><strong>Retrospective outcome after completing A³.</strong> Across 19 three-class
+configurations, the best macro-F1 was 0.424 with fatal-class recall of 0.212,
+so none reached the original gate. U had also found weak standalone
+associations and documented missing physical determinants such as impact speed,
+occupant age, seat-belt use, and vehicle mass. A³ therefore activated the
+predefined KSI fallback.</p>
+<p>KSI is not an arbitrary relabel. Fatal and serious outcomes jointly define the
+high-consequence road-safety group used for prevention decisions. The original
+three-class analysis remains feasibility evidence, while the binary target
+supports the operational model.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="6--unit-of-analysis-and-prediction-horizon"></span></p>
@@ -381,8 +418,12 @@ choice is a modelling decision.</p>
 <td style="text-align:left">One row = one police-recorded personal-injury accident</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Prediction horizon</strong></td>
-<td style="text-align:left">Point-in-time — the severity at the moment the police report is written</td>
+<td style="text-align:left"><strong>Prediction time</strong></td>
+<td style="text-align:left">Predictors available when the police report is created</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Outcome horizon</strong></td>
+<td style="text-align:left">Worst recorded severity after the final 30-day fatality window</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Granularity</strong></td>
@@ -390,11 +431,11 @@ choice is a modelling decision.</p>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Spatial granularity</strong></td>
-<td style="text-align:left">WGS84 coordinates (<code>LON</code>, <code>LAT</code>) + 5-digit Kreis code (<code>UKREIS</code>)</td>
+<td style="text-align:left">WGS84 coordinates (<code>LON</code>, <code>LAT</code>) + 5-digit district code (<code>UKREIS</code>)</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Coverage</strong></td>
-<td style="text-align:left">All of Germany, 2016 – 2024, with a documented ~8 % geocoding-quote exclusion</td>
+<td style="text-align:left">All of Germany, 2016-2024, with a documented ~8 % geocoding coverage exclusion</td>
 </tr>
 </tbody>
 </table>
@@ -435,52 +476,33 @@ objections orthogonal to the project's purpose.</p>
 <hr/>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="8--success-metrics"></span></p>
-<h2 id="8-%C2%B7-Success-metrics">8 · Success metrics<a class="anchor-link" href="#8-%C2%B7-Success-metrics">¶</a></h2><p><span aria-hidden="true" class="heading-anchor" id="primary-metric"></span></p>
-<h3 id="Primary-metric">Primary metric<a class="anchor-link" href="#Primary-metric">¶</a></h3><p><strong>macro-F1 on the held-out test year 2024.</strong></p>
-<p>macro-F1 is chosen because the target is severely imbalanced (~1 / 18 / 81).
-Accuracy would reward predicting "minor" for everything (~81 %). Weighted F1
-would still over-weight the dominant class. macro-F1 averages the per-class F1
-without size weighting and is the standard metric for imbalanced multi-class
-classification in the relevant literature.</p>
-<p><span aria-hidden="true" class="heading-anchor" id="acceptance-threshold"></span></p>
-<h3 id="Acceptance-threshold">Acceptance threshold<a class="anchor-link" href="#Acceptance-threshold">¶</a></h3><table>
-<thead>
-<tr>
-<th style="text-align:left">Threshold</th>
-<th style="text-align:center">macro-F1 (test 2024)</th>
-<th style="text-align:left">Interpretation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left">Baseline (majority class)</td>
-<td style="text-align:center">~0.30</td>
-<td style="text-align:left">Trivial; should be beaten by anything</td>
-</tr>
-<tr>
-<td style="text-align:left">Acceptable</td>
-<td style="text-align:center">≥ 0.55</td>
-<td style="text-align:left">Minimum to declare the project useful</td>
-</tr>
-<tr>
-<td style="text-align:left">Literature-realistic</td>
-<td style="text-align:center">0.60 – 0.70</td>
-<td style="text-align:left">Range reported in comparable studies</td>
-</tr>
-</tbody>
-</table>
-<p><span aria-hidden="true" class="heading-anchor" id="secondary-metric"></span></p>
-<h3 id="Secondary-metric">Secondary metric<a class="anchor-link" href="#Secondary-metric">¶</a></h3><p><strong>Recall for class 1 (Getötet) ≥ 0.50.</strong></p>
-<p>The cost asymmetry is strong: missing a fatal-severity prediction is worse
-than over-predicting one. A model with high macro-F1 but recall 0.10 on class 1
-is rejected.</p>
-<p><span aria-hidden="true" class="heading-anchor" id="business-metric-deferred-to-k"></span></p>
-<h3 id="Business-metric-(deferred-to-K)">Business metric (deferred to K)<a class="anchor-link" href="#Business-metric-(deferred-to-K)">¶</a></h3><p>Number of high-risk corridor-hours identified by the SHAP-explained model that
-trigger a documented safety intervention. The Q phase records this as the
-real-world success measure even though it cannot be evaluated within the
-project itself.</p>
-<hr/>
+<p><span aria-hidden="true" class="heading-anchor" id="8--success-metrics-and-gates"></span></p>
+<h2 id="8-%C2%B7-Success-metrics-and-gates">8 · Success metrics and gates<a class="anchor-link" href="#8-%C2%B7-Success-metrics-and-gates">¶</a></h2><p>The evaluation policy is staged, but the chronological split and primary metric
+remain fixed throughout.</p>
+<p><span aria-hidden="true" class="heading-anchor" id="shared-evaluation-rules"></span></p>
+<h3 id="Shared-evaluation-rules">Shared evaluation rules<a class="anchor-link" href="#Shared-evaluation-rules">¶</a></h3><ul>
+<li><strong>Primary metric:</strong> macro-F1 on the held-out 2024 test year, so each class
+contributes equally despite imbalance.</li>
+<li><strong>Selection data:</strong> thresholds and model choices are made on 2023 validation
+data; Test-2024 is evaluated once after selection.</li>
+<li><strong>Interpretability:</strong> the selected operational model must support global and
+case-level explanation in C.</li>
+</ul>
+<p><span aria-hidden="true" class="heading-anchor" id="stage-1-three-class-feasibility-gate"></span></p>
+<h3 id="Stage-1:-three-class-feasibility-gate">Stage 1: three-class feasibility gate<a class="anchor-link" href="#Stage-1:-three-class-feasibility-gate">¶</a></h3><p><strong>macro-F1 ≥ 0.55 and recall(fatal) ≥ 0.50.</strong></p>
+<p>This gate protects the rarest, highest-consequence class from majority-class
+collapse. It was not met: the best observed three-class macro-F1 was 0.424 and
+fatal recall was 0.212. That result is retained as a negative finding rather than
+hidden by the later reformulation.</p>
+<p><span aria-hidden="true" class="heading-anchor" id="stage-2-operational-ksi-gate"></span></p>
+<h3 id="Stage-2:-operational-KSI-gate">Stage 2: operational KSI gate<a class="anchor-link" href="#Stage-2:-operational-KSI-gate">¶</a></h3><p><strong>binary macro-F1 ≥ 0.55 and recall(KSI) ≥ 0.50.</strong></p>
+<p>This gate applies only after the three-class feasibility decision. It is
+achievable with the same public predictors and supports the operational question:
+which recorded accidents belong to the high-consequence KSI group?</p>
+<p><span aria-hidden="true" class="heading-anchor" id="external-impact-metric"></span></p>
+<h3 id="External-impact-metric">External impact metric<a class="anchor-link" href="#External-impact-metric">¶</a></h3><p>The downstream metric is the number of high-risk location-time profiles that
+lead to a documented safety review or intervention. It is deferred to K because
+the present dataset cannot observe municipal actions.</p>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
 <p><span aria-hidden="true" class="heading-anchor" id="9--constraints"></span></p>
@@ -547,7 +569,7 @@ classifier for events that have occurred, not an early-warning system).</li>
 <li>Predict causation. The dataset records categorical conditions, not causes.</li>
 <li>Predict per-person outcomes. The unit is the accident, not the participant.</li>
 <li>Model demographic effects. Demographics are not in the dataset.</li>
-<li>Estimate true fatality counts. The Dunkelziffer of minor accidents
+<li>Estimate true fatality counts. The under-reporting of minor accidents
 (unreported to police) is unobserved; the model inherits this bias.</li>
 <li>Generalise outside Germany. Training data is national; cross-border
 performance is not claimed.</li>
@@ -571,7 +593,7 @@ performance is not claimed.</li>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Publisher</strong></td>
-<td style="text-align:left">Statistisches Bundesamt (Destatis), coordinated with Bundesländer</td>
+<td style="text-align:left">Statistisches Bundesamt (Destatis), coordinated with federal states</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Distribution</strong></td>
@@ -583,7 +605,7 @@ performance is not claimed.</li>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Coverage</strong></td>
-<td style="text-align:left">2016 – 2024 (9 vintages), all of Germany</td>
+<td style="text-align:left">2016-2024 (9 vintages), all of Germany</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Volume</strong></td>
@@ -591,11 +613,11 @@ performance is not claimed.</li>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Licence</strong></td>
-<td style="text-align:left">Datenlizenz Deutschland — Namensnennung — 2.0 (CC-BY-equivalent)</td>
+<td style="text-align:left">Datenlizenz Deutschland: Namensnennung: 2.0 (CC-BY-equivalent)</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Citation</strong></td>
-<td style="text-align:left">"Datenquelle: Statistische Ämter des Bundes und der Länder, Unfallatlas, 2016–2024"</td>
+<td style="text-align:left">"Datenquelle: Statistische Ämter des Bundes und der Länder, Unfallatlas, 2016-2024"</td>
 </tr>
 </tbody>
 </table>
@@ -608,8 +630,8 @@ is a documented selection bias to be re-examined in U.</p>
 tracked via Git LFS). Re-creation from raw CSVs is scripted in
 <code>src/unfallatlas/data/download.py</code>.</p>
 <hr/>
-<p><span aria-hidden="true" class="heading-anchor" id="secondary-source--dwd-climate-data-center-cdc"></span></p>
-<h3 id="Secondary-source-%E2%80%94-DWD-Climate-Data-Center-(CDC)">Secondary source — DWD Climate Data Center (CDC)<a class="anchor-link" href="#Secondary-source-%E2%80%94-DWD-Climate-Data-Center-(CDC)">¶</a></h3><table>
+<p><span aria-hidden="true" class="heading-anchor" id="secondary-source-dwd-climate-data-center-cdc"></span></p>
+<h3 id="Secondary-source:-DWD-Climate-Data-Center-(CDC)">Secondary source: DWD Climate Data Center (CDC)<a class="anchor-link" href="#Secondary-source:-DWD-Climate-Data-Center-(CDC)">¶</a></h3><table>
 <thead>
 <tr>
 <th style="text-align:left">Item</th>
@@ -647,7 +669,7 @@ tracked via Git LFS). Re-creation from raw CSVs is scripted in
 </tr>
 <tr>
 <td style="text-align:left"><strong>Licence</strong></td>
-<td style="text-align:left">GeoNutzV — Geodatenlizenz Deutschland (free; attribution required)</td>
+<td style="text-align:left">GeoNutzV: Geodatenlizenz Deutschland (free; attribution required)</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Citation</strong></td>
@@ -669,8 +691,8 @@ The join logic lives in <code>src/unfallatlas/data/dwd.py</code>.</p>
 <hr/>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="11--feasibility-check-and-literature-anchor"></span></p>
-<h2 id="11-%C2%B7-Feasibility-check-and-literature-anchor">11 · Feasibility check and literature anchor<a class="anchor-link" href="#11-%C2%B7-Feasibility-check-and-literature-anchor">¶</a></h2><p><span aria-hidden="true" class="heading-anchor" id="data-adequacy"></span></p>
+<p><span aria-hidden="true" class="heading-anchor" id="11--feasibility-and-literature-anchor"></span></p>
+<h2 id="11-%C2%B7-Feasibility-and-literature-anchor">11 · Feasibility and literature anchor<a class="anchor-link" href="#11-%C2%B7-Feasibility-and-literature-anchor">¶</a></h2><p><span aria-hidden="true" class="heading-anchor" id="data-adequacy"></span></p>
 <h3 id="Data-adequacy">Data adequacy<a class="anchor-link" href="#Data-adequacy">¶</a></h3><table>
 <thead>
 <tr>
@@ -681,23 +703,23 @@ The join logic lives in <code>src/unfallatlas/data/dwd.py</code>.</p>
 <tbody>
 <tr>
 <td style="text-align:left">Does the label exist?</td>
-<td style="text-align:left">Yes — <code>UKATGEORIE</code> is uniformly recorded</td>
+<td style="text-align:left">Yes: <code>UKATGEORIE</code> is uniformly recorded</td>
 </tr>
 <tr>
-<td style="text-align:left">Is the label observable at prediction time?</td>
-<td style="text-align:left">Yes — it is set in the police report</td>
+<td style="text-align:left">When is the outcome label final?</td>
+<td style="text-align:left">After the 30-day fatality window; it is not a report-time predictor</td>
 </tr>
 <tr>
 <td style="text-align:left">Are features observable at prediction time?</td>
-<td style="text-align:left">Yes — administrative codes are part of the same report</td>
+<td style="text-align:left">Yes; administrative codes are available when the report is created</td>
 </tr>
 <tr>
 <td style="text-align:left">Is the volume sufficient?</td>
-<td style="text-align:left">Yes — 2.09 M rows, with the rarest class still ~21,000 samples</td>
+<td style="text-align:left">Yes: 2.09 M rows, with the rarest class still ~21,000 samples</td>
 </tr>
 <tr>
 <td style="text-align:left">Is there a literature anchor?</td>
-<td style="text-align:left">Yes — see below</td>
+<td style="text-align:left">Yes: see below</td>
 </tr>
 </tbody>
 </table>
@@ -739,14 +761,17 @@ The join logic lives in <code>src/unfallatlas/data/dwd.py</code>.</p>
 <tr>
 <td style="text-align:left">BASt (2023), Unfallentwicklung auf deutschen Straßen</td>
 <td style="text-align:left">Descriptive statistics</td>
-<td style="text-align:left">—</td>
+<td style="text-align:left">Not reported</td>
 <td style="text-align:left">Reference for sanity-checking model patterns</td>
 </tr>
 </tbody>
 </table>
-<p>The reported macro-F1 range of 0.60 – 0.65 in comparable studies establishes
-the realistic ceiling. A project target of 0.55 is achievable; a target of 0.85
-would not be.</p>
+<p>The published results motivated the provisional 0.55 gate, but they do not
+guarantee that the three-class target is achievable here: target definitions,
+features, and evaluation designs differ. The gate is therefore a falsifiable
+feasibility test. The literature's frequent use of KSI versus slight injury also
+supports the pre-defined fallback if the rare fatal class cannot be separated
+with the public predictors.</p>
 <hr/>
 <p><span aria-hidden="true" class="heading-anchor" id="dwd-enrichment-feasibility-of-the-spatial-temporal-join"></span></p>
 <h3 id="DWD-enrichment:-feasibility-of-the-spatial-temporal-join">DWD enrichment: feasibility of the spatial-temporal join<a class="anchor-link" href="#DWD-enrichment:-feasibility-of-the-spatial-temporal-join">¶</a></h3><table>
@@ -759,11 +784,11 @@ would not be.</p>
 <tbody>
 <tr>
 <td style="text-align:left"><strong>Spatial lookup</strong> (2.09 M accidents × ~400 stations)</td>
-<td style="text-align:left"><code>scipy.spatial.cKDTree</code> vectorised query — completes in &lt; 30 s on a standard laptop</td>
+<td style="text-align:left"><code>scipy.spatial.cKDTree</code> vectorised query: completes in &lt; 30 s on a standard laptop</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Memory</strong></td>
-<td style="text-align:left">Each variable Parquet ≈ 10 – 50 MB; full cache for all variables ≤ 1 GB</td>
+<td style="text-align:left">Each variable Parquet ≈ 10-50 MB; full cache for all variables ≤ 1 GB</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Temporal resolution parity</strong></td>
@@ -775,13 +800,13 @@ would not be.</p>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Licence compatibility</strong></td>
-<td style="text-align:left">GeoNutzV is attribution-only — compatible with DL-DE 2.0 of the Unfallatlas</td>
+<td style="text-align:left">GeoNutzV is attribution-only: compatible with DL-DE 2.0 of the Unfallatlas</td>
 </tr>
 </tbody>
 </table>
 <p>The join is a left-join: every accident row is retained, and DWD columns are
 <code>NaN</code> where no station lies within 30 km. This affects estimated ≤ 5 % of
-records (concentrated in rural Bundesländer).</p>
+records (concentrated in rural federal states).</p>
 <hr/>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
@@ -796,13 +821,13 @@ are absent. According to the literature these are among the strongest
 severity predictors. The model proceeds without them and the predictions
 inherit this blind spot.</li>
 <li><strong>No vehicle speed.</strong> Only the road's permitted maximum is approachable
-(via OpenStreetMap), not the speed at impact — arguably the single
+(via OpenStreetMap), not the speed at impact: arguably the single
 strongest physical determinant of injury severity.</li>
-<li><strong>Geocoding quote ~92 %.</strong> The ~8 % of accidents excluded from publication
+<li><strong>Geocoding coverage ~92 %.</strong> The ~8 % of accidents excluded from publication
 may be systematically different (e.g. more rural, less precise GPS). The
 resulting selection bias is documented but cannot be corrected from within
 the dataset.</li>
-<li><strong>Reporting Dunkelziffer.</strong> Minor accidents are systematically
+<li><strong>Reporting under-reporting.</strong> Minor accidents are systematically
 under-reported to police. The class distribution reflects reporting
 behaviour as much as event frequency.</li>
 <li><strong>DWD station coverage gaps.</strong> Rural areas may have no DWD station within
@@ -830,9 +855,9 @@ preprocessing decision table (§10) and quantified there.</li>
 <p><span aria-hidden="true" class="heading-anchor" id="ethical-framing"></span></p>
 <h3 id="Ethical-framing">Ethical framing<a class="anchor-link" href="#Ethical-framing">¶</a></h3><p>The model's outputs inform infrastructure decisions, not individual judgments.
 There is no targeting of identifiable persons. Predictions describe locations,
-times, and conditions — not people — and are intended to redirect public
+times, and conditions rather than people. They are intended to redirect public
 resources toward demonstrably riskier circumstances.</p>
-<p>The Q phase notes — and the K phase will reiterate to end-users — that
+<p>The Q phase notes that the K phase must reiterate to end users that
 correlation in the model's SHAP attributions is not causation. The model can
 identify that fatal accidents are <em>associated with</em> darkness, wet roads, and
 certain road types; it cannot establish that intervening on any single factor
@@ -840,156 +865,68 @@ will reduce fatalities by a specific amount.</p>
 <hr/>
 </section>
 <section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="15--summary"></span></p>
-<h2 id="15-%C2%B7-Summary">15 · Summary<a class="anchor-link" href="#15-%C2%B7-Summary">¶</a></h2><table>
+<p><span aria-hidden="true" class="heading-anchor" id="13--summary-and-u-phase-handoff"></span></p>
+<h2 id="13-%C2%B7-Summary-and-U-phase-handoff">13 · Summary and U-phase handoff<a class="anchor-link" href="#13-%C2%B7-Summary-and-U-phase-handoff">¶</a></h2><table>
 <thead>
 <tr>
 <th style="text-align:left">Aspect</th>
-<th style="text-align:left">Specification</th>
+<th style="text-align:left">Final specification</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:left"><strong>Problem</strong></td>
-<td style="text-align:left">Predict the severity class of a recorded personal-injury accident</td>
+<td style="text-align:left">Predict a decision-relevant severity outcome for a recorded personal-injury accident</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Dataset</strong></td>
-<td style="text-align:left">Unfallatlas 2016 – 2024 · ~2.09 M rows · GovData / Datenlizenz Deutschland 2.0</td>
+<td style="text-align:left">Unfallatlas 2016-2024 · about 2.09M rows · GovData · Data Licence Germany 2.0</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Target</strong></td>
-<td style="text-align:left"><code>UKATGEORIE</code> ∈ {1=Getötet, 2=Schwer, 3=Leicht}; class imbalance ≈ 1 / 18 / 81</td>
+<td style="text-align:left"><strong>Original target</strong></td>
+<td style="text-align:left">Three classes: fatal, serious injury, slight injury</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Predefined fallback</strong></td>
+<td style="text-align:left">KSI (<code>UKATGEORIE ∈ {1, 2}</code>) versus slight injury (<code>UKATGEORIE = 3</code>); A³ decides whether to activate it</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Unit</strong></td>
-<td style="text-align:left">One accident per row; severity is the worst recorded outcome of that accident</td>
+<td style="text-align:left">One accident per row; the label is the worst recorded outcome</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Primary metric</strong></td>
-<td style="text-align:left">macro-F1 ≥ 0.55 on chronological test year 2024</td>
+<td style="text-align:left"><strong>Evaluation</strong></td>
+<td style="text-align:left">Chronological Train 2016-2022, Validation 2023, Test 2024</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Secondary metric</strong></td>
-<td style="text-align:left">Recall for class 1 ≥ 0.50</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Baseline</strong></td>
-<td style="text-align:left">Majority class — macro-F1 ≈ 0.30</td>
+<td style="text-align:left"><strong>Gates</strong></td>
+<td style="text-align:left">Three-class feasibility: macro-F1 ≥ 0.55 and fatal recall ≥ 0.50; operational KSI: macro-F1 ≥ 0.55 and KSI recall ≥ 0.50</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Hard constraints</strong></td>
-<td style="text-align:left">Interpretability via SHAP; full reproducibility; DL-DE 2.0 compatible</td>
+<td style="text-align:left">Interpretability, reproducibility, licence compliance, and no personal data</td>
 </tr>
 <tr>
-<td style="text-align:left"><strong>Documented limitations</strong></td>
-<td style="text-align:left">No demographic features; no impact speed; ~8 % geocoding gap; reporting Dunkelziffer</td>
-</tr>
-<tr>
-<td style="text-align:left"><strong>Out of scope</strong></td>
-<td style="text-align:left">Property-damage accidents, causal inference, individual targeting, cross-border generalisation</td>
+<td style="text-align:left"><strong>Principal limitations</strong></td>
+<td style="text-align:left">No impact speed, occupant demographics, seat-belt use, or vehicle mass; geocoding and reporting bias</td>
 </tr>
 <tr>
 <td style="text-align:left"><strong>Deployment target</strong></td>
-<td style="text-align:left">Streamlit risk-profile application with explainable predictions</td>
+<td style="text-align:left">Explainable Streamlit risk-profile application</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>Transition.</strong> The problem is defined and the handover checklist is drafted.
-Proceed to <code>02_U_Phase.ipynb</code> to verify these assumptions against the data
-and audit the dataset for quality, leakage, and preprocessing implications.</p>
+<p><strong>U-phase handoff.</strong> Audit whether the target shares are stable, quantify the
+association available in the public predictors, verify the chronological and
+leakage boundaries, and turn those findings into a target-independent
+preprocessing contract for A³.</p>
 </blockquote>
-</section>
-<section class="notebook-cell markdown-cell rendered_html">
-<p><span aria-hidden="true" class="heading-anchor" id="n--addendum-gate-revision-after-a3-phase"></span></p>
-<h2 id="%C2%A7N-%E2%80%94-Addendum:-Gate-Revision-after-A%C2%B3-Phase">§N — Addendum: Gate-Revision after A³-Phase<a class="anchor-link" href="#%C2%A7N-%E2%80%94-Addendum:-Gate-Revision-after-A%C2%B3-Phase">¶</a></h2><p><span aria-hidden="true" class="heading-anchor" id="original-goal-3-class-classification"></span></p>
-<h3 id="Original-Goal-(3-class-classification)">Original Goal (3-class classification)<a class="anchor-link" href="#Original-Goal-(3-class-classification)">¶</a></h3><p>The original research question framed severity classification as a <strong>3-class problem</strong>:</p>
-<table>
-<thead>
-<tr>
-<th>Class</th>
-<th>Meaning</th>
-<th>Share</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>Getötet</td>
-<td>≈ 0.9 %</td>
-</tr>
-<tr>
-<td>2</td>
-<td>Schwerverletzt</td>
-<td>≈ 15.5 %</td>
-</tr>
-<tr>
-<td>3</td>
-<td>Leichtverletzt</td>
-<td>≈ 83.5 %</td>
-</tr>
-</tbody>
-</table>
-<p>Original gate: <strong>macro-F1 ≥ 0.55 AND Recall(Class 1) ≥ 0.50</strong></p>
-<p><span aria-hidden="true" class="heading-anchor" id="empirical-findings-from-the-a3-phase-9"></span></p>
-<h3 id="Empirical-Findings-from-the-A%C2%B3-Phase-(%C2%A79)">Empirical Findings from the A³-Phase (§9)<a class="anchor-link" href="#Empirical-Findings-from-the-A%C2%B3-Phase-(%C2%A79)">¶</a></h3><p>The A³-Phase produced the following evidence for a structural ceiling:</p>
-<ol>
-<li><p><strong>Empirical</strong>: Across 19 model configurations the maximum is macro-F1 = 0.424 — with
-Recall(1) = 0.212. Not a single point lies in the target quadrant (macro-F1 ≥ 0.55 AND Recall(1) ≥ 0.50).</p>
-</li>
-<li><p><strong>Arithmetic</strong>: F1(Class 1) = 0.46 (minimum for gate fulfilment) requires at 0.94 % base rate
-Precision ≈ 0.46 — a ~90× Odds-Lift. Features with Cramér's V ≤ 0.13 cannot achieve this.</p>
-</li>
-<li><p><strong>Feature analysis (U-Phase §6/§7)</strong>: Severity shares are nearly uniform across all categories of
-Lichtverhältnisse, Straßenzustand, and DWD weather features (≈ 80 % / 18 % / 2 %).</p>
-</li>
-<li><p><strong>Missing causes</strong>: The actual physical determinants of severity
-(impact speed, vehicle mass, occupant age, seatbelt use) are not present in the public
-Unfallatlas dataset. This is a <strong>Bayes-ceiling</strong>, not a tuning problem.</p>
-</li>
-</ol>
-<p><span aria-hidden="true" class="heading-anchor" id="reformulation-binary-ksi-framing"></span></p>
-<h3 id="Reformulation:-Binary-KSI-Framing">Reformulation: Binary KSI Framing<a class="anchor-link" href="#Reformulation:-Binary-KSI-Framing">¶</a></h3><p><em>Killed or Seriously Injured</em> (KSI) vs. <em>slight</em> is the methodological standard in the
-road-safety ML literature (Santos 2022, Pakgohar 2021, Schlößler 2024) — precisely because the
-ceiling problem of the three-class formulation has been known for years. Aggregating Class 1 + 2 to
-KSI and Class 3 to <em>slight</em> is substantively justified: both KSI classes require more intensive
-accident investigation, hospital treatment, and appear together in official KSI statistics.</p>
-<table>
-<thead>
-<tr>
-<th>Criterion</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>y_binary = 1</code></td>
-<td>KSI: <code>UKATGEORIE ∈ {1, 2}</code> — Killed or Severely Injured</td>
-</tr>
-<tr>
-<td><code>y_binary = 0</code></td>
-<td>slight: <code>UKATGEORIE = 3</code> — Slightly Injured</td>
-</tr>
-<tr>
-<td>KSI share</td>
-<td>≈ 16.4 % (tractable; no longer a 1 %-extreme-case)</td>
-</tr>
-</tbody>
-</table>
-<p><span aria-hidden="true" class="heading-anchor" id="revised-acceptance-gate-implemented-in-a3-phase-10"></span></p>
-<h3 id="Revised-Acceptance-Gate-(implemented-in-A%C2%B3-Phase-%C2%A710)">Revised Acceptance Gate (implemented in A³-Phase §10)<a class="anchor-link" href="#Revised-Acceptance-Gate-(implemented-in-A%C2%B3-Phase-%C2%A710)">¶</a></h3><p><strong>binary macro-F1 ≥ 0.55 AND Recall(KSI) ≥ 0.50</strong></p>
-<p>The revised gate is demonstrably achievable with the available data: naively relabelling the
-3-class champion predictions already yields binary macro-F1 = 0.552. The model trained directly for
-binary KSI (A³-Phase §10) reaches the gate on the chronological Test-2024 split.</p>
-<p><em>This revision is not a weakening of the scientific standard, but its sharpening:
-a clearly achievable, empirically grounded gate is methodologically stronger than an arbitrarily
-high, structurally unreachable target.</em></p>
 </section>
 </main>
 </div>
-<button class="back-to-top" data-action="back-to-top" type="button">Nach oben</button>
+<button class="back-to-top" data-action="back-to-top" type="button">Back to top</button>
 <p aria-live="polite" class="sr-only" data-status-region=""></p>
-<script defer="" src="../assets/ui/presentation-236ee78fcbebc8f0.js"></script>
+<script defer="" src="../assets/ui/presentation-7191953d6c9e4bae.js"></script>
 </body>
 </html>
