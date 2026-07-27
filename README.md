@@ -106,14 +106,20 @@ unfallatlas-qua3ck/
 
 ## Setup
 
-Lokale Einrichtung auf einem neuen Rechner (z. B. zur Begutachtung) in vier Schritten:
+Lokale Einrichtung auf einem neuen Rechner (z. B. zur Begutachtung):
 
 ```bash
 git lfs install && git lfs pull   # 1 — Datensatz via Git LFS laden
 curl -LsSf https://astral.sh/uv/install.sh | sh   # 2 — uv installieren
 uv sync --all-extras              # 3 — Python-Abhängigkeiten (Python ≥ 3.11, von uv verwaltet)
-uv run jupyter lab                # 4 — Notebooks starten
+uv run jupyter lab                # 4a — Notebooks starten (optional)
+uv run streamlit run app/streamlit_app.py   # 4b — Streamlit-App starten (kein Notebook-Lauf nötig)
 ```
+
+Schritt 4b öffnet die interaktive K-Phase-App (Risk Predictor, Model Comparison,
+Overview-Karte) unter `http://localhost:8501` - vollständig eigenständig, ohne dass
+zuvor ein Notebook ausgeführt werden muss. Alle dafür benötigten Artefakte (Modelle,
+Contract, Kartendaten) sind bereits über Git LFS/Git im Repo committet.
 
 > [!IMPORTANT]
 > `data/accidents.parquet` wird über Git LFS verwaltet. Ohne LFS enthält die Datei nur einen
