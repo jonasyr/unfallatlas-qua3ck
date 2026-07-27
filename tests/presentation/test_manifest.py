@@ -249,7 +249,7 @@ def test_every_index_href_and_src_resolves_inside_output_root(tmp_path: Path) ->
         # The header carries one intentional reciprocal link to the deployed
         # Streamlit app (Task 8); it is external by design and is exempt from
         # the "every link resolves inside output_root" invariant.
-        if target == "https://REPLACE-WITH-REAL-STREAMLIT-CLOUD-URL.streamlit.app":
+        if target == "https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app":
             continue
         resolved = (output_root / target).resolve()
         assert resolved.is_relative_to(output_root.resolve())
@@ -354,7 +354,7 @@ def test_index_separates_ready_wip_placeholder_stale_and_orphaned(tmp_path: Path
     # deployed Streamlit app in the header (Task 8); everything else must
     # stay local/offline-renderable.
     assert index.count("https://") == 1
-    assert "https://REPLACE-WITH-REAL-STREAMLIT-CLOUD-URL.streamlit.app" in index
+    assert "https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app" in index
     assert "http://" not in index
 
     soup = BeautifulSoup(index, "html.parser")

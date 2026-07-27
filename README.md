@@ -13,6 +13,7 @@ Unfallatlas (GovData / Mobilithek), 2016–2024. Universitäts-Portfolioprojekt 
 (Question → Understanding → Algorithm/Adapt/Adjust → Conclude & Compare → Knowledge Transfer).
 
 [![Live-Report](https://img.shields.io/badge/Live--Report-jonasyr.github.io%2Funfallatlas--qua3ck-315F7D?style=for-the-badge&logo=googlechrome&logoColor=white&labelColor=24475F)](https://jonasyr.github.io/unfallatlas-qua3ck/)
+[![Streamlit App](https://img.shields.io/badge/Streamlit-App-315F7D?style=for-the-badge&logo=streamlit&logoColor=white&labelColor=24475F)](https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app)
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-315F7D?style=plastic&logo=python&logoColor=white&labelColor=24475F)](pyproject.toml)
 [![Jupyter](https://img.shields.io/badge/Jupyter-Notebooks-315F7D?style=plastic&logo=jupyter&logoColor=white&labelColor=24475F)](notebooks/)
@@ -65,7 +66,7 @@ vollständig (Code + interaktive Plotly-Outputs) als offlinefähiges HTML — oh
 
 ## Live Deployment
 
-- **Streamlit app:** https://REPLACE-WITH-REAL-STREAMLIT-CLOUD-URL.streamlit.app (deployed per `AGENTS.md`'s "Deploying to Streamlit Community Cloud" section) - interactive risk predictor, model comparison, and severity map.
+- **Streamlit app:** https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app (deployed per `AGENTS.md`'s "Deploying to Streamlit Community Cloud" section) - interactive risk predictor, model comparison, and severity map.
 - **Notebook presentations (GitHub Pages):** the full Q/U/A³/C phase notebooks, rendered as static HTML, are linked from the Streamlit app's Overview page. The notebook-presentation site links back to the Streamlit app once the next notebook re-export picks up the updated template (`src/unfallatlas/presentation/templates/site_index.html.j2`) - this has not happened yet as of this commit.
 
 ## Datensatz
