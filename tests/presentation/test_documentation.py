@@ -77,7 +77,7 @@ def _section(guide_text: str, heading: str) -> str:
 def test_readme_links_to_concise_presentation_workflow() -> None:
     readme = README.read_text(encoding="utf-8")
 
-    assert "## Notebook-Präsentationen" in readme
+    assert "## Notebook Presentations" in readme
     assert "docs/presentation-export.md" in readme
     assert "uv sync --extra presentation" in readme
     assert "uv run python scripts/export_notebooks.py --all" in readme

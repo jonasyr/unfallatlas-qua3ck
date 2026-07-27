@@ -1,15 +1,15 @@
 <!-- Design tokens (aligned with reports/presentation UI, see presentation.css):
      steel blue #315F7D (accent) · dark steel #24475F (badge base) · matching notebook charts (COLOR_PRIMARY).
-     Reserved for Streamlit K-Phase severity encoding: red #E63946 (Getötet) · amber #F4A261 (Schwerverletzt) · green #2A9D8F (Leicht verletzt) -->
+     Reserved for Streamlit K-Phase severity encoding: red #E63946 (Killed) · amber #F4A261 (Seriously injured) · green #2A9D8F (Slightly injured) -->
 
 <div align="center">
 
-# 🚦 Unfallatlas Deutschland
+# 🚦 Unfallatlas Germany
 
-**Klassifikation der Verkehrsunfallschwere nach dem QUA³CK-Prozessmodell**
+**Traffic accident severity classification using the QUA³CK process model**
 
-Multiclass-Klassifikation der Verkehrsunfallschwere in Deutschland auf Basis des offiziellen
-Unfallatlas (GovData / Mobilithek), 2016–2024. Universitäts-Portfolioprojekt nach **QUA³CK**
+Multiclass classification of traffic accident severity in Germany based on the official
+Unfallatlas (GovData / Mobilithek), 2016-2024. University portfolio project following **QUA³CK**
 (Question → Understanding → Algorithm/Adapt/Adjust → Conclude & Compare → Knowledge Transfer).
 
 [![Live-Report](https://img.shields.io/badge/Live--Report-jonasyr.github.io%2Funfallatlas--qua3ck-315F7D?style=for-the-badge&logo=googlechrome&logoColor=white&labelColor=24475F)](https://jonasyr.github.io/unfallatlas-qua3ck/)
@@ -32,103 +32,102 @@ Unfallatlas (GovData / Mobilithek), 2016–2024. Universitäts-Portfolioprojekt 
      exported as static PNG/SVG to reports/figures/ (not the interactive
      .html exports, those can't be embedded). Drop it here below the badges. -->
 
-> **Forschungsfrage:** Welche raumzeitlichen, infrastrukturellen und meteorologischen Faktoren
-> bestimmen die Schwere eines Verkehrsunfalls in Deutschland, und lässt sich diese Schwere mit
-> interpretierbaren Machine-Learning-Modellen aus öffentlich verfügbaren Daten zuverlässig
-> vorhersagen?
+> **Research question:** Which spatiotemporal, infrastructural, and meteorological factors
+> determine the severity of a traffic accident in Germany, and can this severity be reliably
+> predicted from publicly available data using interpretable machine learning models?
 
-Der [Live-Report](https://jonasyr.github.io/unfallatlas-qua3ck/) rendert alle Notebooks
-vollständig (Code + interaktive Plotly-Outputs) als offlinefähiges HTML — ohne lokales Setup.
+The [Live Report](https://jonasyr.github.io/unfallatlas-qua3ck/) renders all notebooks in full
+(code + interactive Plotly outputs) as offline-capable HTML - no local setup required.
 
-## Inhalt
+## Contents
 
-- [QUA³CK-Phasen](#qua³ck-phasen)
-- [Datensatz](#datensatz)
-- [Ziele](#ziele)
-- [Projektstruktur](#projektstruktur)
+- [QUA³CK Phases](#qua³ck-phases)
+- [Dataset](#dataset)
+- [Goals](#goals)
+- [Project Structure](#project-structure)
 - [Setup](#setup)
-- [Tests & Qualitätssicherung](#tests--qualitätssicherung)
-- [Notebook-Präsentationen](#notebook-präsentationen)
-- [Tech-Stack](#tech-stack)
-- [Dokumentation](#dokumentation)
-- [Verwandte Projekte](#verwandte-projekte)
-- [Lizenz & Datenquellen](#lizenz--datenquellen)
+- [Tests & Quality Assurance](#tests--quality-assurance)
+- [Notebook Presentations](#notebook-presentations)
+- [Tech Stack](#tech-stack)
+- [Documentation](#documentation)
+- [Related Projects](#related-projects)
+- [License & Data Sources](#license--data-sources)
 
-## QUA³CK-Phasen
+## QUA³CK Phases
 
-| | Phase | Notebook | Inhalt |
+| | Phase | Notebook | Content |
 |---|-------|----------|--------|
-| **Q** | Question | [`01_Q_Phase.ipynb`](notebooks/01_Q_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/01_Q_Phase.html) | Forschungsfrage, Hypothesen, Erfolgsmetriken, Literatur |
-| **U** | Understanding the Data | [`02_U_Phase.ipynb`](notebooks/02_U_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/02_U_Phase.html) | DIG-Description, EDA, Geo-Visualisierung, Feature Engineering |
-| **A³** | Algorithm / Adapt / Adjust | [`03_A3_Phase.ipynb`](notebooks/03_A3_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/03_A3_Phase.html) | Baselines, Boosting-Modelle, Imbalance-Strategien, Optuna-Tuning |
-| **C** | Conclude & Compare | [`04_C_Phase.ipynb`](notebooks/04_C_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/04_C_Phase.html) | SHAP, Modellvergleich, Limitationen |
-| **K** | Knowledge Transfer | [`app/streamlit_app.py`](app/streamlit_app.py) | Interaktive Risikoprofil-App (Streamlit) |
+| **Q** | Question | [`01_Q_Phase.ipynb`](notebooks/01_Q_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/01_Q_Phase.html) | Research question, hypotheses, success metrics, literature |
+| **U** | Understanding the Data | [`02_U_Phase.ipynb`](notebooks/02_U_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/02_U_Phase.html) | DIG description, EDA, geo-visualization, feature engineering |
+| **A³** | Algorithm / Adapt / Adjust | [`03_A3_Phase.ipynb`](notebooks/03_A3_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/03_A3_Phase.html) | Baselines, boosting models, imbalance strategies, Optuna tuning |
+| **C** | Conclude & Compare | [`04_C_Phase.ipynb`](notebooks/04_C_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/04_C_Phase.html) | SHAP, model comparison, limitations |
+| **K** | Knowledge Transfer | [`app/streamlit_app.py`](app/streamlit_app.py) | Interactive risk-profile app (Streamlit) |
 
 ## Live Deployment
 
 - **Streamlit app:** https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app (deployed per `AGENTS.md`'s "Deploying to Streamlit Community Cloud" section) - interactive risk predictor, model comparison, and severity map.
 - **Notebook presentations (GitHub Pages):** the full Q/U/A³/C phase notebooks, rendered as static HTML, are linked from the Streamlit app's Overview page. The notebook-presentation site links back to the Streamlit app once the next notebook re-export picks up the updated template (`src/unfallatlas/presentation/templates/site_index.html.j2`) - this has not happened yet as of this commit.
 
-## Datensatz
+## Dataset
 
 | | |
 |---|---|
-| **Quelle** | [Unfallatlas auf GovData](https://www.govdata.de/suche/daten/unfallatlas) (Mobilithek), Datenlizenz Deutschland 2.0 |
-| **Zeitraum** | 2016–2024 (9 Jahrgänge) |
-| **Umfang** | ~2,09 Mio. polizeilich aufgenommene Unfälle mit Personenschaden |
-| **Zielvariable** | `UKATGEORIE` — 1 = Getötet (1 %), 2 = Schwer verletzt (18 %), 3 = Leicht verletzt (81 %) |
-| **Format** | Parquet (`data/accidents.parquet`, ~65 MB) — konsolidiert aus den district-level CSV-Dateien, verwaltet via **Git LFS** |
+| **Source** | [Unfallatlas on GovData](https://www.govdata.de/suche/daten/unfallatlas) (Mobilithek), Data License Germany 2.0 |
+| **Period** | 2016-2024 (9 years) |
+| **Scope** | ~2.09M police-recorded accidents involving personal injury |
+| **Target variable** | `UKATGEORIE` - 1 = Killed (1%), 2 = Seriously injured (18%), 3 = Slightly injured (81%) |
+| **Format** | Parquet (`data/accidents.parquet`, ~65 MB) - consolidated from the district-level CSV files, tracked via **Git LFS** |
 
-## Ziele
+## Goals
 
-| Metrik | Zielwert |
+| Metric | Target |
 |--------|----------|
-| macro-F1 (Held-Out 2024) | ≥ 0.55 |
-| Recall Klasse 1 (Getötete) | ≥ 0.50 |
-| Basis-Baseline macro-F1 | ~0.30 (Majority Class) |
+| macro-F1 (held-out 2024) | ≥ 0.55 |
+| Recall class 1 (killed) | ≥ 0.50 |
+| Baseline macro-F1 | ~0.30 (majority class) |
 
-**Test-Strategie:** Chronologischer Split — Train 2016–2022 · Val 2023 · Test 2024
-(keine Zufalls-Splits, da zeitreihenähnliche Daten).
+**Test strategy:** Chronological split - Train 2016-2022 · Val 2023 · Test 2024
+(no random splits, since the data is time-series-like).
 
-## Projektstruktur
+## Project Structure
 
 ```
 unfallatlas-qua3ck/
-├── notebooks/          # QUA³CK-Phasennotebooks (Source of Truth)
-├── src/unfallatlas/    # Wiederverwendbare Bibliothek (data/, features/, models/, viz/, presentation/)
-├── app/                # Streamlit-Demo (K-Phase)
-├── data/               # accidents.parquet (Git LFS) + interim/processed Artefakte
-├── tests/              # pytest-Suite
-├── docs/               # Disclosure, Glossar, Datensatzbeschreibung, Prozessdokumentation
-├── reports/            # Generierte Figures + Notebook-Präsentationen
-└── pyproject.toml      # Projektkonfiguration (hatchling, ruff, pytest, jupytext)
+├── notebooks/          # QUA³CK phase notebooks (source of truth)
+├── src/unfallatlas/    # Reusable library (data/, features/, models/, viz/, presentation/)
+├── app/                # Streamlit demo (K phase)
+├── data/               # accidents.parquet (Git LFS) + interim/processed artifacts
+├── tests/              # pytest suite
+├── docs/               # Disclosure, glossary, dataset description, process documentation
+├── reports/            # Generated figures + notebook presentations
+└── pyproject.toml      # Project configuration (hatchling, ruff, pytest, jupytext)
 ```
 
 ## Setup
 
-Lokale Einrichtung auf einem neuen Rechner (z. B. zur Begutachtung):
+Local setup on a new machine (e.g. for review):
 
 ```bash
-git lfs install && git lfs pull   # 1 — Datensatz via Git LFS laden
-curl -LsSf https://astral.sh/uv/install.sh | sh   # 2 — uv installieren
-uv sync --all-extras              # 3 — Python-Abhängigkeiten (Python ≥ 3.11, von uv verwaltet)
-uv run jupyter lab                # 4a — Notebooks starten (optional)
-uv run streamlit run app/streamlit_app.py   # 4b — Streamlit-App starten (kein Notebook-Lauf nötig)
+git lfs install && git lfs pull   # 1 - fetch the dataset via Git LFS
+curl -LsSf https://astral.sh/uv/install.sh | sh   # 2 - install uv
+uv sync --all-extras              # 3 - Python dependencies (Python >= 3.11, managed by uv)
+uv run jupyter lab                # 4a - launch the notebooks (optional)
+uv run streamlit run app/streamlit_app.py   # 4b - launch the Streamlit app (no notebook run needed)
 ```
 
-Schritt 4b öffnet die interaktive K-Phase-App (Risk Predictor, Model Comparison,
-Overview-Karte) unter `http://localhost:8501` - vollständig eigenständig, ohne dass
-zuvor ein Notebook ausgeführt werden muss. Alle dafür benötigten Artefakte (Modelle,
-Contract, Kartendaten) sind bereits über Git LFS/Git im Repo committet.
+Step 4b opens the interactive K-phase app (Risk Predictor, Model Comparison,
+Overview map) at `http://localhost:8501` - fully self-contained, with no notebook
+needing to run first. Every artifact it needs (models, contract, map data) is
+already committed to the repo via Git LFS/Git.
 
 > [!IMPORTANT]
-> `data/accidents.parquet` wird über Git LFS verwaltet. Ohne LFS enthält die Datei nur einen
-> 133-Byte-Pointer und DuckDB wirft `No magic bytes found`.
+> `data/accidents.parquet` is tracked via Git LFS. Without LFS the file only contains a
+> 133-byte pointer, and DuckDB raises `No magic bytes found`.
 
 <details>
-<summary><strong>Git LFS installieren</strong> (plattformspezifisch)</summary>
+<summary><strong>Install Git LFS</strong> (platform-specific)</summary>
 
-| Plattform | Befehl |
+| Platform | Command |
 |-----------|--------|
 | Arch Linux | `sudo pacman -S git-lfs` |
 | Ubuntu / Debian | `sudo apt install git-lfs` |
@@ -138,7 +137,7 @@ Contract, Kartendaten) sind bereits über Git LFS/Git im Repo committet.
 </details>
 
 <details>
-<summary><strong>Pre-commit Hooks</strong> (optional, für Contributor)</summary>
+<summary><strong>Pre-commit hooks</strong> (optional, for contributors)</summary>
 
 ```bash
 uv run pre-commit install
@@ -146,38 +145,38 @@ uv run pre-commit install
 
 </details>
 
-## Tests & Qualitätssicherung
+## Tests & Quality Assurance
 
 ```bash
-uv run pytest              # Testsuite inkl. Coverage-Report (siehe pyproject.toml)
+uv run pytest              # Test suite incl. coverage report (see pyproject.toml)
 uv run ruff check .        # Linting
-uv run ruff format .       # Formatierung
-pre-commit run --all-files # Alle Hooks (Ruff, nbstripout, Commitizen, u. a.)
+uv run ruff format .       # Formatting
+pre-commit run --all-files # All hooks (Ruff, nbstripout, Commitizen, etc.)
 ```
 
-CI führt dieselben Schritte auf jedem Push/PR über GitHub Actions aus (Badge oben).
+CI runs the same steps on every push/PR via GitHub Actions (badge above).
 
-## Notebook-Präsentationen
+## Notebook Presentations
 
-Bereits ausgeführte Notebooks lassen sich ohne erneute Berechnung als offlinefähige
-HTML-Snapshots unter `reports/presentation/` exportieren — im selben Design wie der
-[Live-Report](https://jonasyr.github.io/unfallatlas-qua3ck/) (IBM Plex, heller/dunkler Modus,
-Seitenzoom, interaktive Plotly-Grafiken):
+Already-executed notebooks can be exported as offline-capable HTML snapshots under
+`reports/presentation/` without re-running anything - in the same design as the
+[Live Report](https://jonasyr.github.io/unfallatlas-qua3ck/) (IBM Plex, light/dark mode,
+page zoom, interactive Plotly charts):
 
 ```bash
 uv sync --extra presentation
 uv run python scripts/export_notebooks.py --all
 ```
 
-Der Export verwendet nur gespeicherte Outputs. Installation, Validierung, Strict-Modus,
-Offline-Kopie, PDF und GitHub Pages beschreibt der
-[Leitfaden zum Präsentationsexport](docs/presentation-export.md).
+The export uses only saved outputs. Installation, validation, strict mode, the offline
+copy, PDF, and GitHub Pages are described in the
+[presentation export guide](docs/presentation-export.md).
 
-## Tech-Stack
+## Tech Stack
 
-| Bereich | Bibliotheken |
+| Area | Libraries |
 |---------|--------------|
-| Daten | pandas, polars, duckdb, pyarrow |
+| Data | pandas, polars, duckdb, pyarrow |
 | ML | scikit-learn, xgboost, lightgbm, catboost |
 | Imbalance & Tuning | imbalanced-learn, optuna |
 | Explainability | shap |
@@ -185,31 +184,34 @@ Offline-Kopie, PDF und GitHub Pages beschreibt der
 | App | streamlit |
 | Tooling | uv, ruff, pytest, jupytext, pre-commit |
 
-## Dokumentation
+## Documentation
 
-- [GLOSSARY.md](docs/GLOSSARY.md) — Glossar der Fachbegriffe und Spaltenbezeichnungen
-- [AI TOOL DISCLOSURE.md](docs/AI%20TOOL%20DISCLOSURE.md) — Offenlegung der verwendeten KI-Tools je QUA³CK-Phase
-- [docs/prompts/](docs/prompts/) — vollständige KI-Prompt-Transkripte je Phase
-- [docs/dataset/](docs/dataset/) — Datensatzbeschreibung (DSB_Unfallatlas)
-- [docs/course-material/](docs/course-material/) — Kursunterlagen als KI-Kontext
-- [docs/project/](docs/project/) — Repo-/Prozessdokumentation (Conventional Commits, Projektplan)
+- [GLOSSARY.md](docs/GLOSSARY.md) - glossary of technical terms and column names
+- [AI TOOL DISCLOSURE.md](docs/AI%20TOOL%20DISCLOSURE.md) - disclosure of AI tools used per QUA³CK phase
+- [docs/prompts/](docs/prompts/) - full AI prompt transcripts per phase
+- [docs/dataset/](docs/dataset/) - dataset description (DSB_Unfallatlas)
+- [docs/course-material/](docs/course-material/) - course materials as AI context
+- [docs/project/](docs/project/) - repo/process documentation (Conventional Commits, project plan)
 
-## Verwandte Projekte
+## Related Projects
 
-- [EnergyCast-App](https://github.com/NiklasSkulll/EnergyCast-App) — verwandtes Notebook-Portfolioprojekt:
-  Prognose des Strombedarfs aus Wetterdaten, Solar-/Windeinspeisung und zeitlichen Mustern
+- [EnergyCast-App](https://github.com/NiklasSkulll/EnergyCast-App) - related notebook portfolio project:
+  forecasting electricity demand from weather data, solar/wind feed-in, and temporal patterns
+- [Degrees-of-No-Return-App](https://github.com/noahrsn/Degrees-of-No-Return-App) - related notebook
+  portfolio project: translating global climate models into local risk profiles, predicting
+  local heat-day counts and flood risk through 2050
 
-## Lizenz & Datenquellen
+## License & Data Sources
 
 - **Code:** [MIT](LICENSE)
-- **Unfalldaten:** [Datenlizenz Deutschland – Namensnennung – Version 2.0](https://www.govdata.de/dl-de/by-2-0) · Quelle: Mobilithek / Statistisches Bundesamt, Unfallatlas Deutschland
-- **Wetterdaten:** Deutscher Wetterdienst (DWD), CDC Open Data
-- **Straßennetz:** © OpenStreetMap-Mitwirkende, ODbL
+- **Accident data:** [Data License Germany – Attribution – Version 2.0](https://www.govdata.de/dl-de/by-2-0) · Source: Mobilithek / Federal Statistical Office (Destatis), Unfallatlas Germany
+- **Weather data:** German Weather Service (DWD), CDC Open Data
+- **Road network:** © OpenStreetMap contributors, ODbL
 
 ---
 
 <div align="center">
 
-[@jonasyr](https://github.com/jonasyr) · Universitäts-Portfolioprojekt (Data Analytics / Big Data)
+[@jonasyr](https://github.com/jonasyr) · University portfolio project (Data Analytics / Big Data)
 
 </div>
