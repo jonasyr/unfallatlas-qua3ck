@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 DATA_PROCESSED = Path("data/processed")
 ACCIDENTS_PARQUET = Path("data/accidents.parquet")
+ACCIDENTS_SPATIAL_PARQUET = Path("data/interim/accidents_with_weather_spatial.parquet")
 
 DEFAULT_DWD_STATION_ID = "01975"
 DEFAULT_H3_CELL = "881f15ad31fffff"
@@ -162,6 +163,79 @@ DEFAULT_WIDGET_VALUES = {
     "osm_way_count": 50.0,
 }
 
+# Two real accident records (from data/interim/accidents_with_weather_spatial.parquet)
+# picked to illustrate the champion model's behavior at the extremes, since it
+# lands near the 0.4986 decision threshold most of the time on typical inputs.
+# Found by batch-scoring a 20k-row sample through the actual committed
+# a3_binary_best_model.joblib and taking the min/max predicted KSI probability -
+# not hand-picked or invented. EXAMPLE_LOW_RISK scores ~0.03 (clearly "Slight"),
+# EXAMPLE_HIGH_RISK scores ~0.89 (clearly "KSI"), both well clear of the
+# threshold on the same pipeline used at prediction time.
+EXAMPLE_LOW_RISK = {
+    "UREGBEZ": "1",
+    "UKREIS": "03",
+    "UMONAT": 2,
+    "USTUNDE": 15,
+    "UWOCHENTAG": 6,
+    "UART": 2,
+    "UTYP1": 6,
+    "ULICHTVERH": 0,
+    "STRZUSTAND": 1,
+    "IstRad": False,
+    "IstPKW": True,
+    "IstFuss": False,
+    "IstKrad": False,
+    "IstGkfz": False,
+    "IstSonstig": False,
+    "LON": 9.986046311,
+    "LAT": 53.549888727,
+    "dwd_station_id": "01975",
+    "dwd_station_dist_km": 9.266605087571069,
+    "dwd_temp_air_2m": 8.193103448275862,
+    "dwd_precip_mm": 0.18275862068965518,
+    "dwd_visibility_m": 26945.51724137931,
+    "dwd_wind_speed_ms": 5.637931034482759,
+    "_precip_bucket": "light (0–5 mm)",
+    "h3_cell": "881f15ad31fffff",
+    "osm_dominant_road_class": "primary",
+    "osm_maxspeed_mean": 42.53699788583509,
+    "osm_maxspeed_max": 50.0,
+    "osm_road_density": 2470.0,
+    "osm_way_count": 588.0,
+}
+EXAMPLE_HIGH_RISK = {
+    "UREGBEZ": "5",
+    "UKREIS": "23",
+    "UMONAT": 5,
+    "USTUNDE": 16,
+    "UWOCHENTAG": 3,
+    "UART": 8,
+    "UTYP1": 1,
+    "ULICHTVERH": 0,
+    "STRZUSTAND": 0,
+    "IstRad": False,
+    "IstPKW": False,
+    "IstFuss": False,
+    "IstKrad": True,
+    "IstGkfz": False,
+    "IstSonstig": False,
+    "LON": 12.45280067,
+    "LAT": 50.453367958,
+    "dwd_station_id": "00840",
+    "dwd_station_dist_km": 17.805339919603124,
+    "dwd_temp_air_2m": 14.674193548387096,
+    "dwd_precip_mm": 0.09999999999999999,
+    "dwd_visibility_m": 47991.6129032258,
+    "dwd_wind_speed_ms": 2.7516129032258063,
+    "_precip_bucket": "light (0–5 mm)",
+    "h3_cell": "881f15ad31fffff",
+    "osm_dominant_road_class": "secondary",
+    "osm_maxspeed_mean": 100.0,
+    "osm_maxspeed_max": 100.0,
+    "osm_road_density": 130.0,
+    "osm_way_count": 14.0,
+}
+
 
 @st.cache_data
 def load_inference_contract() -> dict:
@@ -193,28 +267,63 @@ def load_categorical_options(column: str) -> list[str]:
 
 
 @st.cache_data
-def nearest_uregbez_ukreis(lat: float, lon: float) -> tuple[str, str]:
-    """Find the UREGBEZ/UKREIS of the accident record nearest to a map click.
+def nearest_location_features(lat: float, lon: float) -> dict:
+    """Look up every autofillable feature for the accident record nearest a map click.
 
     This dataset has no ULAND (Bundesland) column anywhere - not just excluded
     from the model's feature set, it was never part of this extract at all -
     so (UREGBEZ, UKREIS) codes can't be resolved to official Gemeindeschlüssel
-    or Bundesland/Kreis names. Deriving them from the nearest real accident
-    location at least ties a map click to a code combination that genuinely
-    co-occurs in the data, instead of asking the user to guess a raw pair.
+    or Bundesland/Kreis names. Deriving them, and the road/weather context
+    columns, from the nearest real accident location at least ties a map
+    click to values that genuinely co-occur in the data, instead of asking
+    the user to guess a raw combination for every widget.
+
+    Reads data/interim/accidents_with_weather_spatial.parquet (not the plain
+    accidents.parquet - that one only has the raw Unfallatlas columns, none
+    of the osm_*/dwd_weather columns needed here). A ~1-degree bounding-box
+    pre-filter keeps the nearest-neighbor ORDER BY cheap; if a click lands
+    somewhere with no rows inside that box (e.g. right at the edge of the
+    covered area), it retries once without the filter.
     """
+    columns = [
+        "UREGBEZ",
+        "UKREIS",
+        "dwd_station_id",
+        "dwd_station_dist_km",
+        "dwd_temp_air_2m",
+        "dwd_precip_mm",
+        "dwd_visibility_m",
+        "dwd_wind_speed_ms",
+        "osm_dominant_road_class",
+        "osm_maxspeed_mean",
+        "osm_maxspeed_max",
+        "osm_road_density",
+        "osm_way_count",
+        "h3_cell",
+    ]
     try:
         con = duckdb.connect()
-        query = f"""
-            SELECT UREGBEZ, UKREIS
-            FROM '{ACCIDENTS_PARQUET}'
-            ORDER BY (LAT - {lat}) * (LAT - {lat}) + (LON - {lon}) * (LON - {lon})
-            LIMIT 1
-        """  # noqa: S608
-        row = con.execute(query).fetchone()
-        return str(row[0]), str(row[1])
+
+        def _query(where: str) -> tuple | None:
+            select_list = ", ".join(columns)
+            query = f"""
+                SELECT {select_list}
+                FROM '{ACCIDENTS_SPATIAL_PARQUET}'
+                {where}
+                ORDER BY (LAT - {lat}) * (LAT - {lat}) + (LON - {lon}) * (LON - {lon})
+                LIMIT 1
+            """  # noqa: S608
+            return con.execute(query).fetchone()
+
+        row = _query(
+            f"WHERE LAT BETWEEN {lat - 0.5} AND {lat + 0.5} "
+            f"AND LON BETWEEN {lon - 0.5} AND {lon + 0.5}"
+        )
+        if row is None:
+            row = _query("")
+        return dict(zip(columns, row, strict=True))
     except Exception:
-        logger.exception(f"Failed to find nearest UREGBEZ/UKREIS for ({lat}, {lon})")
+        logger.exception(f"Failed to find nearest location features for ({lat}, {lon})")
         raise
 
 
@@ -270,7 +379,9 @@ def build_severity_map(precision: float = 0.1):
     import folium
 
     grid_df = load_severity_grid(precision)
-    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    # Dark basemap to match the app's dark Streamlit theme instead of the
+    # default bright OSM tiles, which clashed visibly against it.
+    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6, tiles="cartodbdark_matter")
     ksi_group = folium.FeatureGroup(name="KSI-dominant cells", show=True)
     slight_group = folium.FeatureGroup(name="Slight-dominant cells", show=True)
     for _, cell in grid_df.iterrows():

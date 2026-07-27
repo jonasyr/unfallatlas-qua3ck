@@ -50,7 +50,7 @@ st.caption(
     "map) to show or hide each severity class."
 )
 severity_map = build_severity_map()
-st_folium(severity_map, height=450, width=None, key="overview_severity_map", returned_objects=[])
+st_folium(severity_map, height=640, width=None, key="overview_severity_map", returned_objects=[])
 
 with st.expander("Limitations"):
     st.markdown(LIMITATIONS_TEXT)
