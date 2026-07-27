@@ -66,7 +66,7 @@ vollständig (Code + interaktive Plotly-Outputs) als offlinefähiges HTML — oh
 ## Live Deployment
 
 - **Streamlit app:** https://REPLACE-WITH-REAL-STREAMLIT-CLOUD-URL.streamlit.app (deployed per `AGENTS.md`'s "Deploying to Streamlit Community Cloud" section) - interactive risk predictor, model comparison, and severity map.
-- **Notebook presentations (GitHub Pages):** the full Q/U/A³/C phase notebooks, rendered as static HTML, are linked from the Streamlit app's Overview page and from the notebook-presentation site itself (see below).
+- **Notebook presentations (GitHub Pages):** the full Q/U/A³/C phase notebooks, rendered as static HTML, are linked from the Streamlit app's Overview page. The notebook-presentation site links back to the Streamlit app once the next notebook re-export picks up the updated template (`src/unfallatlas/presentation/templates/site_index.html.j2`) - this has not happened yet as of this commit.
 
 ## Datensatz
 

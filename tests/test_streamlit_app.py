@@ -198,3 +198,12 @@ def test_load_severity_grid_respects_precision_parameter():
     coarse = load_severity_grid(precision=0.5)
     fine = load_severity_grid(precision=0.1)
     assert len(coarse) < len(fine)
+
+
+def test_build_severity_map_returns_a_folium_map():
+    import folium
+
+    from unfallatlas.viz.streamlit_app import build_severity_map
+
+    m = build_severity_map()
+    assert isinstance(m, folium.Map)

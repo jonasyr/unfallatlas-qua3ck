@@ -227,6 +227,35 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
         raise
 
 
+@st.cache_resource
+def build_severity_map(precision: float = 0.1):
+    """Build the folium severity map once and cache the Map object across reruns.
+
+    folium.Map objects aren't relevant to compare by value, so this uses
+    cache_resource (identity-cached singleton), not cache_data.
+    """
+    import folium
+
+    grid_df = load_severity_grid(precision)
+    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    for _, cell in grid_df.iterrows():
+        ksi_share = cell["ksi_count"] / cell["total"]
+        color = SEVERITY_COLORS["KSI"] if ksi_share >= 0.5 else SEVERITY_COLORS["slight"]
+        folium.CircleMarker(
+            location=[cell["lat_bin"], cell["lon_bin"]],
+            radius=min(15, 3 + cell["total"] / 500),
+            color=color,
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.5,
+            popup=(
+                f"KSI: {int(cell['ksi_count'])}, slight: {int(cell['slight_count'])}, "
+                f"total: {int(cell['total'])}"
+            ),
+        ).add_to(severity_map)
+    return severity_map
+
+
 def get_column_spec(contract: dict, name: str) -> dict:
     """Return the required_columns entry for one column name."""
     for col in contract["required_columns"]:

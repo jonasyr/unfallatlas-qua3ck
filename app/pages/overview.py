@@ -1,17 +1,15 @@
 """Overview page: champion headline metrics and the 3-class vs. binary ceiling story."""
 
-import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
 from unfallatlas.viz.metrics_viz import plot_binary_f1_recall_front, plot_f1_recall_front
 from unfallatlas.viz.streamlit_app import (
     LIMITATIONS_TEXT,
-    SEVERITY_COLORS,
+    build_severity_map,
     load_3class_comparison,
     load_binary_comparison,
     load_model_card,
-    load_severity_grid,
 )
 
 st.title("Unfallatlas KSI Risk Console")
@@ -46,23 +44,7 @@ st.caption(
     "Each marker aggregates accidents within a ~0.1 degree (~11 km) grid cell. "
     "Color shows the dominant severity in that cell; size scales with accident count."
 )
-grid_df = load_severity_grid()
-severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
-for _, cell in grid_df.iterrows():
-    ksi_share = cell["ksi_count"] / cell["total"]
-    color = SEVERITY_COLORS["KSI"] if ksi_share >= 0.5 else SEVERITY_COLORS["slight"]
-    folium.CircleMarker(
-        location=[cell["lat_bin"], cell["lon_bin"]],
-        radius=min(15, 3 + cell["total"] / 500),
-        color=color,
-        fill=True,
-        fill_color=color,
-        fill_opacity=0.5,
-        popup=(
-            f"KSI: {int(cell['ksi_count'])}, slight: {int(cell['slight_count'])}, "
-            f"total: {int(cell['total'])}"
-        ),
-    ).add_to(severity_map)
+severity_map = build_severity_map()
 st_folium(severity_map, height=450, width=None, key="overview_severity_map", returned_objects=[])
 
 with st.expander("Limitations"):
