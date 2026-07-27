@@ -1,6 +1,8 @@
 """Risk Predictor page: interactive KSI-risk prediction form."""
 
+import folium
 import streamlit as st
+from streamlit_folium import st_folium
 
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
@@ -28,6 +30,44 @@ st.caption(
 contract = load_inference_contract()
 defaults = DEFAULT_WIDGET_VALUES
 ukreis_options = load_categorical_options("UKREIS")
+
+lon_spec = get_column_spec(contract, "LON")
+lat_spec = get_column_spec(contract, "LAT")
+st.session_state.setdefault("picked_lat", defaults["LAT"])
+st.session_state.setdefault("picked_lon", defaults["LON"])
+
+st.subheader("Pick a location")
+st.caption(
+    "Click a point on the map to set the accident's longitude/latitude. "
+    "Clicks outside Germany's covered area are ignored with a warning below."
+)
+picker_map = folium.Map(
+    location=[st.session_state["picked_lat"], st.session_state["picked_lon"]], zoom_start=6
+)
+folium.Marker(
+    [st.session_state["picked_lat"], st.session_state["picked_lon"]], tooltip="Selected location"
+).add_to(picker_map)
+map_state = st_folium(picker_map, height=350, width=None, key="location_picker")
+
+if map_state and map_state.get("last_clicked"):
+    clicked_lat = map_state["last_clicked"]["lat"]
+    clicked_lon = map_state["last_clicked"]["lng"]
+    if (
+        lat_spec["min"] <= clicked_lat <= lat_spec["max"]
+        and lon_spec["min"] <= clicked_lon <= lon_spec["max"]
+    ):
+        st.session_state["picked_lat"] = clicked_lat
+        st.session_state["picked_lon"] = clicked_lon
+    else:
+        st.warning(
+            f"Clicked point ({clicked_lat:.4f}, {clicked_lon:.4f}) is outside the "
+            f"covered range (lat {lat_spec['min']:.2f}-{lat_spec['max']:.2f}, "
+            f"lon {lon_spec['min']:.2f}-{lon_spec['max']:.2f}) and was ignored."
+        )
+
+st.caption(
+    f"Selected: lat {st.session_state['picked_lat']:.4f}, lon {st.session_state['picked_lon']:.4f}"
+)
 
 with st.form("risk_predictor_form"):
     st.subheader("When and where")
@@ -112,25 +152,6 @@ with st.form("risk_predictor_form"):
         ist_gkfz = st.checkbox("Heavy goods vehicle involved (IstGkfz)", value=defaults["IstGkfz"])
         ist_sonstig = st.checkbox(
             "Other vehicle involved (IstSonstig)", value=defaults["IstSonstig"]
-        )
-
-    st.subheader("Location")
-    c7, c8 = st.columns(2)
-    with c7:
-        lon_spec = get_column_spec(contract, "LON")
-        lon = st.number_input(
-            "Longitude (LON)",
-            min_value=float(lon_spec["min"]),
-            max_value=float(lon_spec["max"]),
-            value=defaults["LON"],
-        )
-    with c8:
-        lat_spec = get_column_spec(contract, "LAT")
-        lat = st.number_input(
-            "Latitude (LAT)",
-            min_value=float(lat_spec["min"]),
-            max_value=float(lat_spec["max"]),
-            value=defaults["LAT"],
         )
 
     st.subheader("Weather")
@@ -232,8 +253,8 @@ if submitted:
         "IstKrad": ist_krad,
         "IstGkfz": ist_gkfz,
         "IstSonstig": ist_sonstig,
-        "LON": lon,
-        "LAT": lat,
+        "LON": st.session_state["picked_lon"],
+        "LAT": st.session_state["picked_lat"],
         "dwd_station_id": defaults["dwd_station_id"],
         "dwd_station_dist_km": defaults["dwd_station_dist_km"],
         "dwd_temp_air_2m": dwd_temp_air_2m,
