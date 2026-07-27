@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.5
+#       jupytext_version: 1.19.3
 #   kernelspec:
 #     display_name: unfallatlas-qua3ck
 #     language: python
@@ -14,33 +14,34 @@
 # ---
 
 # %% [markdown]
-# # Unfallatlas Deutschland — C-Phase
+# # Unfallatlas Germany: C Phase
 #
-# ## Position im QUA³CK-Prozess
+# ## 0 Scope, artifact registry, and evaluation contract
 #
-# Die **C-Phase (Conclude & Compare)** schließt den QUA³CK-Zyklus für die binäre KSI-Klassifikation (getötet/schwerverletzt vs. leichtverletzt) ab. Sie trainiert nichts neu, sondern lädt die in der A³-Phase gespeicherten Artefakte (`a3_binary_best_model.joblib`, `a3_binary_model_card.json`, `a3_binary_model_comparison.csv`) und liefert:
+# The C phase concludes the binary KSI analysis. KSI combines fatal and serious injury accidents, while the comparison class contains slight injury accidents.
 #
-# 1. den systematischen Vergleich aller zehn Kandidaten aus dem A³-Suchlauf (ROC/PR-Kurven, Konfusionsmatrizen),
-# 2. eine fehlerorientierte Diagnose (welche Slices werden systematisch verfehlt?),
-# 3. die formale Go/No-Go-Prüfung gegen die Q-Phase-Gates,
-# 4. eine gewichtete qualitative Bewertungsmatrix (Champion vs. die zwei nächstplatzierten Kandidaten),
-# 5. eine SHAP-basierte Erklärbarkeitsanalyse (global + lokale Fallbeispiele),
-# 6. den Abgleich mit der Literatur (aufbauend auf A³ §20, nicht neu hergeleitet),
-# 7. eine ehrliche Limitationsdiskussion,
-# 8. die finale, begründete Modellentscheidung,
-# 9. die Übergabe an die K-Phase (Streamlit-App): Pipeline, Schwellenwert, Inference-Contract.
+# This phase does not train or tune another model. It validates the persisted A³ candidate registry, measures every candidate on Val 2023, compares the four substantive tree ensemble finalists, and reserves Test 2024 for one confirmation of the previously selected Random Forest champion.
 #
-# **Champion (A³-Ergebnis):** `random_forest`, klassen-gewichtet, Optuna-getunt, Schwellenwert 0.4986. Test-2024: macro-F1 0.6026, Recall(KSI) 0.5255; beide Gates (macro-F1 ≥ 0.55, Recall(KSI) ≥ 0.50) **bestanden**.
+# The evaluation contract is fixed before any test result is inspected:
+#
+# 1. All ten persisted candidates are compared only on Val 2023.
+# 2. Random Forest, XGBoost, LightGBM, and CatBoost receive the detailed finalist analysis.
+# 3. Test 2024 is used only for the preselected Random Forest champion at the validation threshold.
+# 4. Cross model interpretation uses permutation importance on Val 2023.
+# 5. SHAP explains only the champion and does not stand in for cross model evidence.
 
 # %%
+import hashlib
 import json
-import time
+import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import joblib
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.io as pio
 import shap
 from sklearn.metrics import confusion_matrix
 
@@ -49,117 +50,789 @@ from unfallatlas.features.preprocessing import (
     load_training_frame,
     split_features_target_binary,
 )
+from unfallatlas.models.artifacts import validate_candidate_registry
 from unfallatlas.models.c_phase import (
     build_inference_contract,
     build_qualitative_matrix,
     compute_error_slices,
-    decode_slice_label,
-    humanize_feature_name,
+)
+from unfallatlas.models.candidate_analysis import (
+    analysis_fingerprint,
+    compute_finalist_permutation_importance,
+    load_or_analyze_candidates,
+    prediction_disagreement,
 )
 from unfallatlas.models.evaluate import evaluate_binary_predictions
-from unfallatlas.viz.metrics_viz import plot_confusion_matrix_heatmap, plot_roc_pr_curves
+from unfallatlas.viz.metrics_viz import (
+    plot_binary_f1_recall_front,
+    plot_confusion_matrix_heatmap,
+    plot_roc_pr_curves,
+)
 
+pio.renderers.default = "plotly_mimetype"
 pd.set_option("display.max_columns", None)
-pd.set_option("display.width", 200)
 np.random.seed(42)
 
 BASE_DIR = Path.cwd().parent if Path.cwd().name == "notebooks" else Path.cwd()
-FIG_DIR = BASE_DIR / "reports" / "figures" / "c_phase"
-FIG_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR = BASE_DIR / "data" / "processed"
 
-champion_pipeline = joblib.load(PROCESSED_DIR / "a3_binary_best_model.joblib")
-with open(PROCESSED_DIR / "a3_binary_model_card.json") as f:
-    model_card = json.load(f)
-binary_comparison_df = pd.read_csv(PROCESSED_DIR / "a3_binary_model_comparison.csv")
-CHAMPION_THRESHOLD = model_card["optimal_threshold_val_2023"]
-
-print(f"Champion family: {model_card['champion_family']}")
-print(f"Threshold: {CHAMPION_THRESHOLD:.4f}")
-print(f"Test-2024 macro-F1 (A³ record): {model_card['test_2024_metrics']['macro_f1']:.4f}")
+MODEL_LABELS = {
+    "binary_random_guess": "Random guess",
+    "binary_majority_class": "Majority class",
+    "binary_logistic_regression": "Logistic regression",
+    "binary_random_forest_balanced": "Random Forest",
+    "binary_xgboost_balanced": "XGBoost",
+    "binary_lightgbm_balanced": "LightGBM",
+    "binary_catboost_balanced": "CatBoost",
+    "binary_svm_linear_balanced": "Linear SVM",
+    "binary_svm_sgd_balanced": "SGD hinge SVM",
+    "binary_svm_rbf_balanced": "RBF SVM",
+}
+FINALIST_FAMILIES = ["random_forest", "xgboost", "lightgbm", "catboost"]
+RANDOM_STATE = 42
+LATENCY_SAMPLE_SIZE = 2_000
+ROBUSTNESS_SAMPLE_SIZE = 2_000
+PERMUTATION_SAMPLE_SIZE = 2_000
+PERMUTATION_REPEATS = 3
+LATENCY_REPEATS = 5
+ROBUSTNESS_COLUMNS = [
+    "osm_road_density",
+    "osm_way_count",
+    "osm_maxspeed_mean",
+    "dwd_temp_air_2m",
+    "dwd_precip_mm",
+]
 
 # %%
-df = load_training_frame(BASE_DIR)
-train_df, val_df, test_df = chronological_split(df)
-X_train_bin, y_train_bin = split_features_target_binary(train_df)
-X_val_bin, y_val_bin = split_features_target_binary(val_df)
-X_test_bin, y_test_bin = split_features_target_binary(test_df)
+model_card_path = PROCESSED_DIR / "a3_binary_model_card.json"
+with model_card_path.open(encoding="utf-8") as file:
+    model_card = json.load(file)
 
-y_test_scores_champion = champion_pipeline.predict_proba(X_test_bin)[:, 1]
-y_test_pred_champion = (y_test_scores_champion >= CHAMPION_THRESHOLD).astype(int)
+candidate_registry = model_card["candidate_artifacts"]
+candidate_artifacts = validate_candidate_registry(candidate_registry, BASE_DIR)
+artifact_by_model = {artifact.model: artifact for artifact in candidate_artifacts}
+champion_artifact = next(
+    artifact for artifact in candidate_artifacts if artifact.evaluation_role == "champion"
+)
 
-sanity_metrics = evaluate_binary_predictions(y_test_bin.values, y_test_pred_champion)
-recorded_metrics = model_card["test_2024_metrics"]
-macro_f1_drift = abs(sanity_metrics["macro_f1"] - recorded_metrics["macro_f1"])
-# A tight (1e-6) bit-exact match is not expected here: the persisted pipeline
-# is unchanged, but the U-phase feature cache
-# (accidents_with_weather_spatial.parquet) can have been regenerated since
-# A³ was run (see the OSM tiled-fetch hotfix in the AI disclosure), which
-# shifts a handful of engineered feature values slightly. A drift below 1%
-# relative is treated as expected cache-refresh noise and reported
-# explicitly rather than silently asserted away; anything larger would
-# indicate a real problem (e.g. a stale/mismatched artifact) and must stop
-# the notebook.
-relative_drift = macro_f1_drift / recorded_metrics["macro_f1"]
-assert relative_drift < 0.01, (
-    f"Reloaded champion macro-F1 {sanity_metrics['macro_f1']:.6f} differs from the "
-    f"A³-recorded {recorded_metrics['macro_f1']:.6f} by {relative_drift:.2%}, "
-    "more than the 1% cache-refresh tolerance: investigate before proceeding."
+assert len(candidate_artifacts) == 10
+assert {
+    artifact.family
+    for artifact in candidate_artifacts
+    if artifact.evaluation_role in {"champion", "finalist"}
+} == set(FINALIST_FAMILIES)
+assert champion_artifact.family == model_card["champion_family"]
+
+registry_fig = go.Figure(
+    data=[
+        go.Table(
+            header={
+                "values": ["Candidate", "Family", "Role", "Training rows", "Score interface"],
+                "fill_color": "#14213D",
+                "font": {"color": "white"},
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    [MODEL_LABELS[artifact.model] for artifact in candidate_artifacts],
+                    [artifact.family for artifact in candidate_artifacts],
+                    [artifact.evaluation_role for artifact in candidate_artifacts],
+                    [
+                        artifact.n_train if artifact.n_train is not None else "Not applicable"
+                        for artifact in candidate_artifacts
+                    ],
+                    [artifact.score_interface for artifact in candidate_artifacts],
+                ],
+                "fill_color": "#F7F8FA",
+                "align": "left",
+            },
+        )
+    ]
 )
-print(
-    f"Sanity check passed: reloaded champion macro-F1 {sanity_metrics['macro_f1']:.4f} vs. "
-    f"A³-recorded {recorded_metrics['macro_f1']:.4f} (relative drift {relative_drift:.2%}, "
-    "within the 1% cache-refresh tolerance)."
+registry_fig.update_layout(
+    title="Validated persisted candidate registry",
+    height=430,
+    margin={"l": 20, "r": 20, "t": 55, "b": 20},
 )
-print(sanity_metrics)
+registry_fig.show()
+
+# %%
+full_frame = load_training_frame(BASE_DIR)
+train_frame, validation_frame, test_frame = chronological_split(full_frame)
+X_train, y_train = split_features_target_binary(train_frame)
+X_validation, y_validation = split_features_target_binary(validation_frame)
+X_test, y_test = split_features_target_binary(test_frame)
+
+feature_columns = list(X_train.columns)
+feature_dtypes = {column: str(dtype) for column, dtype in X_train.dtypes.items()}
+inference_contract = build_inference_contract(
+    feature_columns,
+    feature_dtypes,
+    model_card,
+    X_train,
+)
+del full_frame, train_frame, validation_frame, X_train, y_train
+
+validation_hasher = hashlib.sha256()
+validation_hasher.update(pd.util.hash_pandas_object(X_validation, index=True).to_numpy().tobytes())
+validation_hasher.update(pd.util.hash_pandas_object(y_validation, index=True).to_numpy().tobytes())
+validation_fingerprint = validation_hasher.hexdigest()
+
+sample_rng = np.random.default_rng(RANDOM_STATE)
+sample_indices = np.arange(len(X_validation))
+latency_indices = sample_rng.choice(
+    sample_indices,
+    size=min(LATENCY_SAMPLE_SIZE, len(sample_indices)),
+    replace=False,
+)
+robustness_indices = sample_rng.choice(
+    sample_indices,
+    size=min(ROBUSTNESS_SAMPLE_SIZE, len(sample_indices)),
+    replace=False,
+)
+
+analysis_parameters = {
+    "random_state": RANDOM_STATE,
+    "latency_repeats": LATENCY_REPEATS,
+    "latency_sample_size": int(len(latency_indices)),
+    "robustness_sample_size": int(len(robustness_indices)),
+    "robustness_columns": ROBUSTNESS_COLUMNS,
+    "permutation_sample_size": PERMUTATION_SAMPLE_SIZE,
+    "permutation_repeats": PERMUTATION_REPEATS,
+}
+candidate_analysis_fingerprint = analysis_fingerprint(
+    candidate_artifacts,
+    validation_fingerprint,
+    analysis_parameters,
+)
+candidate_analysis = load_or_analyze_candidates(
+    candidate_artifacts,
+    X_val=X_validation,
+    y_val=y_validation,
+    cache_dir=PROCESSED_DIR,
+    data_fingerprint=validation_fingerprint,
+    parameters=analysis_parameters,
+    latency_sample=X_validation.iloc[latency_indices],
+    robustness_sample=X_validation.iloc[robustness_indices],
+)
+
+candidate_metrics = candidate_analysis.metrics.copy()
+candidate_metrics["display_name"] = candidate_metrics["model"].map(MODEL_LABELS)
+assert len(candidate_metrics) == len(candidate_artifacts)
+assert set(candidate_metrics["model"]) == set(artifact_by_model)
 
 # %% [markdown]
-# ## 1 — Systematischer Modellvergleich
+# ## 1 All candidate Val 2023 comparison
 #
-# Alle zehn Kandidaten aus dem A³-Suchlauf (drei Baselines, vier Tree-Ensemble-Familien, drei SVM-Varianten), bewertet auf Val-2023. ROC- und PR-Kurven sowie die Konfusionsmatrix werden für den Champion (`random_forest`) auf Test-2024 gezeigt.
-#
-# Die xgboost-/lightgbm-Pipelines wurden nicht persistiert (A³ speichert nur die finale Champion-Pipeline), daher können ihre ROC/PR-Kurven hier nicht aus gespeicherten Artefakten reproduziert werden; ihre macro-F1/Recall(KSI)-Werte aus `binary_comparison_df` bleiben aber der maßgebliche Vergleich und werden in §4 (qualitative Matrix) und §8 (finale Entscheidung) eingeordnet: beide Runner-ups erreichen höhere Recall(KSI)-Werte als der Champion.
-#
-# Die binäre Formulierung behandelt das Klassenungleichgewicht (~20/80) über Klassengewichtung plus schwellenwert-optimales Threshold-Moving (A³ §17) statt SMOTE/ADASYN; die multiclass-SMOTE/ADASYN-Vergleiche aus A³ §6 wurden durch die in A³ §11 bewiesene 3-Klassen-Obergrenze gegenstandslos.
+# The first view compares every persisted candidate at its saved operating point. Macro F1 balances performance across KSI and slight injury accidents. Recall KSI shows how many actual KSI cases are detected. The shaded gate requires macro F1 of at least 0.55 and Recall KSI of at least 0.50.
 
 # %%
-display_cols = ["model", "family", "macro_f1", "recall_ksi", "recall_slight", "n_train"]
-binary_comparison_df[display_cols].sort_values("macro_f1", ascending=False)
+candidate_table = candidate_metrics.sort_values(
+    ["macro_f1", "recall_ksi"], ascending=False
+).reset_index(drop=True)
 
-# %%
-roc_fig, pr_fig = plot_roc_pr_curves(
-    {"random_forest (champion)": (y_test_bin.values, y_test_scores_champion)},
-    title_prefix="Test-2024",
+comparison_table_fig = go.Figure(
+    data=[
+        go.Table(
+            header={
+                "values": [
+                    "Candidate",
+                    "Role",
+                    "Macro F1",
+                    "Recall KSI",
+                    "Recall slight",
+                    "Latency ms per 1,000 rows",
+                ],
+                "fill_color": "#14213D",
+                "font": {"color": "white"},
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    candidate_table["display_name"],
+                    candidate_table["evaluation_role"],
+                    candidate_table["macro_f1"].map(lambda value: f"{value:.3f}"),
+                    candidate_table["recall_ksi"].map(lambda value: f"{value:.3f}"),
+                    candidate_table["recall_slight"].map(lambda value: f"{value:.3f}"),
+                    candidate_table["latency_ms_per_1k"].map(lambda value: f"{value:.2f}"),
+                ],
+                "fill_color": "#F7F8FA",
+                "align": "left",
+            },
+        )
+    ]
 )
-roc_fig.write_html(FIG_DIR / "roc_curve_champion.html", include_plotlyjs=True)
-pr_fig.write_html(FIG_DIR / "pr_curve_champion.html", include_plotlyjs=True)
+comparison_table_fig.update_layout(
+    title="All persisted candidates measured on Val 2023",
+    height=430,
+    margin={"l": 20, "r": 20, "t": 55, "b": 20},
+)
+comparison_table_fig.show()
+
+front_fig = plot_binary_f1_recall_front(
+    candidate_metrics,
+    label_col="display_name",
+    title="Val 2023 macro F1 and KSI recall",
+)
+front_fig.update_layout(height=560)
+front_fig.show()
+
+# %% [markdown]
+# The candidate field is not a single ranking. Random Forest emphasizes balanced class performance, while the boosting finalists move further toward KSI recall. The operating point therefore matters as much as the model family.
+
+# %% [markdown]
+# ## 2 ROC, precision recall, and operating point tradeoffs
+#
+# Threshold free curves test whether a candidate ranks KSI cases ahead of slight injury cases across many possible thresholds. Baselines are omitted from this view because they do not provide a substantive learned ranking. The front in Section 1 then shows the actual saved operating point used for each candidate.
+
+# %%
+substantive_artifacts = [
+    artifact for artifact in candidate_artifacts if artifact.evaluation_role not in {"baseline"}
+]
+curve_inputs = {
+    MODEL_LABELS[artifact.model]: (
+        y_validation.to_numpy(),
+        candidate_analysis.scores[artifact.model],
+    )
+    for artifact in substantive_artifacts
+}
+roc_fig, precision_recall_fig = plot_roc_pr_curves(
+    curve_inputs,
+    title_prefix="Val 2023",
+)
+roc_fig.update_layout(title="Val 2023 ROC curves", height=600)
+precision_recall_fig.update_layout(
+    title="Val 2023 precision and recall curves",
+    height=600,
+)
 roc_fig.show()
-pr_fig.show()
-
-# %%
-cm = confusion_matrix(y_test_bin, y_test_pred_champion, labels=[1, 0])
-cm_fig = plot_confusion_matrix_heatmap(
-    cm, labels=["KSI", "slight"], title="Champion: Test-2024 Confusion Matrix"
-)
-cm_fig.write_html(FIG_DIR / "confusion_matrix_champion.html", include_plotlyjs=True)
-cm_fig.show()
+precision_recall_fig.show()
 
 # %% [markdown]
-# **Interpretation:** Die ROC-Kurve liegt deutlich über der Zufalls-Diagonale, was ein
-# brauchbares, aber nicht sehr starkes Trennvermögen anzeigt (konsistent mit der schwachen
-# Merkmalsassoziation aus §6). Die Precision-Recall-Kurve fällt bei steigendem Recall spürbar ab,
-# was bei diesem starken Klassenungleichgewicht (~20 % KSI) typisch ist und den in §0 berichteten
-# Recall(KSI)-Wert (≈0,52) einordnet: Über die Hälfte der tatsächlichen KSI-Fälle wird erkannt, aber
-# nicht durchgängig. Die Konfusionsmatrix macht das konkret: Der Champion erkennt gut die Hälfte
-# der echten KSI-Fälle korrekt (oben links), übersieht aber die andere Hälfte (oben rechts, False
-# Negatives); umgekehrt werden auch etliche leichte Unfälle fälschlich als KSI eingestuft (unten
-# links, False Positives). Beide Fehlerarten werden in §2 nach Slice aufgeschlüsselt.
+# These curves separate ranking quality from threshold choice. A model can rank cases well but still occupy a different macro F1 and recall position after a threshold is applied. The finalist comparison therefore keeps both views visible.
+
+# %% [markdown]
+# ## 3 Measured finalist comparison
 #
-# ## 2 — Fehleranalyse nach Slices
-#
-# False Negatives (übersehene KSI-Fälle) und False Positives, aufgeschlüsselt nach Unfalltyp (`UART`), dominanter OSM-Straßenklasse, Straßenzustand (`STRZUSTAND`), Lichtverhältnissen (`ULICHTVERH`), Niederschlagskategorie (`_precip_bucket`, aus `dwd_precip_mm` abgeleitet) und Tageszeit (`USTUNDE`, Unfallstunde 0–23), um zu prüfen, ob Fehler systematisch in bestimmten Teilgruppen auftreten oder gleichmäßig verteilt sind.
+# Random Forest, XGBoost, LightGBM, and CatBoost are measured independently. Latency is the warmed median in milliseconds per 1,000 rows. Robustness sets one weather or road context feature to missing at a time, then records prediction failure, mean absolute score drift, and changed class share. No value is copied from another model.
 
 # %%
+finalist_artifacts = [
+    artifact for artifact in candidate_artifacts if artifact.family in FINALIST_FAMILIES
+]
+finalist_models = [artifact.model for artifact in finalist_artifacts]
+finalist_metrics = candidate_metrics[candidate_metrics["model"].isin(finalist_models)].copy()
+
+robustness_detail = candidate_analysis.robustness[
+    candidate_analysis.robustness["model"].isin(finalist_models)
+].copy()
+robustness_summary = robustness_detail.groupby("model", as_index=False).agg(
+    failed_probes=("prediction_failed", "sum"),
+    mean_abs_score_drift=("mean_abs_score_drift", "mean"),
+    max_abs_score_drift=("mean_abs_score_drift", "max"),
+    mean_changed_class_share=("changed_class_share", "mean"),
+    max_changed_class_share=("changed_class_share", "max"),
+)
+finalist_summary = finalist_metrics.merge(robustness_summary, on="model", how="left")
+finalist_summary["failed_probes"] = finalist_summary["failed_probes"].astype(int)
+finalist_summary["robustness_status"] = np.where(
+    finalist_summary["failed_probes"].gt(0),
+    "Prediction failure observed",
+    "All probes passed",
+)
+finalist_summary["robustness_score"] = np.where(
+    finalist_summary["failed_probes"].gt(0),
+    0.0,
+    1.0 - finalist_summary["mean_changed_class_share"],
+)
+finalist_summary = finalist_summary.sort_values("macro_f1", ascending=False)
+
+robustness_status_fig = go.Figure(
+    data=[
+        go.Table(
+            header={
+                "values": [
+                    "Model",
+                    "Probe status",
+                    "Failed probes",
+                    "Mean score drift",
+                    "Maximum score drift",
+                    "Mean changed class share",
+                    "Maximum changed class share",
+                ],
+                "fill_color": "#14213D",
+                "font": {"color": "white"},
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    finalist_summary["display_name"],
+                    finalist_summary["robustness_status"],
+                    finalist_summary["failed_probes"].map(
+                        lambda value: f"{value} of {len(ROBUSTNESS_COLUMNS)}"
+                    ),
+                    finalist_summary["mean_abs_score_drift"].map(lambda value: f"{value:.4f}"),
+                    finalist_summary["max_abs_score_drift"].map(lambda value: f"{value:.4f}"),
+                    finalist_summary["mean_changed_class_share"].map(lambda value: f"{value:.2%}"),
+                    finalist_summary["max_changed_class_share"].map(lambda value: f"{value:.2%}"),
+                ],
+                "fill_color": "#F7F8FA",
+                "align": "left",
+            },
+        )
+    ]
+)
+robustness_status_fig.update_layout(
+    title="Per finalist missing feature robustness status",
+    height=310,
+    margin={"l": 20, "r": 20, "t": 55, "b": 20},
+)
+robustness_status_fig.show()
+
+latency_fig = go.Figure(
+    go.Bar(
+        x=finalist_summary["display_name"],
+        y=finalist_summary["latency_ms_per_1k"],
+        marker_color="#3776AB",
+        text=finalist_summary["latency_ms_per_1k"].map(lambda value: f"{value:.2f}"),
+        textposition="outside",
+        hovertemplate="%{x}<br>%{y:.2f} ms per 1,000 rows<extra></extra>",
+    )
+)
+latency_fig.update_layout(
+    title="Measured finalist inference latency on Val 2023",
+    xaxis_title="Model",
+    yaxis_title="Median milliseconds per 1,000 rows",
+    template="plotly_white",
+    height=480,
+)
+latency_fig.show()
+
+robustness_fig = go.Figure()
+robustness_fig.add_trace(
+    go.Bar(
+        x=finalist_summary["display_name"],
+        y=finalist_summary["mean_abs_score_drift"],
+        name="Mean absolute score drift",
+        marker_color="#6D5DFC",
+        hovertemplate="%{x}<br>Score drift %{y:.4f}<extra></extra>",
+    )
+)
+robustness_fig.add_trace(
+    go.Bar(
+        x=finalist_summary["display_name"],
+        y=finalist_summary["mean_changed_class_share"],
+        name="Mean changed class share",
+        marker_color="#F37626",
+        hovertemplate="%{x}<br>Changed class share %{y:.2%}<extra></extra>",
+    )
+)
+robustness_fig.update_layout(
+    title="Measured response to missing weather and road context features",
+    xaxis_title="Model",
+    yaxis_title="Mean change across five probes",
+    yaxis_tickformat=".1%",
+    barmode="group",
+    template="plotly_white",
+    height=520,
+)
+robustness_fig.show()
+
+# %%
+finalist_predictions = {model: candidate_analysis.predictions[model] for model in finalist_models}
+disagreement_long = prediction_disagreement(finalist_predictions)
+disagreement_matrix = pd.DataFrame(
+    0.0,
+    index=finalist_models,
+    columns=finalist_models,
+)
+for row in disagreement_long.itertuples(index=False):
+    disagreement_matrix.loc[row.model_a, row.model_b] = row.disagreement_share
+    disagreement_matrix.loc[row.model_b, row.model_a] = row.disagreement_share
+
+finalist_display_names = [MODEL_LABELS[model] for model in finalist_models]
+disagreement_fig = go.Figure(
+    go.Heatmap(
+        z=disagreement_matrix.to_numpy(),
+        x=finalist_display_names,
+        y=finalist_display_names,
+        colorscale="Blues",
+        zmin=0,
+        zmax=max(0.01, float(disagreement_matrix.to_numpy().max())),
+        text=np.vectorize(lambda value: f"{value:.1%}")(disagreement_matrix.to_numpy()),
+        texttemplate="%{text}",
+        hovertemplate="%{y} compared with %{x}<br>Disagreement %{z:.2%}<extra></extra>",
+        colorbar={"title": "Share"},
+    )
+)
+disagreement_fig.update_layout(
+    title="Pairwise finalist prediction disagreement on Val 2023",
+    xaxis_title="Model",
+    yaxis_title="Model",
+    template="plotly_white",
+    height=560,
+)
+disagreement_fig.show()
+
+champion_disagreement_rows = disagreement_long[
+    disagreement_long["model_a"].eq(champion_artifact.model)
+    | disagreement_long["model_b"].eq(champion_artifact.model)
+]
+champion_mean_disagreement = float(champion_disagreement_rows["disagreement_share"].mean())
+maximum_disagreement_row = disagreement_long.loc[disagreement_long["disagreement_share"].idxmax()]
+
+
+# %%
+def write_csv_atomically(frame, path):
+    with NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as temporary:
+        temporary_path = Path(temporary.name)
+    try:
+        frame.to_csv(temporary_path, index=False)
+        os.replace(temporary_path, path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+def write_json_atomically(payload, path):
+    with NamedTemporaryFile(
+        mode="w",
+        encoding="utf-8",
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        delete=False,
+    ) as temporary:
+        json.dump(payload, temporary, sort_keys=True, separators=(",", ":"))
+        temporary.flush()
+        os.fsync(temporary.fileno())
+        temporary_path = Path(temporary.name)
+    try:
+        os.replace(temporary_path, path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+permutation_importance_path = PROCESSED_DIR / "c_phase_permutation_importance.csv"
+analysis_manifest_path = PROCESSED_DIR / "c_phase_analysis_manifest.json"
+with analysis_manifest_path.open(encoding="utf-8") as file:
+    analysis_manifest = json.load(file)
+assert analysis_manifest["fingerprint"] == candidate_analysis_fingerprint
+
+permutation_cache_metadata = analysis_manifest.get(
+    "permutation_importance_cache",
+    {},
+)
+permutation_cache_hit = (
+    permutation_importance_path.is_file()
+    and permutation_cache_metadata.get("fingerprint") == candidate_analysis_fingerprint
+    and permutation_cache_metadata.get("sample_size") == PERMUTATION_SAMPLE_SIZE
+    and permutation_cache_metadata.get("repeats") == PERMUTATION_REPEATS
+)
+
+if permutation_cache_hit:
+    try:
+        permutation_importance_df = pd.read_csv(permutation_importance_path)
+        required_importance_columns = {
+            "model",
+            "feature",
+            "importance_mean",
+            "importance_std",
+            "rank",
+        }
+        assert required_importance_columns.issubset(permutation_importance_df.columns)
+        assert set(permutation_importance_df["model"]) == set(finalist_models)
+    except (AssertionError, OSError, ValueError, pd.errors.ParserError):
+        permutation_cache_hit = False
+
+if not permutation_cache_hit:
+    permutation_importance_df = compute_finalist_permutation_importance(
+        finalist_artifacts,
+        X_val=X_validation,
+        y_val=y_validation,
+        sample_size=PERMUTATION_SAMPLE_SIZE,
+        n_repeats=PERMUTATION_REPEATS,
+        random_state=RANDOM_STATE,
+    )
+    write_csv_atomically(
+        permutation_importance_df,
+        permutation_importance_path,
+    )
+    analysis_manifest["permutation_importance_cache"] = {
+        "fingerprint": candidate_analysis_fingerprint,
+        "sample_size": PERMUTATION_SAMPLE_SIZE,
+        "repeats": PERMUTATION_REPEATS,
+        "random_state": RANDOM_STATE,
+        "models": finalist_models,
+    }
+    write_json_atomically(analysis_manifest, analysis_manifest_path)
+
+print("Permutation importance cache: " + ("reused" if permutation_cache_hit else "rebuilt"))
+
+all_importance_rank_matrix = permutation_importance_df.pivot(
+    index="feature",
+    columns="model",
+    values="rank",
+).reindex(columns=finalist_models)
+champion_top_features = set(
+    permutation_importance_df[
+        permutation_importance_df["model"].eq(champion_artifact.model)
+        & permutation_importance_df["rank"].le(10)
+    ]["feature"]
+)
+importance_rank_correlations = {}
+importance_top_10_jaccard = {}
+for finalist_model in finalist_models:
+    if finalist_model == champion_artifact.model:
+        continue
+    rank_correlation = all_importance_rank_matrix[champion_artifact.model].corr(
+        all_importance_rank_matrix[finalist_model],
+        method="spearman",
+    )
+    finalist_top_features = set(
+        permutation_importance_df[
+            permutation_importance_df["model"].eq(finalist_model)
+            & permutation_importance_df["rank"].le(10)
+        ]["feature"]
+    )
+    feature_union = champion_top_features | finalist_top_features
+    importance_rank_correlations[finalist_model] = float(rank_correlation)
+    importance_top_10_jaccard[finalist_model] = float(
+        len(champion_top_features & finalist_top_features) / len(feature_union)
+    )
+mean_importance_rank_correlation = float(np.mean(list(importance_rank_correlations.values())))
+mean_importance_top_10_jaccard = float(np.mean(list(importance_top_10_jaccard.values())))
+
+top_feature_union = (
+    permutation_importance_df[permutation_importance_df["rank"].le(10)]
+    .groupby("feature")["importance_mean"]
+    .max()
+    .sort_values(ascending=False)
+    .head(15)
+    .index
+)
+importance_rank_matrix = (
+    permutation_importance_df[permutation_importance_df["feature"].isin(top_feature_union)]
+    .pivot(index="feature", columns="model", values="rank")
+    .reindex(index=top_feature_union, columns=finalist_models)
+)
+
+importance_rank_fig = go.Figure(
+    go.Heatmap(
+        z=importance_rank_matrix.to_numpy(),
+        x=finalist_display_names,
+        y=importance_rank_matrix.index,
+        colorscale="Blues_r",
+        zmin=1,
+        zmax=float(np.nanmax(importance_rank_matrix.to_numpy())),
+        text=importance_rank_matrix.to_numpy(),
+        texttemplate="%{text:.0f}",
+        hovertemplate="%{y}<br>%{x}<br>Rank %{z:.0f}<extra></extra>",
+        colorbar={"title": "Rank"},
+    )
+)
+importance_rank_fig.update_layout(
+    title="Val 2023 permutation importance rank by finalist",
+    xaxis_title="Model",
+    yaxis_title="Input feature",
+    template="plotly_white",
+    height=650,
+)
+importance_rank_fig.show()
+
+# %%
+qualitative_rows = [
+    {
+        "model": row.display_name,
+        "macro_f1": row.macro_f1,
+        "recall_ksi": row.recall_ksi,
+        "latency_ms_per_1k": row.latency_ms_per_1k,
+        "robustness_score": row.robustness_score,
+    }
+    for row in finalist_summary.itertuples(index=False)
+]
+qualitative_matrix = build_qualitative_matrix(qualitative_rows)
+criteria_used = qualitative_matrix.attrs["criteria_used"]
+criteria_excluded = qualitative_matrix.attrs["criteria_excluded"]
+
+qualitative_fig = go.Figure(
+    data=[
+        go.Table(
+            header={
+                "values": [
+                    "Model",
+                    "Macro F1",
+                    "Recall KSI",
+                    "Latency ms per 1,000 rows",
+                    "Robustness score",
+                    "Measured decision score",
+                ],
+                "fill_color": "#14213D",
+                "font": {"color": "white"},
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    qualitative_matrix["model"],
+                    qualitative_matrix["macro_f1"].map(lambda value: f"{value:.3f}"),
+                    qualitative_matrix["recall_ksi"].map(lambda value: f"{value:.3f}"),
+                    qualitative_matrix["latency_ms_per_1k"].map(lambda value: f"{value:.2f}"),
+                    qualitative_matrix["robustness_score"].map(lambda value: f"{value:.3f}"),
+                    qualitative_matrix["weighted_score"].map(lambda value: f"{value:.3f}"),
+                ],
+                "fill_color": "#F7F8FA",
+                "align": "left",
+            },
+        )
+    ]
+)
+qualitative_fig.update_layout(
+    title="Finalist decision matrix using only measured and varying criteria",
+    height=310,
+    margin={"l": 20, "r": 20, "t": 55, "b": 20},
+)
+qualitative_fig.show()
+
+print(f"Criteria used: {', '.join(criteria_used)}")
+print(f"Criteria excluded: {criteria_excluded}")
+
+# %% [markdown]
+# The decision matrix excludes any missing or constant criterion automatically. It does not assign subjective interpretability or training cost scores. The disagreement and importance views remain diagnostic evidence because they describe model diversity and feature dependence, not a universally better direction.
+
+# %% [markdown]
+# ## 4 Champion only Test 2024 confirmation and gate
+#
+# The candidate comparison now stops. Only the Random Forest champion is loaded from the dedicated deployment artifact. Its threshold was selected on Val 2023. Test 2024 confirms the frozen model and threshold once, with no challenger predictions and no test guided reselection.
+
+# %%
+champion_pipeline = joblib.load(PROCESSED_DIR / "a3_binary_best_model.joblib")
+champion_threshold = float(model_card["optimal_threshold_val_2023"])
+champion_test_scores = champion_pipeline.predict_proba(X_test)[:, 1]
+champion_test_predictions = (champion_test_scores >= champion_threshold).astype(int)
+champion_test_metrics = evaluate_binary_predictions(
+    y_test.to_numpy(),
+    champion_test_predictions,
+)
+
+recorded_test_metrics = model_card["test_2024_metrics"]
+CACHE_TOLERANCE_RELATIVE = 0.01
+for metric_name in ["macro_f1", "recall_ksi", "recall_slight"]:
+    observed = float(champion_test_metrics[metric_name])
+    recorded = float(recorded_test_metrics[metric_name])
+    denominator = max(abs(recorded), 1e-12)
+    relative_drift = abs(observed - recorded) / denominator
+    assert relative_drift < CACHE_TOLERANCE_RELATIVE, (
+        f"{metric_name} drift {relative_drift:.2%} exceeds the "
+        f"{CACHE_TOLERANCE_RELATIVE:.0%} cache tolerance."
+    )
+
+test_confusion = confusion_matrix(
+    y_test,
+    champion_test_predictions,
+    labels=[1, 0],
+)
+test_confusion_fig = plot_confusion_matrix_heatmap(
+    test_confusion,
+    labels=["KSI", "Slight injury"],
+    title="Random Forest confusion matrix on Test 2024",
+)
+test_confusion_fig.update_layout(height=560)
+test_confusion_fig.show()
+
+gate_rows = pd.DataFrame(
+    [
+        {
+            "criterion": "Macro F1 at least 0.55",
+            "value": champion_test_metrics["macro_f1"],
+            "passed": champion_test_metrics["macro_f1"] >= 0.55,
+        },
+        {
+            "criterion": "Recall KSI at least 0.50",
+            "value": champion_test_metrics["recall_ksi"],
+            "passed": champion_test_metrics["recall_ksi"] >= 0.50,
+        },
+    ]
+)
+gate_passed = bool(gate_rows["passed"].all())
+gate_fig = go.Figure(
+    data=[
+        go.Table(
+            header={
+                "values": ["Test 2024 criterion", "Observed value", "Passed"],
+                "fill_color": "#14213D",
+                "font": {"color": "white"},
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    gate_rows["criterion"],
+                    gate_rows["value"].map(lambda value: f"{value:.4f}"),
+                    gate_rows["passed"].map({True: "Yes", False: "No"}),
+                ],
+                "fill_color": "#F7F8FA",
+                "align": "left",
+            },
+        )
+    ]
+)
+gate_fig.update_layout(
+    title="Frozen champion gate result",
+    height=250,
+    margin={"l": 20, "r": 20, "t": 55, "b": 20},
+)
+gate_fig.show()
+
+# %% [markdown]
+# The confirmation checks the three recorded scalar metrics against a one percent relative cache tolerance. This allows small feature cache refresh differences while still stopping the notebook if the persisted model and recorded result no longer agree.
+
+# %% [markdown]
+# ## 5 Champion error analysis
+#
+# The confusion matrix gives the overall error count. Slice analysis then asks where the champion misses KSI cases or flags slight injury cases as KSI. Rates use the relevant actual class as denominator, so slices with different class balance remain comparable.
+
+# %%
+LIGHT_LABELS = {0: "Daylight", 1: "Twilight", 2: "Darkness"}
+ROAD_CONDITION_LABELS = {
+    0: "Dry",
+    1: "Wet or slippery",
+    2: "Winter conditions",
+}
+ACCIDENT_TYPE_LABELS = {
+    0: "Other accident type",
+    1: "Collision with a parked or stopped vehicle",
+    2: "Rear end collision",
+    3: "Side collision with a vehicle moving in the same direction",
+    4: "Collision with oncoming traffic",
+    5: "Crossing or turning collision",
+    6: "Collision with a pedestrian",
+    7: "Collision with a road obstacle",
+    8: "Departure from road to the right",
+    9: "Departure from road to the left",
+}
+
+
+def decode_slice_label_english(column, value):
+    if column == "UART":
+        return f"Accident type: {ACCIDENT_TYPE_LABELS.get(int(value), value)}"
+    if column == "STRZUSTAND":
+        return f"Road condition: {ROAD_CONDITION_LABELS.get(int(value), value)}"
+    if column == "ULICHTVERH":
+        return f"Light condition: {LIGHT_LABELS.get(int(value), value)}"
+    if column == "USTUNDE":
+        return f"Hour: {int(value):02d}:00"
+    if column == "osm_dominant_road_class":
+        return f"OSM road class: {value}"
+    if column == "_precip_bucket":
+        return f"Precipitation: {value}"
+    return f"{column}: {value}"
+
+
 slice_columns = [
     "UART",
     "osm_dominant_road_class",
@@ -168,453 +841,506 @@ slice_columns = [
     "_precip_bucket",
     "USTUNDE",
 ]
-slice_frame = test_df[slice_columns].reset_index(drop=True)
-
-error_slice_df = compute_error_slices(
-    pd.Series(y_test_bin.values), pd.Series(y_test_pred_champion), slice_frame, slice_columns
+slice_frame = test_frame[slice_columns].reset_index(drop=True)
+error_slices = compute_error_slices(
+    pd.Series(y_test.to_numpy()),
+    pd.Series(champion_test_predictions),
+    slice_frame,
+    slice_columns,
 )
-# Decoded "Spalte: Wertlabel" per row (e.g. "Unfallart: Zzs. vorausfahrendes
-# Fz. (Auffahrunfall)") so every table/chart below shows the human-readable
-# category directly, never a bare code the reader has to look up elsewhere.
-error_slice_df["label"] = [
-    decode_slice_label(col, value)
-    for col, value in zip(error_slice_df["slice_column"], error_slice_df["slice_value"])
+error_slices["label"] = [
+    decode_slice_label_english(column, value)
+    for column, value in zip(
+        error_slices["slice_column"],
+        error_slices["slice_value"],
+        strict=True,
+    )
 ]
-error_display_cols = [
-    "label",
-    "n",
-    "n_false_negative",
-    "n_false_positive",
-    "false_negative_rate",
-    "false_positive_rate",
-]
-error_slice_df[error_display_cols].sort_values("false_negative_rate", ascending=False).head(20)
 
-# %%
-plot_df = error_slice_df[error_slice_df["n"] >= 100].nlargest(15, "false_negative_rate")
-
+error_plot_data = (
+    error_slices[error_slices["n"].ge(100)]
+    .nlargest(15, "false_negative_rate")
+    .sort_values("false_negative_rate")
+)
 error_slice_fig = go.Figure(
     go.Bar(
-        x=plot_df["false_negative_rate"],
-        y=plot_df["label"],
+        x=error_plot_data["false_negative_rate"],
+        y=error_plot_data["label"],
         orientation="h",
-        marker_color="#315F7D",
-        hovertemplate="%{y}: %{x:.1%}<extra></extra>",
+        marker_color="#3776AB",
+        text=error_plot_data["false_negative_rate"].map(lambda value: f"{value:.1%}"),
+        textposition="outside",
+        customdata=error_plot_data[["n", "n_false_negative"]],
+        hovertemplate=(
+            "%{y}<br>False negative rate %{x:.1%}"
+            "<br>Rows %{customdata[0]:,.0f}"
+            "<br>False negatives %{customdata[1]:,.0f}<extra></extra>"
+        ),
     )
 )
 error_slice_fig.update_layout(
-    title="Höchste False-Negative-Raten nach Slice (n ≥ 100)",
-    xaxis_title="False-Negative-Rate",
+    title="Highest champion false negative rates by Test 2024 slice",
+    xaxis_title="False negative rate among actual KSI cases",
     xaxis_tickformat=".0%",
+    yaxis_title="Slice",
     template="plotly_white",
-    yaxis=dict(autorange="reversed"),
-    height=520,
+    height=680,
+    margin={"l": 320, "r": 70, "t": 60, "b": 60},
 )
-error_slice_fig.write_html(FIG_DIR / "error_slices_fn_rate.html", include_plotlyjs=True)
 error_slice_fig.show()
 
 # %% [markdown]
-# **Beobachtung:** Die höchsten False-Negative-Raten treten bei `UART`-Kategorien auf: `UART=1` (Kollision mit haltendem/parkendem Fahrzeug, 89,0 % FN-Rate, n=14.673), `UART=3` (Seitenkollision, 74,1 %) und `UART=2` (Auffahrunfall, 71,5 %). Auch `STRZUSTAND=2` (Winterglätte, 68,5 %, wenn auch mit kleinerem n=4.731) und `UART=5` (Abbiege-/Einbiegeunfall, der häufigste Unfalltyp, 68,0 %) liegen weit oben. Bemerkenswert: Gerade die von A³ §20 als stärkstes Einzelmerkmal identifizierte Variable `UART` (Cramér's V=0,1801) dominiert auch hier die Fehlerliste: selbst das informativste verfügbare Merkmal reicht nicht aus, um KSI-Fälle innerhalb dieser Unfalltypen zuverlässig zu erkennen. Das deckt sich mit der in §6 aufgegriffenen Feature-Obergrenze: Die Fehler sind nicht zufällig verteilt, sondern konzentrieren sich systematisch dort, wo die verfügbaren Merkmale am wenigsten trennscharf sind.
-#
-# Die beiden neuen Dimensionen zeigen ein deutlich schwächeres, aber nicht triviales Muster: Nach Tageszeit (`USTUNDE`) liegt die FN-Rate im morgendlichen Berufsverkehr (7–9 Uhr) mit 56,7–60,7 % spürbar über dem Durchschnitt und fällt danach kontinuierlich ab (10 Uhr: 50,8 %); ein Hinweis, dass der Champion KSI-Fälle im dichten Frühverkehr etwas häufiger übersieht als in verkehrsärmeren Stunden. Nach Niederschlagskategorie (`_precip_bucket`) zeigt sich dagegen praktisch kein Unterschied (dry: 47,2 % vs. light 0–5 mm: 48,7 % FN-Rate); in Test-2024 kommen ohnehin nur diese zwei Kategorien vor (moderate/heavy: n=0), sodass Niederschlag hier keine systematische Fehlerquelle ist, anders als Unfalltyp, Straßenzustand oder Tageszeit.
+# The slice chart is descriptive rather than causal. A high rate can indicate weak signal, a difficult subgroup, or a small effective KSI denominator. The row count and false negative count remain available in the hover details.
 
 # %% [markdown]
-# ## 3 — Formale KPI-Validierung: Go/No-Go
+# ## 6 Cross model feature evidence and champion SHAP
 #
-# Explizite Prüfung des Champions gegen die in der Q-Phase festgelegten Akzeptanzkriterien für die binäre KSI-Formulierung, auf Basis der in §0 frisch berechneten Test-2024-Metriken (`sanity_metrics`).
-
-# %%
-champion_val_row = next(
-    r for r in model_card["stage0_1_comparison"] if r["family"] == model_card["champion_family"]
-)
-
-gate_table = pd.DataFrame(
-    [
-        {
-            "Gate": "macro-F1 >= 0.55",
-            "Val-2023": model_card["val_2023_macro_f1"],
-            "Test-2024": sanity_metrics["macro_f1"],
-            "Passed": sanity_metrics["macro_f1"] >= 0.55,
-        },
-        {
-            "Gate": "Recall(KSI) >= 0.50",
-            "Val-2023": champion_val_row["recall_ksi"],
-            "Test-2024": sanity_metrics["recall_ksi"],
-            "Passed": sanity_metrics["recall_ksi"] >= 0.50,
-        },
-    ]
-)
-gate_overall_pass = bool(gate_table["Passed"].all())
-print(f"Overall gate PASSED: {gate_overall_pass}")
-gate_table
-
-# %% [markdown]
-# ## 4 — Qualitative Bewertungsmatrix
+# Permutation importance in Section 3 is model agnostic and compares all four finalists on the same Val 2023 sample. The SHAP analysis below answers a different question. It explains how the Random Forest champion uses its transformed features on a stratified Test 2024 sample.
 #
-# Reine Metriken (macro-F1, Recall(KSI)) reichen nicht aus, um zwischen dem Champion und den zwei nächstplatzierten Kandidaten zu entscheiden: die Runner-ups (`xgboost`, `lightgbm`) haben höhere Recall(KSI)-Werte. Diese gewichtete Matrix berücksichtigt zusätzlich Inferenzgeschwindigkeit, Interpretierbarkeit, Robustheit gegenüber fehlenden OSM/DWD-Features und Trainingskosten.
-#
-# **Gewichtung:** macro-F1 und Recall(KSI) je 30 % (Kernmetriken der Q-Phase-Gates), die übrigen vier Kriterien je 10 %.
+# The champion contains very deep trees. Exact Tree SHAP was not practical in the earlier timing check, so this notebook uses the documented approximate TreeExplainer path with additivity checking disabled. The sample contains 2,500 KSI cases and 2,500 slight injury cases.
 
 # %%
-_latency_sample = X_test_bin.sample(n=1000, random_state=42)
-_start = time.perf_counter()
-champion_pipeline.predict_proba(_latency_sample)
-_champion_latency_ms_per_1k = (time.perf_counter() - _start) * 1000
-print(f"Champion latency: {_champion_latency_ms_per_1k:.1f} ms per 1,000 rows")
+FEATURE_LABELS_ENGLISH = {
+    "IstRad": "Bicycle involved",
+    "IstPKW": "Car involved",
+    "IstFuss": "Pedestrian involved",
+    "IstKrad": "Motorcycle involved",
+    "IstGkfz": "Goods vehicle involved",
+    "IstSonstig": "Other transport involved",
+    "LON": "Longitude",
+    "LAT": "Latitude",
+    "dwd_temp_air_2m": "Air temperature",
+    "dwd_precip_mm": "Precipitation",
+    "dwd_visibility_m": "Visibility",
+    "dwd_wind_speed_ms": "Wind speed",
+    "dwd_station_dist_km": "Distance to weather station",
+    "osm_road_density": "OSM road density",
+    "osm_way_count": "OSM way count",
+    "osm_maxspeed_mean": "OSM mean speed limit",
+    "osm_maxspeed_max": "OSM maximum speed limit",
+}
+ACCIDENT_CATEGORY_LABELS = {
+    1: "Driving accident",
+    2: "Turning accident",
+    3: "Crossing accident",
+    4: "Pedestrian crossing accident",
+    5: "Stationary traffic accident",
+    6: "Longitudinal traffic accident",
+    7: "Other accident",
+}
 
-# %%
-# Robustness check: all three families share the exact same ColumnTransformer
-# preprocessing (build_preprocessor() is passed in externally to every
-# build_*_pipeline() in src/unfallatlas/models/*.py), so their handling of
-# missing OSM/DWD input is identical, not a per-family trait. Verify this
-# empirically instead of asserting it: null every OSM/DWD column on a small
-# batch and confirm the champion pipeline still predicts without raising
-# (numeric OSM/DWD columns are median-imputed, the one OSM categorical
-# column is constant-imputed to "unknown" - see build_preprocessor()).
-_osm_dwd_cols = [
-    c for c in X_test_bin.columns if c.startswith(("osm_", "dwd_")) or c == "_precip_bucket"
-]
-_robustness_probe = X_test_bin.iloc[:50].copy()
-for _col in _osm_dwd_cols:
-    _robustness_probe[_col] = np.nan if _robustness_probe[_col].dtype.kind in "fc" else None
-try:
-    champion_pipeline.predict_proba(_robustness_probe)
-    ROBUSTNESS_OK = True
-except Exception as exc:
-    ROBUSTNESS_OK = False
-    print(f"Robustness probe FAILED: {exc}")
-# Identical across families since it is a preprocessing-pipeline property,
-# not a classifier property.
-ROBUSTNESS_SCORE = 0.8 if ROBUSTNESS_OK else 0.2
-print(
-    f"Pipeline tolerates fully-missing OSM/DWD input ({len(_osm_dwd_cols)} columns nulled): "
-    f"{ROBUSTNESS_OK} -> robustness_score={ROBUSTNESS_SCORE} for all three families"
+
+def humanize_feature_name_english(name):
+    for column, labels in {
+        "UART": ACCIDENT_TYPE_LABELS,
+        "UTYP1": ACCIDENT_CATEGORY_LABELS,
+        "ULICHTVERH": LIGHT_LABELS,
+        "STRZUSTAND": ROAD_CONDITION_LABELS,
+    }.items():
+        prefix = f"{column}_"
+        if name.startswith(prefix):
+            value = name[len(prefix) :]
+            return labels.get(int(value), value)
+    road_prefix = "osm_dominant_road_class_"
+    if name.startswith(road_prefix):
+        return f"OSM road class: {name[len(road_prefix) :]}"
+    if name.endswith("_target_enc"):
+        base = name.removesuffix("_target_enc")
+        return f"{base} target encoding"
+    if name.endswith(("_sin", "_cos")):
+        base, component = name.rsplit("_", 1)
+        return f"{base} cyclic {component}"
+    return FEATURE_LABELS_ENGLISH.get(name, name)
+
+
+test_target_series = pd.Series(y_test.to_numpy())
+shap_indices = (
+    test_target_series.groupby(test_target_series).sample(n=2_500, random_state=RANDOM_STATE).index
 )
+shap_raw = X_test.iloc[shap_indices].reset_index(drop=True)
+shap_target = y_test.iloc[shap_indices].reset_index(drop=True)
 
-# %%
-champion_row = binary_comparison_df[
-    binary_comparison_df["family"] == model_card["champion_family"]
-].iloc[0]
-xgboost_row = binary_comparison_df[binary_comparison_df["family"] == "xgboost"].iloc[0]
-lightgbm_row = binary_comparison_df[binary_comparison_df["family"] == "lightgbm"].iloc[0]
+champion_preprocessor = champion_pipeline[:-1]
+champion_classifier = champion_pipeline[-1]
+shap_features = pd.DataFrame(
+    champion_preprocessor.transform(shap_raw),
+    columns=champion_preprocessor.get_feature_names_out(),
+).astype(float)
 
-# Interpretability: random_forest exposes native feature_importances_ and is a
-# bagged-tree ensemble (each tree independently traceable); xgboost/lightgbm
-# are boosted ensembles (feature_importances_ also available, but individual
-# trees correct previous residuals rather than voting independently, making
-# per-prediction path tracing less direct without SHAP). Scored 0-1, champion
-# favoured for its direct TreeExplainer compatibility used in §5.
-# Robustness: ROBUSTNESS_SCORE (computed above) is identical for all three -
-# it reflects the shared ColumnTransformer preprocessing, not a per-family
-# difference.
-# Training cost: Optuna trial count from the shared A³ search budget
-# (provenance.optuna_trials applies to the whole binary Stage-1 search, so
-# it is identical across families here: a genuine shared-cost fact, not an
-# invented per-family estimate).
-qualitative_rows = [
-    {
-        "model": "random_forest (champion)",
-        "macro_f1": champion_row["macro_f1"],
-        "recall_ksi": champion_row["recall_ksi"],
-        "latency_ms_per_1k": _champion_latency_ms_per_1k,
-        "interpretability_score": 0.8,
-        "robustness_score": ROBUSTNESS_SCORE,
-        "training_cost_score": model_card["provenance"]["optuna_trials"],
-    },
-    {
-        "model": "xgboost",
-        "macro_f1": xgboost_row["macro_f1"],
-        "recall_ksi": xgboost_row["recall_ksi"],
-        "latency_ms_per_1k": _champion_latency_ms_per_1k,
-        "interpretability_score": 0.6,
-        "robustness_score": ROBUSTNESS_SCORE,
-        "training_cost_score": model_card["provenance"]["optuna_trials"],
-    },
-    {
-        "model": "lightgbm",
-        "macro_f1": lightgbm_row["macro_f1"],
-        "recall_ksi": lightgbm_row["recall_ksi"],
-        "latency_ms_per_1k": _champion_latency_ms_per_1k,
-        "interpretability_score": 0.6,
-        "robustness_score": ROBUSTNESS_SCORE,
-        "training_cost_score": model_card["provenance"]["optuna_trials"],
-    },
-]
-qualitative_matrix_df = build_qualitative_matrix(qualitative_rows)
-qualitative_matrix_df
-
-# %% [markdown]
-# **Hinweis zur Latenz, Robustheit und den Trainingskosten:** Nur die Champion-Pipeline ist als Artefakt gespeichert (`a3_binary_best_model.joblib`); xgboost/lightgbm wurden nicht auf dem vollen Trainingsset refittet und persistiert, daher kann ihre Inferenzlatenz hier nicht separat gemessen werden; der Platzhalterwert (identisch zum Champion) wird explizit als Limitation benannt statt stillschweigend als exakter Wert behandelt. Der Robustheits-Score ist für alle drei Familien identisch (`ROBUSTNESS_SCORE`, oben empirisch geprüft): Alle drei teilen sich dieselbe `ColumnTransformer`-Preprocessing-Pipeline, daher ist die Behandlung fehlender OSM/DWD-Werte eine Eigenschaft der Pipeline, nicht des Klassifikators. Der Trainingskosten-Score (`optuna_trials`) bezieht sich auf das gemeinsame Suchbudget des gesamten binären Stage-1-Laufs und ist daher ebenfalls für alle drei Familien identisch; auch das ist ein echter, dokumentierter Fakt aus der Provenienz und keine erfundene Pro-Familie-Schätzung. Alle drei Kriterien tragen wegen fehlender Varianz nicht zur Rangfolge bei; die Entscheidung stützt sich damit primär auf macro-F1, Recall(KSI) und Interpretierbarkeit.
-
-# %% [markdown]
-# ## 5 — SHAP-Erklärbarkeit
-#
-# `TreeExplainer` auf einer stratifizierten Stichprobe von 5.000 Zeilen aus Test-2024 (2.500 pro Klasse); die vollen ~223.000 Test-2024-Zeilen sind für SHAP nicht praktikabel. Zusätzlich wird `approximate=True` (Saabas-Algorithmus) verwendet: Der Champion hat 180 Bäume mit exakt Tiefe 23 und im Schnitt ~41.355 Blättern pro Baum (insgesamt ~7,4 Mio. Blätter); für Bäume dieser Größe ist die exakte SHAP-Berechnung (Komplexität ~O(Blätter·Tiefe²)) empirisch bestätigt unpraktikabel (ein Testlauf mit 50 Zeilen ohne `approximate=True` lief über 10 Minuten, ohne zu terminieren; mit `approximate=True` dauerten 500 Zeilen 0,11 Sekunden). Diese Stichprobengröße und die Approximation sind bewusste, hier dokumentierte Entscheidungen, keine stillschweigenden Kürzungen. Zunächst die globale Sicht (Summary/Beeswarm + mittlere absolute SHAP-Werte), danach vier konkrete Fallbeispiele.
-
-# %%
-sample_idx = (
-    pd.Series(y_test_bin.values)
-    .groupby(y_test_bin.values)
-    .sample(n=2500, random_state=42)  # 2,500 per class = 5,000 total, stratified
-    .index
+shap_explainer = shap.TreeExplainer(champion_classifier)
+shap_values = shap_explainer.shap_values(
+    shap_features,
+    approximate=True,
+    check_additivity=False,
 )
-shap_sample_X_raw = X_test_bin.iloc[sample_idx].reset_index(drop=True)
-shap_sample_y = y_test_bin.iloc[sample_idx].reset_index(drop=True)
-
-preprocessor = champion_pipeline[:-1]
-classifier = champion_pipeline[-1]
-shap_sample_X = pd.DataFrame(
-    preprocessor.transform(shap_sample_X_raw),
-    columns=preprocessor.get_feature_names_out(),
-)
-# ColumnTransformer stacks heterogeneous encoders (OneHotEncoder returns
-# bool, passthrough returns int8, target/cyclic encoders return float) into
-# a single object-dtype array. That silently breaks SHAP's colour-by-
-# feature-value coding in the beeswarm plot below (all points render gray
-# instead of the usual low->high gradient) even though every value is
-# numeric. Cast to float64 explicitly - verified safe (0 NaNs introduced).
-shap_sample_X = shap_sample_X.astype(float)
-
-explainer = shap.TreeExplainer(classifier)
-# approximate=True (Saabas algorithm): the exact TreeExplainer algorithm is
-# impractical for this champion's tree size (180 trees, depth 23, ~7.4M
-# leaves total); see the markdown above for the empirical timing that
-# motivated this choice. check_additivity=False because the approximate
-# algorithm does not guarantee exact additivity to the model's raw output.
-shap_values = explainer.shap_values(shap_sample_X, approximate=True, check_additivity=False)
-# For binary sklearn classifiers, shap_values may be a list [class0, class1]
-# or a single 2D array depending on the shap version pinned; handle both.
 shap_values_ksi = shap_values[1] if isinstance(shap_values, list) else shap_values
 if shap_values_ksi.ndim == 3:
-    # shap>=0.45 TreeExplainer on binary classifiers can return shape
-    # (n_samples, n_features, n_classes) instead of a list; select class 1.
     shap_values_ksi = shap_values_ksi[:, :, 1]
-print(f"shap_values_ksi shape: {shap_values_ksi.shape}, shap_sample_X shape: {shap_sample_X.shape}")
 
-# %%
+assert shap_values_ksi.shape == shap_features.shape
 shap_importance = pd.Series(
-    np.abs(shap_values_ksi).mean(axis=0), index=shap_sample_X.columns
+    np.abs(shap_values_ksi).mean(axis=0),
+    index=shap_features.columns,
 ).sort_values(ascending=False)
 
-N_BEESWARM_FEATURES = 20
-top_features = shap_importance.head(N_BEESWARM_FEATURES).index[::-1]  # most important on top
-feature_col_idx = {col: i for i, col in enumerate(shap_sample_X.columns)}
-_jitter_rng = np.random.default_rng(42)
+# %%
+beeswarm_feature_count = 20
+beeswarm_features = shap_importance.head(beeswarm_feature_count).index[::-1]
+feature_positions = {feature: index for index, feature in enumerate(shap_features.columns)}
+jitter_rng = np.random.default_rng(RANDOM_STATE)
 
 beeswarm_fig = go.Figure()
-for row, feat in enumerate(top_features):
-    feat_vals = shap_sample_X[feat].to_numpy()
-    shap_vals = shap_values_ksi[:, feature_col_idx[feat]]
-    val_min, val_max = feat_vals.min(), feat_vals.max()
-    span = (val_max - val_min) or 1.0
-    color_vals = (feat_vals - val_min) / span
-    jitter = _jitter_rng.uniform(-0.35, 0.35, size=len(shap_vals))
+for row_index, feature in enumerate(beeswarm_features):
+    feature_values = shap_features[feature].to_numpy()
+    feature_shap = shap_values_ksi[:, feature_positions[feature]]
+    value_span = feature_values.max() - feature_values.min()
+    normalized_values = (feature_values - feature_values.min()) / (
+        value_span if value_span else 1.0
+    )
+    jitter = jitter_rng.uniform(-0.35, 0.35, size=len(feature_shap))
     beeswarm_fig.add_trace(
         go.Scatter(
-            x=shap_vals,
-            y=row + jitter,
+            x=feature_shap,
+            y=row_index + jitter,
             mode="markers",
-            marker=dict(
-                color=color_vals,
-                colorscale="RdBu_r",
-                size=4,
-                opacity=0.65,
-                showscale=(row == 0),
-                colorbar=dict(
-                    title="Feature-<br>wert", tickvals=[0, 1], ticktext=["niedrig", "hoch"], x=1.02
-                )
-                if row == 0
+            marker={
+                "color": normalized_values,
+                "colorscale": "RdBu_r",
+                "size": 4,
+                "opacity": 0.65,
+                "showscale": row_index == 0,
+                "colorbar": {
+                    "title": "Feature value",
+                    "tickvals": [0, 1],
+                    "ticktext": ["Low", "High"],
+                    "x": 1.02,
+                }
+                if row_index == 0
                 else None,
+            },
+            name=humanize_feature_name_english(feature),
+            hovertemplate=(
+                f"{humanize_feature_name_english(feature)}<br>SHAP value %{{x:.3f}}<extra></extra>"
             ),
-            name=humanize_feature_name(feat),
-            hovertemplate=f"{humanize_feature_name(feat)}<br>SHAP=%{{x:.3f}}<extra></extra>",
             showlegend=False,
         )
     )
 beeswarm_fig.update_layout(
-    title=f"SHAP Summary (Beeswarm), Top {N_BEESWARM_FEATURES} Features",
-    xaxis_title="SHAP-Wert (Einfluss auf KSI-Score)",
-    yaxis=dict(
-        tickmode="array",
-        tickvals=list(range(N_BEESWARM_FEATURES)),
-        ticktext=[humanize_feature_name(f) for f in top_features],
-    ),
+    title="Random Forest SHAP beeswarm on the stratified Test 2024 sample",
+    xaxis_title="SHAP contribution toward the KSI score",
+    yaxis={
+        "tickmode": "array",
+        "tickvals": list(range(beeswarm_feature_count)),
+        "ticktext": [humanize_feature_name_english(feature) for feature in beeswarm_features],
+    },
     template="plotly_white",
-    height=700,
-    margin=dict(r=120),
+    height=760,
+    margin={"l": 240, "r": 130, "t": 60, "b": 60},
 )
-beeswarm_fig.write_html(FIG_DIR / "shap_summary_beeswarm.html", include_plotlyjs=True)
 beeswarm_fig.show()
 
 # %%
-N_BAR_FEATURES = 15
-bar_data = shap_importance.head(N_BAR_FEATURES).iloc[::-1]
-
-bar_fig = go.Figure(
+bar_feature_count = 15
+bar_data = shap_importance.head(bar_feature_count).iloc[::-1]
+shap_bar_fig = go.Figure(
     go.Bar(
-        x=bar_data.values,
-        y=[humanize_feature_name(f) for f in bar_data.index],
+        x=bar_data.to_numpy(),
+        y=[humanize_feature_name_english(feature) for feature in bar_data.index],
         orientation="h",
-        marker_color="#315F7D",
-        hovertemplate="%{y}: %{x:.4f}<extra></extra>",
+        marker_color="#3776AB",
+        hovertemplate="%{y}<br>Mean absolute SHAP %{x:.4f}<extra></extra>",
     )
 )
-bar_fig.update_layout(
-    title=f"Mittlere absolute SHAP-Werte (Top {N_BAR_FEATURES})",
-    xaxis_title="mean(|SHAP value|)",
+shap_bar_fig.update_layout(
+    title="Random Forest mean absolute SHAP values",
+    xaxis_title="Mean absolute SHAP value",
+    yaxis_title="Transformed feature",
     template="plotly_white",
-    height=500,
+    height=560,
+    margin={"l": 260, "r": 40, "t": 60, "b": 60},
 )
-bar_fig.write_html(FIG_DIR / "shap_importance_bar.html", include_plotlyjs=True)
-bar_fig.show()
-
-# %% [markdown]
-# **Interpretation:** Im Beeswarm-Plot verschiebt Rot (hoher Feature-Wert) den SHAP-Wert für die
-# meisten Top-Features klar in eine Richtung, Blau (niedriger Wert) in die andere; eine breite,
-# durchmischte Punktwolke statt einer klaren Trennung würde auf ein schwaches Merkmal hindeuten.
-# Der Balkenplot bestätigt die Rangfolge über den Mittelwert der absoluten SHAP-Beiträge: Kein
-# einzelnes Feature dominiert (§6 ordnet diese Rangfolge gegen die Literatur ein). Die vier
-# folgenden Fallbeispiele zeigen, wie sich dieses globale Muster auf einzelne Vorhersagen auswirkt.
+shap_bar_fig.show()
 
 # %%
-shap_sample_pred_proba = champion_pipeline.predict_proba(shap_sample_X_raw)[:, 1]
-shap_sample_pred = (shap_sample_pred_proba >= CHAMPION_THRESHOLD).astype(int)
+sample_scores = champion_pipeline.predict_proba(shap_raw)[:, 1]
+sample_predictions = (sample_scores >= champion_threshold).astype(int)
 
-is_tp = (shap_sample_y.values == 1) & (shap_sample_pred == 1)
-is_fn = (shap_sample_y.values == 1) & (shap_sample_pred == 0)
-is_fp = (shap_sample_y.values == 0) & (shap_sample_pred == 1)
-is_tn = (shap_sample_y.values == 0) & (shap_sample_pred == 0)
+case_masks = {
+    "True positive KSI": ((shap_target.to_numpy() == 1) & (sample_predictions == 1)),
+    "False negative KSI": ((shap_target.to_numpy() == 1) & (sample_predictions == 0)),
+    "False positive slight injury": ((shap_target.to_numpy() == 0) & (sample_predictions == 1)),
+    "True negative slight injury": ((shap_target.to_numpy() == 0) & (sample_predictions == 0)),
+}
+case_indices = {
+    case_name: int(np.flatnonzero(mask)[0])
+    for case_name, mask in case_masks.items()
+    if np.flatnonzero(mask).size
+}
+assert len(case_indices) == 4
 
-case_indices = {}
-for name, mask in [
-    ("true_positive_ksi", is_tp),
-    ("false_negative_ksi", is_fn),
-    ("false_positive_slight", is_fp),
-    ("true_negative", is_tn),
-]:
-    matches = np.where(mask)[0]
-    if len(matches) == 0:
-        print(f"WARNING: no examples found for {name} in this sample, skipping")
-        continue
-    case_indices[name] = matches[0]
-print(case_indices)
+expected_value = np.atleast_1d(shap_explainer.expected_value)
+expected_value_ksi = float(expected_value[1] if len(expected_value) > 1 else expected_value[0])
 
-# %%
-expected_value = explainer.expected_value
-expected_value_ksi = (
-    expected_value[1]
-    if isinstance(expected_value, (list, np.ndarray)) and len(np.atleast_1d(expected_value)) > 1
-    else expected_value
-)
-
-N_WATERFALL_FEATURES = 10
-for name, idx in case_indices.items():
-    contributions = pd.Series(shap_values_ksi[idx], index=shap_sample_X.columns)
-    top_contrib = contributions.reindex(
+waterfall_feature_count = 10
+for case_name, case_index in case_indices.items():
+    contributions = pd.Series(
+        shap_values_ksi[case_index],
+        index=shap_features.columns,
+    )
+    top_contributions = contributions.reindex(
         contributions.abs().sort_values(ascending=False).index
-    ).head(N_WATERFALL_FEATURES)
-    other_sum = contributions.drop(top_contrib.index).sum()
+    ).head(waterfall_feature_count)
+    remaining_contribution = contributions.drop(top_contributions.index).sum()
 
-    labels = [
-        "Basiswert",
-        *(humanize_feature_name(f) for f in top_contrib.index),
-        "Übrige Features",
-        "Vorhersage",
+    waterfall_labels = [
+        "Base value",
+        *(humanize_feature_name_english(feature) for feature in top_contributions.index),
+        "Remaining features",
+        "Prediction",
     ]
-    values = [expected_value_ksi, *top_contrib.tolist(), other_sum, 0]
-    measures = ["absolute", *(["relative"] * (len(top_contrib) + 1)), "total"]
+    waterfall_values = [
+        expected_value_ksi,
+        *top_contributions.to_list(),
+        remaining_contribution,
+        0,
+    ]
+    waterfall_measures = [
+        "absolute",
+        *(["relative"] * (len(top_contributions) + 1)),
+        "total",
+    ]
 
     waterfall_fig = go.Figure(
         go.Waterfall(
             orientation="v",
-            measure=measures,
-            x=labels,
-            y=values,
-            connector={"line": {"color": "rgba(120, 120, 120, 0.4)"}},
-            increasing={"marker": {"color": "#E06C75"}},
-            decreasing={"marker": {"color": "#56B6C2"}},
-            totals={"marker": {"color": "#315F7D"}},
+            measure=waterfall_measures,
+            x=waterfall_labels,
+            y=waterfall_values,
+            connector={"line": {"color": "rgba(80, 80, 80, 0.4)"}},
+            increasing={"marker": {"color": "#E63946"}},
+            decreasing={"marker": {"color": "#3776AB"}},
+            totals={"marker": {"color": "#14213D"}},
         )
     )
     waterfall_fig.update_layout(
-        title=f"SHAP Waterfall: {name}",
-        yaxis_title="Score-Beitrag (Richtung KSI)",
+        title=f"Random Forest SHAP case: {case_name}",
+        yaxis_title="Contribution toward the KSI score",
         template="plotly_white",
-        height=480,
+        height=520,
         xaxis_tickangle=-35,
     )
-    waterfall_fig.write_html(FIG_DIR / f"shap_waterfall_{name}.html", include_plotlyjs=True)
     waterfall_fig.show()
 
 # %% [markdown]
-# **Fallbeispiele:** Bei der **True-Positive-KSI** (korrekt erkannter KSI-Fall) treibt `IstKrad` (Motorradbeteiligung) den Score am stärksten Richtung KSI (SHAP=+0,13); mit Abstand der größte Einzelbeitrag unter allen vier Fällen, konsistent mit dem bekannten hohen Verletzungsrisiko für Motorradfahrer. Bei der **False-Negative-KSI** (übersehener KSI-Fall) sind die Beiträge insgesamt deutlich schwächer (größter Betrag nur 0,036 für `UKREIS_target_enc`, und dieser zeigt sogar in die falsche Richtung); genau das Muster, das die niedrige Recall(KSI) erklärt: Es fehlt nicht an einem falsch gewichteten Feature, sondern schlicht an einem hinreichend starken Signal in den verfügbaren Merkmalen für diesen Fall. Beim **False-Positive-Slight** (fälschlich als KSI eingestuft) ziehen `UTYP1_1` (Fahrunfall), `osm_road_density` und `osm_way_count` gemeinsam Richtung KSI (SHAP zwischen +0,05 und +0,06 je Feature); ein Muster aus mehreren mittelstarken OSM-/Unfalltyp-Signalen, das in diesem Fall in die falsche Richtung zeigt. Bei der **True Negative** dominiert `UART_2` (Auffahrunfall) mit SHAP=-0,14 klar Richtung "leicht"; der stärkste Einzelbeitrag unter den korrekten Klassifikationen. Alle vier Fälle stützen sich auf dieselbe Merkmalsfamilie wie die globale Rangfolge oben (`osm_way_count`, `IstKrad`, `UTYP1_1`, `osm_road_density`, `UART_2` sind die fünf global wichtigsten Features); es gibt kein verborgenes, in den Einzelfällen dominierendes Merkmal, das in der globalen Sicht fehlen würde.
+# The permutation ranks and SHAP values should not be read as causal effects. Permutation importance measures validation performance loss when a raw input is disrupted. SHAP distributes one champion prediction across transformed features. Agreement between the two views strengthens a descriptive interpretation, while disagreement can reveal model specific feature use.
 
 # %% [markdown]
-# ## 6 — Abgleich mit der Literatur
+# ## 7 Literature context and limitations
 #
-# A³ §20 hat Cramér's V direkt gegen das **binäre** KSI-Label neu berechnet (nicht gegen das ursprüngliche 3-Klassen-`UKATGEORIE`, für das die U-Phase, §6, bereits eine Assoziationsobergrenze von ≤0,13 dokumentiert hatte): `UART` (Unfallart) ist mit **0,1801** das stärkste Einzelmerkmal für die binäre Klassifikation, gefolgt von `UTYP1` mit 0,1505; `ULICHTVERH` und `STRZUSTAND` liegen beide unter 0,03. Selbst das stärkste binäre Merkmal bleibt damit deutlich unter dem für starkes Klassifikationssignal üblichen Bereich von ~0,3–0,5; die binäre Reformulierung erhöht zwar die erreichbare Vorhersagegüte gegenüber der 3-Klassen-Formulierung (A³ §11), löst aber nicht das zugrundeliegende Problem schwacher Merkmalsassoziation.
+# The result is consistent with the literature context established in the Q and A³ phases. Public accident records contain useful road, time, weather, location, and participant signals, but they omit several physical determinants of injury severity. The binary KSI target is therefore more feasible than the original three class target without becoming an easy prediction problem.
 #
-# Diese SHAP-Analyse ergänzt eine dritte, unabhängige Sicht auf dieselbe Frage: die mittleren absoluten SHAP-Werte über die 5.000er-Stichprobe:
+# The main limitations are:
+#
+# 1. The Unfallatlas covers police recorded accidents. Unreported accidents are outside the observed population.
+# 2. Impact speed, restraint use, occupant age, vehicle mass, and detailed injury mechanisms are not available in the public feature set.
+# 3. OSM road context is not historically versioned for every accident year.
+# 4. Training covers 2016-2022, validation uses 2023, and the final confirmation uses 2024. Later years can still drift.
+# 5. Missing feature probes test operational resilience, not every possible distribution shift.
+# 6. Permutation importance and SHAP describe association and model behavior, not causal effects.
+# 7. The selected threshold reflects the stated macro F1 and Recall KSI gate. A different operational cost function could justify a different threshold.
+
+# %% [markdown]
+# ## 8 Final model decision and K phase contract
+#
+# The measured matrix ranks the finalists using macro F1, Recall KSI, latency, and robustness only when those criteria are present and varying. Pairwise disagreement and permutation rank agreement are diagnostic evidence without a universally better direction. The final statement reports their measured values, but it does not turn them into arbitrary ranking points.
+#
+# The matrix can confirm the preselected champion or reveal a validation challenger. It cannot silently replace the champion after Test 2024 has been opened. If another finalist leads the measured matrix, it becomes a candidate for a future preregistered comparison while Random Forest remains the deployment model for this cycle.
 
 # %%
-shap_importance.rename(humanize_feature_name).head(15)
+measured_matrix_leader = str(qualitative_matrix.iloc[0]["model"])
+champion_display_name = MODEL_LABELS[champion_artifact.model]
+random_forest_remains_preferred = measured_matrix_leader == champion_display_name
+
+fastest_row = finalist_summary.loc[finalist_summary["latency_ms_per_1k"].idxmin()]
+most_stable_row = finalist_summary.sort_values(
+    ["failed_probes", "mean_changed_class_share", "mean_abs_score_drift"],
+    ascending=[True, True, True],
+).iloc[0]
+
+if random_forest_remains_preferred:
+    decision_statement = (
+        "Random Forest remains preferred after measured performance, latency, "
+        "and robustness are ranked together. Disagreement and permutation "
+        "rank evidence describe model diversity but do not reverse that result."
+    )
+else:
+    decision_statement = (
+        f"{measured_matrix_leader} leads the measured validation matrix. "
+        "Random Forest is therefore not the preferred finalist on the combined "
+        "measured criteria, but it remains the deployment champion because the "
+        "test set cannot be reused for challenger selection."
+    )
+
+finalist_measurement_records = []
+for row in finalist_summary.itertuples(index=False):
+    finalist_measurement_records.append(
+        {
+            "model": row.display_name,
+            "registry_model": row.model,
+            "macro_f1": float(row.macro_f1),
+            "recall_ksi": float(row.recall_ksi),
+            "recall_slight": float(row.recall_slight),
+            "latency_ms_per_1k": float(row.latency_ms_per_1k),
+            "robustness_status": row.robustness_status,
+            "failed_probes": int(row.failed_probes),
+            "mean_abs_score_drift": float(row.mean_abs_score_drift),
+            "max_abs_score_drift": float(row.max_abs_score_drift),
+            "mean_changed_class_share": float(row.mean_changed_class_share),
+            "max_changed_class_share": float(row.max_changed_class_share),
+            "robustness_score": float(row.robustness_score),
+        }
+    )
+
+disagreement_records = [
+    {
+        "model_a": MODEL_LABELS[row.model_a],
+        "model_b": MODEL_LABELS[row.model_b],
+        "disagreement_share": float(row.disagreement_share),
+    }
+    for row in disagreement_long.itertuples(index=False)
+]
+
+inference_contract["decision_evidence"] = {
+    "candidate_registry_size": len(candidate_artifacts),
+    "validation_decision_matrix": {
+        "leader": measured_matrix_leader,
+        "criteria_used": criteria_used,
+        "criteria_excluded": criteria_excluded,
+        "ranking": [
+            {
+                "model": row.model,
+                "measured_decision_score": float(row.weighted_score),
+            }
+            for row in qualitative_matrix.itertuples(index=False)
+        ],
+    },
+    "finalist_measurements": finalist_measurement_records,
+    "latency_summary": {
+        "fastest_model": str(fastest_row["display_name"]),
+        "fastest_ms_per_1k": float(fastest_row["latency_ms_per_1k"]),
+    },
+    "robustness_summary": {
+        "most_stable_model": str(most_stable_row["display_name"]),
+        "failed_probes": int(most_stable_row["failed_probes"]),
+        "mean_abs_score_drift": float(most_stable_row["mean_abs_score_drift"]),
+        "mean_changed_class_share": float(most_stable_row["mean_changed_class_share"]),
+    },
+    "pairwise_disagreement": {
+        "champion_mean_disagreement": champion_mean_disagreement,
+        "maximum_pair": {
+            "model_a": MODEL_LABELS[maximum_disagreement_row["model_a"]],
+            "model_b": MODEL_LABELS[maximum_disagreement_row["model_b"]],
+            "disagreement_share": float(maximum_disagreement_row["disagreement_share"]),
+        },
+        "pairs": disagreement_records,
+    },
+    "permutation_rank_evidence": {
+        "fingerprint": candidate_analysis_fingerprint,
+        "sample_size": PERMUTATION_SAMPLE_SIZE,
+        "repeats": PERMUTATION_REPEATS,
+        "mean_spearman_correlation_with_champion": (mean_importance_rank_correlation),
+        "mean_top_10_jaccard_with_champion": (mean_importance_top_10_jaccard),
+        "spearman_correlation_by_model": {
+            MODEL_LABELS[model]: value for model, value in importance_rank_correlations.items()
+        },
+        "top_10_jaccard_by_model": {
+            MODEL_LABELS[model]: value for model, value in importance_top_10_jaccard.items()
+        },
+    },
+    "preference_conclusion": {
+        "random_forest_remains_preferred": (random_forest_remains_preferred),
+        "statement": decision_statement,
+        "diagnostic_evidence_has_no_preferred_direction": True,
+    },
+    "deployment_model": champion_display_name,
+    "deployment_model_registry_name": champion_artifact.model,
+    "deployment_model_sha256": champion_artifact.sha256,
+    "test_2024_champion_only": True,
+    "test_2024_metrics": {
+        key: value for key, value in champion_test_metrics.items() if key != "confusion_matrix"
+    },
+    "acceptance_gate_passed": gate_passed,
+    "analysis_artifacts": {
+        "manifest": "data/processed/c_phase_analysis_manifest.json",
+        "candidate_metrics": "data/processed/c_phase_candidate_metrics.csv",
+        "candidate_scores": "data/processed/c_phase_candidate_scores.parquet",
+        "candidate_robustness": "data/processed/c_phase_candidate_robustness.csv",
+        "permutation_importance": "data/processed/c_phase_permutation_importance.csv",
+    },
+}
+
+contract_path = PROCESSED_DIR / "c_phase_inference_contract.json"
+write_json_atomically(inference_contract, contract_path)
+
+decision_fig = go.Figure(
+    data=[
+        go.Table(
+            header={
+                "values": ["Decision item", "Measured result"],
+                "fill_color": "#14213D",
+                "font": {"color": "white"},
+                "align": "left",
+            },
+            cells={
+                "values": [
+                    [
+                        "Validation matrix leader",
+                        "Fastest finalist",
+                        "Most stable missing feature response",
+                        "Random Forest mean disagreement",
+                        "Mean importance rank correlation with Random Forest",
+                        "Random Forest remains preferred",
+                        "Deployment model",
+                        "Test 2024 gate",
+                    ],
+                    [
+                        measured_matrix_leader,
+                        (
+                            f"{fastest_row['display_name']} at "
+                            f"{fastest_row['latency_ms_per_1k']:.2f} ms per 1,000 rows"
+                        ),
+                        (
+                            f"{most_stable_row['display_name']} with "
+                            f"{int(most_stable_row['failed_probes'])} failed probes and "
+                            f"{most_stable_row['mean_changed_class_share']:.2%} mean class change"
+                        ),
+                        f"{champion_mean_disagreement:.2%}",
+                        f"{mean_importance_rank_correlation:.3f}",
+                        "Yes" if random_forest_remains_preferred else "No",
+                        champion_display_name,
+                        "Passed" if gate_passed else "Not passed",
+                    ],
+                ],
+                "fill_color": "#F7F8FA",
+                "align": "left",
+            },
+        )
+    ]
+)
+decision_fig.update_layout(
+    title="Final model decision and K phase handoff",
+    height=420,
+    margin={"l": 20, "r": 20, "t": 55, "b": 20},
+)
+decision_fig.show()
+print(decision_statement)
+print(f"Inference contract written to {contract_path}")
 
 # %% [markdown]
-# Die global wichtigsten SHAP-Features sind `osm_way_count`, `IstKrad`, `UTYP1_1`, `osm_road_density`, `UART_2`, `IstPKW`, `UKREIS_target_enc`, `osm_maxspeed_mean`; eine Mischung aus OSM-Straßenkontext, Fahrzeugtyp-Flags und Unfalltyp-Kategorien, nicht eine einzelne dominante Variable. Das deckt sich mit A³ §20/§21: Der Champion stützt sich stärker auf OSM-Straßenkontext- und Geo-Features als primär auf die assoziationsstärksten `UART`/`UTYP1`-Codes; ein Modell, das schwaches Signal über viele Merkmale hinweg extrahiert, statt sich auf ein dominantes Prädiktor zu verlassen.
+# ## 9 C phase summary
 #
-# Das erreichte Test-2024 macro-F1 (0,6039 in dieser Neuberechnung; 0,6026 im A³-Rekord) liegt im von der Q-Phase zitierten Literaturbereich für vergleichbare KSI-vs.-leicht-Klassifikation (Santos 2022 ≈ 0,60, Pakgohar 2021 ≈ 0,62, Schlößler 2024 ≈ 0,65); konsistent mit, nicht unterhalb des Stands der Technik auf diesem Feature-Set.
-
-# %% [markdown]
-# ## 7 — Limitationen
+# The C phase now uses the complete persisted model set instead of a champion only approximation. All ten candidates are validated on Val 2023, the four finalists receive independent latency and robustness measurements, prediction disagreement exposes where their decisions differ, and permutation importance compares their raw feature dependence.
 #
-# - **Selektionsbias:** Der Unfallatlas erfasst nur polizeilich gemeldete Unfälle; leichte Unfälle ohne Polizeibeteiligung fehlen systematisch, was die tatsächliche Grundgesamtheit verzerrt.
-# - **Fehlende physische Determinanten:** Aufprallgeschwindigkeit, Gurtnutzung, Insassenalter und Fahrzeugmasse (die stärksten bekannten Prädiktoren für Verletzungsschwere in der Literatur) liegen nicht im öffentlichen Unfallatlas vor, sondern in zugriffsbeschränkten Destatis-Personen-/Fahrzeugmikrodaten (siehe A³ §11/§19 `gate_reformulation_reason`).
-# - **Korrelation ≠ Kausalität:** SHAP-Werte und Feature-Importances zeigen Assoziationen, keine kausalen Effekte; z. B. sagt eine hohe SHAP-Bedeutung von OSM-Straßenkontext-Features nichts darüber aus, ob bauliche Eingriffe die KSI-Rate kausal senken würden.
-# - **OSM-Features sind zeitlich nicht versioniert:** Die OSM-Straßenkontext-Features spiegeln das heutige Straßennetz wider und werden einheitlich auf alle Unfalljahre (2016–2024) angewendet; eine dokumentierte, akzeptierte Näherung (U-Phase §8.8, siehe Glossar), keine Leckage-Quelle, aber eine Einschränkung der historischen Genauigkeit.
-# - **Geografische/zeitliche Abdeckung:** Trainingsdaten 2016–2022, Validierung 2023, Test 2024; Verallgemeinerung auf zukünftige Jahre oder auf Regionen mit strukturell anderer Infrastruktur ist nicht geprüft.
-# - **Schwellenwert-Sensitivität:** Der gate-optimale Schwellenwert (0,4986) wurde auf Val-2023 gewählt; siehe §3 für die Gate-Ergebnisse bei diesem Schwellenwert; eine Verschiebung würde den Recall(KSI)/macro-F1-Tradeoff entlang der in §1 gezeigten Kurven verändern.
-# - **Restliches Klassenungleichgewicht:** Trotz Klassengewichtung und Threshold-Moving verfehlt der Champion Recall(KSI) gegenüber den Runner-ups (§1/§4); ein bewusster Tradeoff zugunsten von macro-F1 (§4/§8), nicht ein ungelöstes technisches Problem.
-
-# %% [markdown]
-# ## 8 — Finale Modellentscheidung
+# Test 2024 remains a single confirmation of the frozen Random Forest champion. Champion error slices and SHAP then explain the confirmed model without leaking challenger information into the final decision.
 #
-# **Synthese:** Der formale Gate-Check (§3) ist für beide Kriterien **bestanden** (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50). Die qualitative Bewertungsmatrix (§4) bestätigt `random_forest` als Champion mit dem höchsten gewichteten Score (0,600 vs. 0,518 für xgboost und 0,500 für lightgbm), trotz niedrigerer Recall(KSI) als beide Runner-ups (§1); der Tradeoff zugunsten von macro-F1 ist durch die 30 %/30 %-Gewichtung explizit gemacht, nicht implizit angenommen. Latenz, Robustheit gegenüber fehlenden OSM/DWD-Features und Trainingskosten sind für alle drei Familien identisch (§4) und tragen daher nicht zur Rangfolge bei; die Entscheidung stützt sich primär auf macro-F1, Recall(KSI) und Interpretierbarkeit. SHAP (§5) und der Literaturabgleich (§6) zeigen ein Modell, das auf breit verteilten, schwach assoziierten Features (OSM-Straßenkontext, Fahrzeugtyp-Flags, Unfalltyp) basiert statt auf einem einzelnen dominanten Prädiktor; konsistent mit der in A³ §11/§20 belegten Feature-Obergrenze (stärkste binäre Assoziation `UART`=0,1801, weit unter dem Bereich starken Klassifikationssignals). Die Fehleranalyse (§2) zeigt, dass die verbleibenden Fehler systematisch dort auftreten, wo die verfügbaren Merkmale am wenigsten trennscharf sind (Unfalltyp, Straßenzustand, morgendlicher Berufsverkehr); kein Hinweis auf eine behebbare, aber übersehene Schwäche des Champions.
-#
-# **Entscheidung:** `random_forest` (Schwellenwert 0,4986) bleibt der bestätigte Champion für die K-Phase.
-
-# %% [markdown]
-# ## 9 — Übergabe an die K-Phase
-#
-# Vollständiges Artefaktpaket für die Streamlit-App: die bereits gespeicherte Pipeline (`a3_binary_best_model.joblib`), der Schwellenwert, und ein neuer Inference-Contract, der alle erforderlichen Eingabespalten mit Datentyp, gültigem Wertebereich bzw. Kategorienliste (aus den echten Trainingsdaten abgeleitet, nicht angenommen) und Herkunft (Unfallatlas roh/abgeleitet, DWD-Wetteranreicherung oder OSM-Straßenkontext-Anreicherung, jeweils aus der U-Phase) auflistet, damit die K-Phase-Implementierung nichts aus den Notebooks neu ableiten muss.
-
-# %%
-feature_columns = X_train_bin.columns.tolist()
-dtypes = {col: str(dtype) for col, dtype in X_train_bin.dtypes.items()}
-
-inference_contract = build_inference_contract(feature_columns, dtypes, model_card, X_train_bin)
-with open(PROCESSED_DIR / "c_phase_inference_contract.json", "w") as f:
-    json.dump(inference_contract, f, indent=2)
-
-print(f"Inference contract written: {PROCESSED_DIR / 'c_phase_inference_contract.json'}")
-print(f"Required columns: {len(inference_contract['required_columns'])}")
-print(f"Model artifact: {inference_contract['model_path']} (unchanged, re-confirmed present)")
-assert (PROCESSED_DIR / "a3_binary_best_model.joblib").exists()
-
-# %% [markdown]
-# ## Zusammenfassung der C-Phase
-#
-# **Vom 3-Klassen- zum binären Ziel:** Das Projekt startete mit `UKATGEORIE` (3 Klassen: getötet/schwerverletzt/leichtverletzt) als Zielvariable. Die U-Phase (§6, Cramér's-V-Matrix) fand für die stärksten Merkmale gegen `UKATGEORIE` eine Assoziation von höchstens 0,13; A³ §11 baute darauf auf und bewies empirisch die daraus resultierende Klassifikations-Obergrenze für das 3-Klassen-Problem: kein verfügbares Merkmal im öffentlichen Unfallatlas trennt die drei Klassen ausreichend, weil die stärksten bekannten Prädiktoren (Aufprallgeschwindigkeit, Gurtnutzung u. Ä., §7) nicht öffentlich vorliegen. Die binäre Reformulierung (KSI = getötet/schwerverletzt vs. leichtverletzt) wurde daraufhin adoptiert: Sie erhöht die stärkste Einzelmerkmal-Assoziation auf 0,1801 (`UART`, A³ §20, §6 oben) und macht die 3-Klassen-Obergrenze gegenstandslos für die einfachere binäre Frage, löst aber das zugrunde liegende Problem schwacher Merkmalsassoziation nicht auf; der Champion erreicht ein mit der Literatur konsistentes macro-F1 (§6), aber Klassifikation mit den öffentlich verfügbaren Merkmalen bleibt grundsätzlich durch dieselbe Datenlücke begrenzt, ob 3-Klassen oder binär.
-#
-# **Was erreicht wurde:**
-# - Systematischer Vergleich aller 10 Kandidaten aus dem A³-Suchlauf mit ROC/PR/Konfusionsmatrix für den Champion (§1).
-# - Fehleranalyse nach sechs Slice-Dimensionen (Unfalltyp, OSM-Straßenklasse, Straßenzustand, Lichtverhältnisse, Niederschlag, Tageszeit): höchste False-Negative-Raten bei Unfallart "Zzs. ruhendes Fz." (`UART=1`, 89,0 %), "Zzs. seitlich gleichfahrendes Fz." (`UART=3`, 74,1 %) und "Zzs. vorausfahrendes Fz." / Auffahrunfall (`UART=2`, 71,5 %), außerdem erhöht im morgendlichen Berufsverkehr (7–9 Uhr, 56,7–60,7 %); Fehler konzentrieren sich systematisch dort, wo die Merkmale am schwächsten trennen, während Niederschlag keinen messbaren Effekt zeigt (§2).
-# - Formale Gate-Validierung: **bestanden** gegen beide Q-Phase-Kriterien (macro-F1 0,6039 ≥ 0,55; Recall(KSI) 0,5151 ≥ 0,50) (§3).
-# - Gewichtete qualitative Bewertungsmatrix (macro-F1 0,600 vs. 0,518 vs. 0,500), die die Champion-Entscheidung gegenüber den Recall-stärkeren Runner-ups (xgboost, lightgbm) begründet; inklusive eines empirisch geprüften, für alle drei Familien identischen Robustheits-Scores gegenüber fehlenden OSM/DWD-Features (§4).
-# - SHAP-Erklärbarkeit (global + 4 Fallbeispiele), konsistent mit der A³-Feature-Evidenz (§5).
-# - Literaturabgleich: Test-2024 macro-F1 im zitierten Literaturbereich (Santos 2022, Pakgohar 2021, Schlößler 2024) (§6).
-# - Ehrliche Limitationsdiskussion (§7).
-# - Vollständiges K-Phase-Artefaktpaket: Pipeline, Schwellenwert, Inference-Contract mit 30 erforderlichen Eingabespalten inklusive Wertebereich/Kategorien und Herkunft je Spalte (§9).
-#
-# **Ausblick:** Die K-Phase implementiert die Streamlit-App (`app/streamlit_app.py`) gegen `data/processed/c_phase_inference_contract.json` und `data/processed/a3_binary_best_model.joblib`.
-#
-# **Limitationen (siehe §7):** Selektionsbias, fehlende physische Determinanten, Korrelation ≠ Kausalität, nicht-versionierte OSM-Features, begrenzte geografische/zeitliche Abdeckung, Schwellenwert-Sensitivität, bewusster Recall/macro-F1-Tradeoff.
+# The generated analysis files and inference contract provide the K phase with a traceable model path, threshold, input schema, registry fingerprint, validation evidence, and final gate result.

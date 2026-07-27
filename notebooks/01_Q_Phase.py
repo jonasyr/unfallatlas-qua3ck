@@ -14,11 +14,11 @@
 # ---
 
 # %% [markdown]
-# # "Unfallatlas Deutschland" — Q-Phase
+# # "Unfallatlas Deutschland": Q-Phase
 #
 # **Phase:** Question (Q) · 1 of 5 · QUA³CK
 # **Goal of this notebook:** define the problem, the target, the success criteria,
-# the constraints, and the data context — *before any data is opened or any model
+# the constraints, and the data context: *before any data is opened or any model
 # is trained*. The output is a written, testable problem definition that the
 # remaining QUA³CK phases can build against.
 #
@@ -32,11 +32,11 @@
 #
 # | Phase | Notebook | Purpose | Status |
 # |:---|:---|:---|:---:|
-# | **Q** — Question | `01_Q_Phase.ipynb` | Problem definition, target, metrics, constraints | ✓ |
-# | **U** — Understanding | `02_U_Phase.ipynb` | Schema audit, EDA, quality, leakage probes, preprocessing decisions | → next |
-# | **A³** — Algorithm / Adapt / Adjust | `03_A3_Phase.ipynb` | Baselines, boosting models, imbalance strategies, tuning | pending |
-# | **C** — Conclude & Compare | `04_C_Phase.ipynb` | SHAP, model comparison, limitations | pending |
-# | **K** — Knowledge Transfer | `app/streamlit_app.py` | Interactive risk-profile application | pending |
+# | **Q**: Question | `01_Q_Phase.ipynb` | Problem definition, target, metrics, constraints | ✓ |
+# | **U**: Understanding | `02_U_Phase.ipynb` | Schema audit, EDA, quality, leakage probes, preprocessing decisions | → next |
+# | **A³**: Algorithm / Adapt / Adjust | `03_A3_Phase.ipynb` | Baselines, boosting models, imbalance strategies, tuning | pending |
+# | **C**: Conclude & Compare | `04_C_Phase.ipynb` | SHAP, model comparison, limitations | pending |
+# | **K**: Knowledge Transfer | `app/streamlit_app.py` | Interactive risk-profile application | pending |
 #
 # ---
 
@@ -46,9 +46,9 @@
 # Each year, German police record roughly **270,000 road accidents with personal
 # injury**. About 1 % of these are fatal, 18 % cause serious injury, and 81 %
 # cause only minor injury. The Statistisches Bundesamt publishes every one of
-# these accidents — georeferenced, hour-stamped, with administrative codes for
-# road condition, lighting, accident type, and the transport modes involved — as
-# the **Unfallatlas Deutschland**, an open dataset spanning 2016 – 2024.
+# these accidents: georeferenced, hour-stamped, with administrative codes for
+# road condition, lighting, accident type, and the transport modes involved. The result is
+# the **Unfallatlas Deutschland**, an open dataset spanning 2016-2024.
 #
 # Despite this rich data infrastructure, road-safety decisions at the municipal
 # level (intersection redesign, lighting, speed-limit revision) are typically
@@ -74,37 +74,40 @@
 # %% [markdown]
 # ## 3 · Hypotheses
 #
-# Three testable predictions derived from the research question. Each is evaluated against evidence in the U phase (EDA) or the A³ phase (model results). A hypothesis is *not* a prior commitment to what A³ will find — it is a structured expectation that can be confirmed, weakened, or falsified by the data.
+# Three testable predictions derived from the research question. Each is evaluated against evidence in the U phase (EDA) or the A³ phase (model results). A hypothesis is *not* a prior commitment to what A³ will find. It is a structured expectation that can be confirmed, weakened, or falsified by the data.
 #
 # ---
 #
-# **H1 — Temporal-environmental severity shift**
+# **H1: Temporal and environmental severity shift**
 #
-# > Night-time accidents (22:00 – 05:00) and accidents recorded under adverse meteorological conditions (precipitation > 0 mm, visibility < 2 000 m, or icy/snow road surface) will show a statistically higher share of fatal and serious-injury outcomes (`UKATGEORIE` ∈ {1, 2}) compared to daytime, dry-road accidents. The association between darkness, adverse weather, and severity will persist after controlling for transport mode and accident type.
+# > Night-time accidents (22:00-05:00) and accidents recorded under adverse meteorological conditions (precipitation > 0 mm, visibility < 2 000 m, or icy or snowy road surface) will show a statistically higher share of fatal and serious-injury outcomes (`UKATGEORIE` ∈ {1, 2}) than daytime accidents on dry roads. The association between darkness, adverse weather, and severity will persist after controlling for transport mode and accident type.
 #
-# *Verifiable in:* U phase §7 (hourly severity profile), §8.6 (weather distributions), §8.7 (Cramér's V weather × UKATGEORIE).
-#
-# ---
-#
-# **H2 — Rural infrastructure and fatal-severity concentration**
-#
-# > Accidents in rural Bundesländer (proxied by higher `dwd_station_dist_km` and lower population density per Kreis) will exhibit significantly higher fatal-accident rates than urban accidents. The effect is attributed to higher travel speeds on rural roads, lower infrastructure quality, and longer emergency-response times — none of which are directly measurable in the dataset, but whose aggregate footprint is detectable at the spatial-aggregate level.
-#
-# *Verifiable in:* U phase §8 (Bundesland fatal-share analysis), §9.4 (rural-proxy probe on `dwd_station_dist_km`).
+# *Verifiable in:* U phase §7 (hourly severity profile), §8.6 (weather distributions), and §8.7 (weather associations with `UKATGEORIE`).
 #
 # ---
 #
-# **H3 — Staged predictive feasibility**
+# **H2: Location and spatial-context signal**
+#
+# > Location and spatial-context features, including coordinates, distance to the assigned weather station, and OSM road features, will add measurable predictive signal after controlling for accident type and transport mode.
+#
+# U tests the observable geographic concentration and proxy associations only. Higher travel speed, infrastructure quality, and emergency response time remain plausible mechanisms, but this dataset does not measure them and the report does not claim to identify them.
+#
+# *Verifiable in:* U phase §8 (geographic coverage and spatial proxies), A³ §12 (persisted champion feature evidence), and C §6 (cross-model permutation and SHAP evidence).
+#
+# ---
+#
+# **H3: Staged predictive feasibility**
 #
 # > Interpretable machine-learning models will outperform trivial and linear
 # > baselines under chronological evaluation. The original three-class target is
 # > tested first against macro-F1 ≥ 0.55 and fatal recall ≥ 0.50. If the public
 # > predictors cannot clear that gate for structural reasons, a model trained
-# > directly for KSI versus slight injury will clear the corresponding binary gate
-# > without changing the temporal split or leakage boundary.
+# > directly for KSI versus slight injury will be evaluated against the
+# > corresponding binary gate without changing the temporal split or leakage
+# > boundary.
 #
-# *Verifiable in:* U phase (target viability), A³ phase (model search and gate
-# decision), and C phase (comparison, error analysis, and explanations).
+# *Verifiable in:* U phase (target viability warning), A³ phase (model search and
+# gate decision), and C phase (comparison, error analysis, and explanations).
 #
 # ---
 
@@ -137,14 +140,14 @@
 # input feature. All predictors must be observable when the police report is
 # created; U audits this leakage boundary.
 #
-# ### Stage 1 — original three-class research target
+# ### Stage 1: original three-class research target
 #
 # The original question treats the three ordered levels separately. This is the
 # scientifically informative formulation because it tests whether the public data
 # can distinguish fatal from serious and slight outcomes. Both nominal multiclass
 # and ordinal models are therefore legitimate candidates.
 #
-# ### Stage 2 — evidence-driven operational revision
+# ### Stage 2: evidence-driven operational revision
 #
 # The fallback target is defined in advance as **KSI versus slight injury**:
 #
@@ -153,17 +156,21 @@
 # | 1 | `UKATGEORIE ∈ {1, 2}` | Killed or seriously injured (KSI) |
 # | 0 | `UKATGEORIE = 3` | Slight injury |
 #
-# The final evidence supports activating this fallback. Across 19 three-class
-# configurations, the best macro-F1 was 0.424 with fatal-class recall of 0.212;
-# none reached the original gate. U also found weak standalone associations
-# (maximum target-related Cramér's V about 0.13), while impact speed, occupant age,
-# seat-belt use, and vehicle mass are unavailable. Separating the roughly 1% fatal
-# class would require an implausible odds lift from the available predictors.
+# The fallback is specified here before modelling. U later assesses whether
+# the available predictors make the original target doubtful, and A³ makes the
+# formal activation decision after the three-class search.
+#
+# **Retrospective outcome after completing A³.** Across 19 three-class
+# configurations, the best macro-F1 was 0.424 with fatal-class recall of 0.212,
+# so none reached the original gate. U had also found weak standalone
+# associations and documented missing physical determinants such as impact speed,
+# occupant age, seat-belt use, and vehicle mass. A³ therefore activated the
+# predefined KSI fallback.
 #
 # KSI is not an arbitrary relabel. Fatal and serious outcomes jointly define the
-# high-consequence road-safety group used for prevention decisions. The revision
-# therefore preserves the original three-class analysis as feasibility evidence and
-# uses the binary target for the operational model.
+# high-consequence road-safety group used for prevention decisions. The original
+# three-class analysis remains feasibility evidence, while the binary target
+# supports the operational model.
 
 # %% [markdown]
 # ## 6 · Unit of analysis and prediction horizon
@@ -171,10 +178,11 @@
 # | Aspect | Specification |
 # |:---|:---|
 # | **Unit of analysis** | One row = one police-recorded personal-injury accident |
-# | **Prediction horizon** | Point-in-time — the severity at the moment the police report is written |
+# | **Prediction time** | Predictors available when the police report is created |
+# | **Outcome horizon** | Worst recorded severity after the final 30-day fatality window |
 # | **Granularity** | Hourly (`USTUNDE`), daily (`UWOCHENTAG`), monthly (`UMONAT`), yearly (`UJAHR`) |
-# | **Spatial granularity** | WGS84 coordinates (`LON`, `LAT`) + 5-digit Kreis code (`UKREIS`) |
-# | **Coverage** | All of Germany, 2016 – 2024, with a documented ~8 % geocoding-quote exclusion |
+# | **Spatial granularity** | WGS84 coordinates (`LON`, `LAT`) + 5-digit district code (`UKREIS`) |
+# | **Coverage** | All of Germany, 2016-2024, with a documented ~8 % geocoding coverage exclusion |
 #
 # The unit of analysis is *the accident*, not *the person involved*. Multi-person
 # accidents are represented as a single row; the model predicts the worst
@@ -214,7 +222,7 @@
 # - **Interpretability:** the selected operational model must support global and
 #   case-level explanation in C.
 #
-# ### Stage 1 — three-class feasibility gate
+# ### Stage 1: three-class feasibility gate
 #
 # **macro-F1 ≥ 0.55 and recall(fatal) ≥ 0.50.**
 #
@@ -223,7 +231,7 @@
 # fatal recall was 0.212. That result is retained as a negative finding rather than
 # hidden by the later reformulation.
 #
-# ### Stage 2 — operational KSI gate
+# ### Stage 2: operational KSI gate
 #
 # **binary macro-F1 ≥ 0.55 and recall(KSI) ≥ 0.50.**
 #
@@ -266,7 +274,7 @@
 # - Predict causation. The dataset records categorical conditions, not causes.
 # - Predict per-person outcomes. The unit is the accident, not the participant.
 # - Model demographic effects. Demographics are not in the dataset.
-# - Estimate true fatality counts. The Dunkelziffer of minor accidents
+# - Estimate true fatality counts. The under-reporting of minor accidents
 #   (unreported to police) is unobserved; the model inherits this bias.
 # - Generalise outside Germany. Training data is national; cross-border
 #   performance is not claimed.
@@ -281,13 +289,13 @@
 # | Item | Value |
 # |:---|:---|
 # | **Dataset** | Unfallatlas Deutschland |
-# | **Publisher** | Statistisches Bundesamt (Destatis), coordinated with Bundesländer |
+# | **Publisher** | Statistisches Bundesamt (Destatis), coordinated with federal states |
 # | **Distribution** | [GovData.de](https://www.govdata.de/suche/daten/unfallatlas) / Mobilithek |
 # | **Format** | Shapefile + CSV per year; consolidated to Parquet for this project |
-# | **Coverage** | 2016 – 2024 (9 vintages), all of Germany |
+# | **Coverage** | 2016-2024 (9 vintages), all of Germany |
 # | **Volume** | ~2.09 million personal-injury accidents |
-# | **Licence** | Datenlizenz Deutschland — Namensnennung — 2.0 (CC-BY-equivalent) |
-# | **Citation** | "Datenquelle: Statistische Ämter des Bundes und der Länder, Unfallatlas, 2016–2024" |
+# | **Licence** | Datenlizenz Deutschland: Namensnennung: 2.0 (CC-BY-equivalent) |
+# | **Citation** | "Datenquelle: Statistische Ämter des Bundes und der Länder, Unfallatlas, 2016-2024" |
 #
 # ### Provenance note
 #
@@ -303,7 +311,7 @@
 #
 # ---
 #
-# ### Secondary source — DWD Climate Data Center (CDC)
+# ### Secondary source: DWD Climate Data Center (CDC)
 #
 # | Item | Value |
 # |:---|:---|
@@ -314,7 +322,7 @@
 # | **Coverage** | ~400 active climate stations across Germany; records from 1937 to present |
 # | **Variables** | Air temperature at 2 m (TU, °C) · precipitation (RR, mm) · visibility (VV, m) · wind speed (FF, m/s) |
 # | **Temporal resolution** | Hourly |
-# | **Licence** | GeoNutzV — Geodatenlizenz Deutschland (free; attribution required) |
+# | **Licence** | GeoNutzV: Geodatenlizenz Deutschland (free; attribution required) |
 # | **Citation** | "Quelle: Deutscher Wetterdienst (DWD), Climate Data Center (CDC)" |
 #
 # ### Role in this project
@@ -341,11 +349,11 @@
 #
 # | Question | Answer |
 # |:---|:---|
-# | Does the label exist? | Yes — `UKATGEORIE` is uniformly recorded |
-# | Is the label observable at prediction time? | Yes — it is set in the police report |
-# | Are features observable at prediction time? | Yes — administrative codes are part of the same report |
-# | Is the volume sufficient? | Yes — 2.09 M rows, with the rarest class still ~21,000 samples |
-# | Is there a literature anchor? | Yes — see below |
+# | Does the label exist? | Yes: `UKATGEORIE` is uniformly recorded |
+# | When is the outcome label final? | After the 30-day fatality window; it is not a report-time predictor |
+# | Are features observable at prediction time? | Yes; administrative codes are available when the report is created |
+# | Is the volume sufficient? | Yes: 2.09 M rows, with the rarest class still ~21,000 samples |
+# | Is there a literature anchor? | Yes: see below |
 #
 # ### Literature anchor
 #
@@ -355,7 +363,7 @@
 # | Pakgohar et al. (2021), *IATSS Research* | LightGBM + SMOTE | macro-F1 ≈ 0.62 | Imbalance treatment template |
 # | Schlößler et al. (2024), *Accident Analysis & Prevention* | ML ensemble on German accident data | macro-F1 ≈ 0.65 | Comparable jurisdiction and features |
 # | MDPI *Sustainability* (2024) | CatBoost + threshold moving | best recall on minority class | Rare-class handling reference |
-# | BASt (2023), Unfallentwicklung auf deutschen Straßen | Descriptive statistics | — | Reference for sanity-checking model patterns |
+# | BASt (2023), Unfallentwicklung auf deutschen Straßen | Descriptive statistics | Not reported | Reference for sanity-checking model patterns |
 #
 # The published results motivated the provisional 0.55 gate, but they do not
 # guarantee that the three-class target is achievable here: target definitions,
@@ -370,15 +378,15 @@
 #
 # | Concern | Assessment |
 # |:---|:---|
-# | **Spatial lookup** (2.09 M accidents × ~400 stations) | `scipy.spatial.cKDTree` vectorised query — completes in < 30 s on a standard laptop |
-# | **Memory** | Each variable Parquet ≈ 10 – 50 MB; full cache for all variables ≤ 1 GB |
+# | **Spatial lookup** (2.09 M accidents × ~400 stations) | `scipy.spatial.cKDTree` vectorised query: completes in < 30 s on a standard laptop |
+# | **Memory** | Each variable Parquet ≈ 10-50 MB; full cache for all variables ≤ 1 GB |
 # | **Temporal resolution parity** | Accidents recorded at hour precision (`USTUNDE`); DWD data is hourly-aligned → integer join on (year, month, hour-of-day) |
 # | **Reproducibility** | All downloads are cached locally; re-running `build_weather_features` reproduces from the DWD open-data API without manual steps |
-# | **Licence compatibility** | GeoNutzV is attribution-only — compatible with DL-DE 2.0 of the Unfallatlas |
+# | **Licence compatibility** | GeoNutzV is attribution-only: compatible with DL-DE 2.0 of the Unfallatlas |
 #
 # The join is a left-join: every accident row is retained, and DWD columns are
 # `NaN` where no station lies within 30 km. This affects estimated ≤ 5 % of
-# records (concentrated in rural Bundesländer).
+# records (concentrated in rural federal states).
 #
 # ---
 
@@ -395,13 +403,13 @@
 #    severity predictors. The model proceeds without them and the predictions
 #    inherit this blind spot.
 # 3. **No vehicle speed.** Only the road's permitted maximum is approachable
-#    (via OpenStreetMap), not the speed at impact — arguably the single
+#    (via OpenStreetMap), not the speed at impact: arguably the single
 #    strongest physical determinant of injury severity.
-# 4. **Geocoding quote ~92 %.** The ~8 % of accidents excluded from publication
+# 4. **Geocoding coverage ~92 %.** The ~8 % of accidents excluded from publication
 #    may be systematically different (e.g. more rural, less precise GPS). The
 #    resulting selection bias is documented but cannot be corrected from within
 #    the dataset.
-# 5. **Reporting Dunkelziffer.** Minor accidents are systematically
+# 5. **Reporting under-reporting.** Minor accidents are systematically
 #    under-reported to police. The class distribution reflects reporting
 #    behaviour as much as event frequency.
 # 6. **DWD station coverage gaps.** Rural areas may have no DWD station within
@@ -430,10 +438,10 @@
 #
 # The model's outputs inform infrastructure decisions, not individual judgments.
 # There is no targeting of identifiable persons. Predictions describe locations,
-# times, and conditions — not people — and are intended to redirect public
+# times, and conditions rather than people. They are intended to redirect public
 # resources toward demonstrably riskier circumstances.
 #
-# The Q phase notes — and the K phase will reiterate to end-users — that
+# The Q phase notes that the K phase must reiterate to end users that
 # correlation in the model's SHAP attributions is not causation. The model can
 # identify that fatal accidents are *associated with* darkness, wet roads, and
 # certain road types; it cannot establish that intervening on any single factor
@@ -447,11 +455,11 @@
 # | Aspect | Final specification |
 # |:---|:---|
 # | **Problem** | Predict a decision-relevant severity outcome for a recorded personal-injury accident |
-# | **Dataset** | Unfallatlas 2016–2024 · about 2.09M rows · GovData · Data Licence Germany 2.0 |
+# | **Dataset** | Unfallatlas 2016-2024 · about 2.09M rows · GovData · Data Licence Germany 2.0 |
 # | **Original target** | Three classes: fatal, serious injury, slight injury |
-# | **Operational target** | KSI (`UKATGEORIE ∈ {1, 2}`) versus slight injury (`UKATGEORIE = 3`) |
+# | **Predefined fallback** | KSI (`UKATGEORIE ∈ {1, 2}`) versus slight injury (`UKATGEORIE = 3`); A³ decides whether to activate it |
 # | **Unit** | One accident per row; the label is the worst recorded outcome |
-# | **Evaluation** | Chronological Train 2016–2022, Validation 2023, Test 2024 |
+# | **Evaluation** | Chronological Train 2016-2022, Validation 2023, Test 2024 |
 # | **Gates** | Three-class feasibility: macro-F1 ≥ 0.55 and fatal recall ≥ 0.50; operational KSI: macro-F1 ≥ 0.55 and KSI recall ≥ 0.50 |
 # | **Hard constraints** | Interpretability, reproducibility, licence compliance, and no personal data |
 # | **Principal limitations** | No impact speed, occupant demographics, seat-belt use, or vehicle mass; geocoding and reporting bias |

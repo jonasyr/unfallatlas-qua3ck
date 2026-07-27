@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Unfallatlas Deutschland — U-Phase
+# # Unfallatlas Deutschland: U-Phase
 #
 # **Phase:** Understanding the Data (U) · 2 of 5 · QUA³CK
 # **Goal of this notebook:** verify the Q-phase assumptions against the data,
@@ -37,22 +37,22 @@
 #
 # | Phase | Notebook | Status |
 # |:---|:---|:---:|
-# | Q — Question | `01_Q_Phase.ipynb` | ✓ |
-# | **U — Understanding** | `02_U_Phase.ipynb` | **→ here** |
-# | A³ — Algorithm / Adapt / Adjust | `03_A3_Phase.ipynb` | pending |
-# | C — Conclude & Compare | `04_C_Phase.ipynb` | pending |
-# | K — Knowledge Transfer | `app/streamlit_app.py` | pending |
+# | Q: Question | `01_Q_Phase.ipynb` | ✓ |
+# | **U: Understanding** | `02_U_Phase.ipynb` | **→ here** |
+# | A³: Algorithm / Adapt / Adjust | `03_A3_Phase.ipynb` | pending |
+# | C: Conclude & Compare | `04_C_Phase.ipynb` | pending |
+# | K: Knowledge Transfer | `app/streamlit_app.py` | pending |
 #
 # ---
 
 # %% [markdown]
-# ## 0 — Setup and reproducibility
+# ## 0: Setup and reproducibility
 #
 # A U-phase notebook is reproducible or it is not a U-phase notebook. The
 # following cells pin versions, hash the data file, configure Plotly, and set
 # a deterministic random seed for sampling.
 #
-# **Plotly is the only plotting library used here** — it is already pinned in
+# **Plotly is the only plotting library used here**: it is already pinned in
 # `pyproject.toml` (≥ 5.22) and renders interactively in Jupyter and VS Code.
 # Figures save as standalone `.html` files (preserve interactivity) and
 # optionally as `.png` if `kaleido` is installed (`uv pip install kaleido`).
@@ -89,9 +89,9 @@ np.random.seed(42)
 
 # Project colour palette — kept consistent across all U-phase plots
 COLOR_PRIMARY = "#315f7d"  # brand steel blue (matches presentation UI accent)
-COLOR_FATAL = "#c1393a"  # class 1 — Getötet
-COLOR_SERIOUS = "#e09f3e"  # class 2 — Schwer
-COLOR_MINOR = "#5a8db8"  # class 3 — Leicht
+COLOR_FATAL = "#c1393a"  # class 1: Fatal
+COLOR_SERIOUS = "#e09f3e"  # class 2: Serious injury
+COLOR_MINOR = "#5a8db8"  # class 3: Slight injury
 COLOURS_SEV = [COLOR_FATAL, COLOR_SERIOUS, COLOR_MINOR]  # ordered 1, 2, 3
 
 # %%
@@ -227,7 +227,7 @@ con = duckdb.connect()
 con.execute("SET memory_limit = '4GB';")
 
 # %% [markdown]
-# ## 1 — Schema and dtype audit
+# ## 1: Schema and dtype audit
 #
 # The first quantitative output: what columns exist, what are their dtypes, and
 # how many distinct values does each one carry?
@@ -280,7 +280,7 @@ audit
 # | `UMONAT` | TINYINT | cyclic ordinal (period 12) | sin/cos encoding in A³ |
 # | `USTUNDE` | TINYINT | cyclic ordinal (period 24) | sin/cos encoding in A³ |
 # | `UWOCHENTAG` | TINYINT | cyclic ordinal (period 7) | sin/cos encoding in A³ |
-# | **`UKATGEORIE`** | TINYINT | **ordinal target** | label — never a feature |
+# | **`UKATGEORIE`** | TINYINT | **ordinal target** | label: never a feature |
 # | `UART` | TINYINT | nominal categorical | one-hot or target-encoded; **leakage probe required** |
 # | `UTYP1` | TINYINT | nominal categorical | one-hot or target-encoded; **leakage probe required** |
 # | `ULICHTVERH` | TINYINT | nominal categorical (3 levels) | one-hot |
@@ -298,9 +298,9 @@ audit
 # ---
 
 # %% [markdown]
-# ## 2 — Volume and temporal coverage
+# ## 2: Volume and temporal coverage
 #
-# Verifies the Q-phase assumption: ~2.09 M rows, 9 vintages 2016 – 2024.
+# Verifies the Q-phase assumption: ~2.09 M rows, 9 vintages 2016-2024.
 
 # %%
 total = con.execute(f"""
@@ -346,16 +346,16 @@ fig.show()
 # %% [markdown]
 # > **Observation.** All nine years are present. The visible 2020 dip is
 # > consistent with COVID-19 mobility reduction and matches BASt yearly
-# > reports — structural, not a data-quality issue. The level recovers
+# > reports: structural, not a data-quality issue. The level recovers
 # > steadily from 2021 onwards; by 2023 it matches and marginally exceeds
 # > the 2019 pre-pandemic peak (269,048 vs 268,370). A³ should note that
 # > the 2024 test year (268,519) sits in the same volume regime as the
-# > 2019 peak, not the lower 2016 – 2018 range.
+# > 2019 peak, not the lower 2016-2018 range.
 #
 # ---
 
 # %% [markdown]
-# ## 3 — Data quality audit
+# ## 3: Data quality audit
 #
 # Five sub-audits: missingness, sentinel values, duplicates, range checks,
 # and consistency rules.
@@ -395,7 +395,7 @@ fig.show()
 # > types being underreported in the police record.
 # >
 # > **Decision.** Per-column missing-value strategies are recorded in the §10
-# > decision table. Imputation is *not* performed here — that is A³ work
+# > decision table. Imputation is *not* performed here. That is A³ work
 # > inside a `Pipeline` so statistics do not leak across splits.
 
 # %% [markdown]
@@ -513,14 +513,14 @@ print("rows with no transport mode flagged:", int(violation.iloc[0, 0]))
 # ---
 
 # %% [markdown]
-# ## 4 — Target variable
+# ## 4: Target variable
 #
 # The audit begins with the original three-class target: fatal, serious injury,
 # and slight injury. Keeping the original classes visible is essential because
 # their imbalance and separability determine whether that formulation is viable.
 
 # %% [markdown]
-# > **Staged target policy.** The plots in sections 4–8 retain all three source
+# > **Staged target policy.** The plots in sections 4-8 retain all three source
 # > classes. The operational KSI fallback is introduced only after this evidence
 # > is assembled, in section 10. This keeps the reformulation traceable: stable
 # > class shares support temporal evaluation, while imbalance, weak associations,
@@ -529,9 +529,9 @@ print("rows with no transport mode flagged:", int(violation.iloc[0, 0]))
 # %%
 target = con.execute(f"""
     SELECT UKATGEORIE AS class,
-           CASE UKATGEORIE WHEN 1 THEN '1 — Getötet'
-                          WHEN 2 THEN '2 — Schwer verletzt'
-                          ELSE     '3 — Leicht verletzt' END AS label,
+           CASE UKATGEORIE WHEN 1 THEN '1: Fatal'
+                          WHEN 2 THEN '2: Serious injury'
+                          ELSE     '3: Slight injury' END AS label,
            COUNT(*) AS n,
            ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS pct
     FROM '{DATA}'
@@ -568,7 +568,7 @@ for (_, row), color in zip(target.iterrows(), COLOURS_SEV):
     )
     left += row["pct"]
 fig.update_layout(
-    title="UKATGEORIE — class distribution (full dataset)",
+    title="UKATGEORIE class distribution (full dataset)",
     barmode="stack",
     height=240,
     showlegend=True,
@@ -583,7 +583,7 @@ fig.show()
 # %% [markdown]
 # ### 4.2  Stability across years
 #
-# A model trained on 2016 – 2022 will be evaluated on 2024. If class
+# A model trained on 2016-2022 will be evaluated on 2024. If class
 # proportions drift across years, the held-out performance estimate is biased.
 
 # %%
@@ -595,7 +595,7 @@ target_by_year = con.execute(f"""
 """).df()
 pivot = target_by_year.pivot(index="UJAHR", columns="UKATGEORIE", values="n")
 pct = pivot.div(pivot.sum(axis=1), axis=0) * 100
-pct.columns = ["1 — Getötet", "2 — Schwer", "3 — Leicht"]
+pct.columns = ["1: Fatal", "2: Serious injury", "3: Slight injury"]
 pct.round(2)
 
 # %%
@@ -606,7 +606,7 @@ fig = px.line(
     y="pct",
     color="class",
     markers=True,
-    title="Class proportions by year — stability check",
+    title="Class proportions by year: stability check",
     labels={"UJAHR": "", "pct": "share (%)", "class": "severity"},
     color_discrete_sequence=COLOURS_SEV,
     height=DEFAULT_FIG_H,
@@ -618,12 +618,12 @@ fig.show()
 
 # %% [markdown]
 # > **Observation.** Class shares are stable to within ~1 pp across the nine
-# > years — no structural drift that would invalidate the chronological split.
+# > years: no structural drift that would invalidate the chronological split.
 #
 # ---
 
 # %% [markdown]
-# ## 5 — Univariate distributions
+# ## 5: Univariate distributions
 #
 # A first look at each feature in isolation. Categorical features get
 # countplots; binary features a grid of counts; continuous features histograms.
@@ -740,14 +740,14 @@ fig.show()
 
 # %% [markdown]
 # > **Observation.** LON (skew = 0.30) and LAT (skew = 0.10) reflect
-# > Germany's centre-of-mass distribution — neither is skewed enough to
+# > Germany's centre-of-mass distribution: neither is skewed enough to
 # > demand a transformation. Tree models will use these directly; if a
 # > distance-based baseline is added in A³, `StandardScaler` is appropriate.
 #
 # ---
 
 # %% [markdown]
-# ## 6 — Bivariate analysis — feature × target
+# ## 6: Bivariate analysis: feature × target
 #
 # Pearson correlation on coded categoricals is meaningless. The correct
 # measure for categorical-vs-categorical association is **Cramér's V**
@@ -826,10 +826,10 @@ fig.show()
 # %% [markdown]
 # > **Reading guide.** The first row / column (`UKATGEORIE`) shows each
 # > feature's association with the target. In this dataset all target-row
-# > values stay below 0.15 (highest: Unfallart = 0.13, Unfalltyp = 0.11)
-# > — no single feature shows a definitional association. The high
-# > off-diagonal values (e.g., Unfallart–Fußgänger = 0.93, Unfalltyp–PKW
-# > = 0.43) reveal inter-feature collinearity; the conditional-entropy
+# > values stay below 0.15 (highest: accident type = 0.13 and accident
+# > category = 0.11), so no single feature shows a definitional association.
+# > High off-diagonal values, such as accident type and pedestrian involvement
+# > at 0.93 or accident category and car involvement at 0.43, reveal inter-feature collinearity; the conditional-entropy
 # > probe in §9 tests whether those structural correlations introduce leakage.
 
 # %%
@@ -881,19 +881,18 @@ save_fig(fig, "06_severity_by_conditions")
 fig.show()
 
 # %% [markdown]
-# > **Observation.** Severity shares are near-uniform across both
-# > lighting and road-condition categories — all three Lichtverhältnisse
-# > and all three Straßenzustand groups show ≈ 80 % Leicht / 18 % Schwer
-# > / 1–2 % Getötet. This is consistent with the low Cramér's V scores
-# > (0.02 and 0.01 respectively): these features do not strongly predict
-# > severity alone. Signal is expected through interactions (e.g.,
-# > Dunkelheit + Winterglatt) rather than as standalone predictors.
+# > **Observation.** Severity shares are nearly uniform across the lighting
+# and road-condition categories. Daylight, twilight, and darkness, as well as
+# dry, wet or slippery, and wintry road conditions, each show about 80% slight
+# injury, 18% serious injury, and 1-2% fatal outcomes. This matches the low
+# Cramér's V scores of 0.02 and 0.01. These features do not strongly predict
+# severity alone, although interactions may still carry signal.
 
 # %% [markdown]
 # ---
 
 # %% [markdown]
-# ## 7 — Temporal patterns
+# ## 7: Temporal patterns
 #
 # Hourly profile, weekday × hour heatmaps, and stability checks.
 
@@ -944,11 +943,12 @@ fig.show()
 
 # %% [markdown]
 # **Interpretation:** Accident frequency peaks during the afternoon commute
-# (15–17 h), with a secondary morning peak (7–9 h). Night-time accidents
-# (0–5 h) are rarer but show lower mean Unfallkategorie (≈ 2.73 vs ≈ 2.82
-# during daylight hours) — i.e., more severe on average — driven by higher
-# speeds and lower visibility. USTUNDE is encoded as cyclic (sin/cos) features
-# for modelling.
+# (15-17 h), with a secondary morning peak (7-9 h). Night-time accidents
+# (0-5 h) are rarer but have a lower mean severity code (about 2.73 versus 2.82
+# during daylight hours), which indicates more severe outcomes on average. This
+# is a descriptive association, not evidence that speed or visibility causes the
+# difference. `USTUNDE` is encoded as cyclic sine and cosine features for
+# modelling.
 
 # %%
 # Weekday × hour heatmaps — count + mean severity.
@@ -1008,23 +1008,25 @@ save_fig(fig, "07_weekday_hour_heatmaps")
 fig.show()
 
 # %% [markdown]
-# > **Observation.** Frequency peaks during commuter hours (7 – 9 and
-# > 15 – 18) on weekdays; severity is *higher* (lower mean) at night and on
-# > weekends — the two plots tell different stories, which is why both must
+# > **Observation.** Frequency peaks during commuter hours (7-9 and
+# > 15-18) on weekdays; severity is *higher* (lower mean) at night and on
+# > weekends: the two plots tell different stories, which is why both must
 # > be shown. A model that uses only `USTUNDE` sees the count signal; a model
 # > that uses `USTUNDE` and `UWOCHENTAG` together can resolve the interaction.
 #
 # ---
 
 # %% [markdown]
-# ## 8 — Spatial patterns
+# ## 8: Spatial patterns
 #
-# Two views: an interactive density map on a representative sample, and a
-# Bundesland-level aggregate of fatal-accident share. The Bundesland is
-# derived from the first two digits of `UKREIS` (per `AGENTS.md`).
+# The accident coordinates support a self-contained interactive view of the
+# national spatial distribution. A federal-state ranking is intentionally not
+# shown because the consolidated parquet does not retain `ULAND`. Its two-digit
+# `UKREIS` field is a state-local district code, so it cannot reconstruct a
+# federal state without an additional validated boundary join.
 
 # %%
-# Interactive density map (OpenStreetMap, no token required).
+# Self-contained interactive coordinate view with no external map tiles.
 SAMPLE_GEO = 50_000
 geo_sample = con.execute(
     f"SELECT LON, LAT, UKATGEORIE FROM '{DATA}' USING SAMPLE {SAMPLE_GEO} ROWS (reservoir, 42)"
@@ -1037,10 +1039,10 @@ geo_sample["severity_label"] = geo_sample["UKATGEORIE"].map(
     }
 )
 
-fig = px.scatter_mapbox(
+fig = px.scatter(
     geo_sample,
-    lat="LAT",
-    lon="LON",
+    x="LON",
+    y="LAT",
     color="severity_label",
     color_discrete_map={
         "1 — Fatal": COLOR_FATAL,
@@ -1049,9 +1051,8 @@ fig = px.scatter_mapbox(
     },
     category_orders={"severity_label": ["1 — Fatal", "2 — Serious injury", "3 — Slight injury"]},
     opacity=0.45,
-    zoom=5.2,
-    center={"lat": 51.2, "lon": 10.4},
-    mapbox_style="open-street-map",
+    render_mode="webgl",
+    labels={"LON": "Longitude", "LAT": "Latitude", "severity_label": "Severity"},
     title=f"Accident locations — sample of {SAMPLE_GEO:,} rows",
     height=640,
 )
@@ -1060,87 +1061,27 @@ fig.update_layout(
     legend=dict(orientation="h", y=-0.02, x=0.5, xanchor="center"),
     margin=dict(l=0, r=0, t=60, b=20),
 )
+fig.update_yaxes(scaleanchor="x", scaleratio=1.55)
 save_fig(fig, "08_geo_density_map")
 fig.show()
 
 # %% [markdown]
-# **Interpretation:** Accidents are concentrated in urban agglomerations (Berlin, Ruhr, Munich), but fatal accidents (red) occur disproportionately on rural roads and federal highways where higher speeds and absent median barriers amplify injury outcomes. This urban–rural contrast supports hypothesis H4 (spatial heterogeneity).
-
-# %%
-BL_NAMES = {
-    1: "Schleswig-Holstein",
-    2: "Hamburg",
-    3: "Niedersachsen",
-    4: "Bremen",
-    5: "Nordrhein-Westfalen",
-    6: "Hessen",
-    7: "Rheinland-Pfalz",
-    8: "Baden-Württemberg",
-    9: "Bayern",
-    10: "Saarland",
-    11: "Berlin",
-    12: "Brandenburg",
-    13: "Mecklenburg-Vorpommern",
-    14: "Sachsen",
-    15: "Sachsen-Anhalt",
-    16: "Thüringen",
-}
-
-bl = con.execute(f"""
-    SELECT CAST(SUBSTR(UKREIS, 1, 2) AS INT) AS uland,
-           COUNT(*) AS n,
-           AVG(CAST(UKATGEORIE AS DOUBLE)) AS mean_severity,
-           SUM(CASE WHEN UKATGEORIE = 1 THEN 1 ELSE 0 END) AS n_fatal,
-           100.0 * SUM(CASE WHEN UKATGEORIE = 1 THEN 1 ELSE 0 END)
-                 / COUNT(*) AS pct_fatal
-    FROM '{DATA}'
-    GROUP BY uland
-    ORDER BY uland
-""").df()
-bl["name"] = bl["uland"].map(BL_NAMES)
-bl
-
-# %%
-bl_sorted = bl.sort_values("pct_fatal", ascending=True)
-fig = px.bar(
-    bl_sorted,
-    x="pct_fatal",
-    y="name",
-    orientation="h",
-    title="Share of fatal accidents (class 1) by federal state",
-    labels={"pct_fatal": "% fatal", "name": ""},
-    color_discrete_sequence=[COLOR_FATAL],
-    height=560,
-    custom_data=["n", "n_fatal"],
-)
-fig.update_traces(
-    hovertemplate=(
-        "<b>%{y}</b><br>"
-        "%{x:.2f}% fatal<br>"
-        "total = %{customdata[0]:,}<br>"
-        "fatal = %{customdata[1]:,}<extra></extra>"
-    ),
-    texttemplate="%{x:.2f}%",
-    textposition="outside",
-)
-fig.update_layout(xaxis=dict(range=[0, bl_sorted["pct_fatal"].max() * 1.35]))
-save_fig(fig, "08_pct_fatal_by_bundesland")
-fig.show()
+# **Interpretation:** The coordinate view documents descriptive
+# location coverage and the concentration of recorded accidents around urban
+# agglomerations such as Berlin, the Ruhr area, and Munich. Color identifies the
+# observed class of each event, but without local denominators or a spatial
+# association test it does not establish severity heterogeneity. The spatial
+# proxies are tested for predictive signal in A³.
 
 # %% [markdown]
-# > **Observation.** Thüringen (0.88 %) and Sachsen-Anhalt (0.68 %) lead
-# > by a wide margin; eastern Bundesländer and Bayern dominate the top half.
-# > Rheinland-Pfalz (0.23 %) and Baden-Württemberg (0.29 %) sit at the low
-# > end. The rural / urban narrative holds broadly — city-states Hamburg
-# > (0.34 %) and Bremen (0.35 %) are below average — but Berlin (0.43 %,
-# > 5th) and Bayern (0.50 %, 3rd) show the split is not clean. Higher speeds
-# > and longer rural rescue times likely drive the eastern pattern. The
-# > Q-phase scoping note about "no causal claims" applies.
+# ### Geographic boundary of the available evidence
 #
-# ---
+# The coordinate view above uses the spatial evidence retained in the analytical
+# data. It avoids inventing a federal-state label from a district code whose
+# meaning is only unique within a state.
 
 # %% [markdown]
-# ## 8.5 — DWD weather enrichment: schema and coverage audit
+# ## 8.5: DWD weather enrichment: schema and coverage audit
 #
 # The DWD join is a precondition for all weather features used in A³. Before
 # treating these columns as modelling inputs, three conditions must hold:
@@ -1295,8 +1236,8 @@ if df_weather is not None and "dwd_temp_air_2m" in df_weather.columns:
 # %% [markdown]
 # > **Observation.** Spatial coverage meets the criterion: 2,072,398 / 2,092,401
 # > accidents (99.0 %) have a DWD station within 30 km. Temporal completeness
-# > is more uneven — temperature readings are above 95 % only for 2016–2018;
-# > all years 2019–2024 fall to 91–93 %, below the 95 % threshold. Wind speed
+# > is more uneven: temperature readings are above 95 % only for 2016-2018;
+# > all years 2019-2024 fall to 91-93 %, below the 95 % threshold. Wind speed
 # > (50.8 % missing) and visibility (54.4 % missing) have substantial gaps and
 # > are flagged as risks in §11. Station distance (0.0 % missing), temperature
 # > (7.0 %), and precipitation (9.9 %) are acceptable.
@@ -1307,12 +1248,12 @@ if df_weather is not None and "dwd_temp_air_2m" in df_weather.columns:
 # ---
 
 # %% [markdown]
-# ## 8.6 — Weather feature distributions
+# ## 8.6 Weather feature distributions
 #
-# Univariate distributions of the four DWD variables. Skewness informs the
-# transform recommendations in the §10 preprocessing table: right-skewed
-# variables (precipitation, visibility) call for log1p; near-symmetric ones
-# (temperature, wind speed) do not.
+# Univariate distributions of the four DWD variables inform the §10
+# preprocessing table. Precipitation and wind speed are right-skewed. Temperature
+# is seasonally bimodal, while visibility is broadly bell-shaped with a sparse
+# low-visibility tail.
 
 # %%
 if df_weather is not None:
@@ -1342,15 +1283,14 @@ if df_weather is not None:
     fig.show()
 
 # %% [markdown]
-# **Interpretation:** Air temperature is bimodal — a winter peak around
-# 5 °C and a summer peak around 20 °C (range approximately −10 to +30 °C),
-# reflecting the seasonal cycle; StandardScaler is still appropriate.
-# Precipitation is strongly right-skewed (log-scale y-axis), with most
-# station-hours near-zero and a sparse extreme-event tail — log1p
-# transformation is appropriate. Visibility shows a bell-shaped distribution
-# peaking at 50–70 km; rare low-visibility events form a sparse left tail.
-# Wind speed is right-skewed with a modal peak around 3 m/s and a tail
-# extending to ~15 m/s.
+# **Interpretation:** Air temperature is seasonally bimodal, with a winter
+# peak around 5 °C and a summer peak around 20 °C. No monotonic transform is
+# recommended; monthly cyclic features capture much of the seasonal structure.
+# Precipitation is strongly right-skewed, with most station-hours near zero and a
+# sparse extreme-event tail, so `log1p` is appropriate. Visibility is broadly
+# bell-shaped with a sparse low-visibility tail, so it is left untransformed.
+# Wind speed is right-skewed with a peak around 3 m/s and a tail near 15 m/s, so
+# `log1p` is appropriate.
 
 # %%
 if df_weather is not None and "dwd_temp_air_2m" in df_weather.columns:
@@ -1399,9 +1339,9 @@ if df_weather is not None and "dwd_temp_air_2m" in df_weather.columns:
 
 # %% [markdown]
 # **Interpretation:** The chart shows the expected Northern European seasonal
-# pattern: precipitation peaks in summer (convective storms, months 6–8) with
+# pattern: precipitation peaks in summer (convective storms, months 6-8) with
 # a modest secondary elevation in winter. Temperature follows an inverted-U
-# curve — near 3 °C in January, peaking around 20 °C in July, returning to
+# curve: near 3 °C in January, peaking around 20 °C in July, returning to
 # winter levels by December. Winter months have more icy road conditions
 # (STRZUSTAND=2), which is a relevant interaction target with temperature in A³.
 
@@ -1448,20 +1388,12 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
     fig.show()
 
 # %% [markdown]
-# > **Observation.** Precipitation is right-skewed as expected — log1p
-# > justified. Visibility is bell-shaped (peak 50–70 km) rather than
-# > right-skewed; the §10 transform decision should reflect this. Temperature
-# > is bimodal (seasonal), not symmetric; wind speed is right-skewed (peak
-# > ~3 m/s, tail to 15 m/s), not symmetric. The seasonal chart confirms a
-# > typical Northern European annual cycle. The severity-by-precipitation
-# > stacked bar shows only two populated buckets (dry / light rain) with
-# > near-identical severity shares — no monotone trend visible, consistent
-# > with precipitation's low Cramér's V.
-#
-# ---
+# > **Observation.** The seasonal chart shows the expected annual temperature
+# cycle. The remaining weather evidence is interpreted beside the relevant
+# distribution, precipitation, and association charts below.
 
 # %% [markdown]
-# ## 8.7 — Weather × severity: bivariate associations
+# ## 8.7: Weather × severity: bivariate associations
 #
 # Association between weather conditions and accident severity, using the same
 # Cramér's V and observation-driven framework as §6. These findings feed
@@ -1484,11 +1416,10 @@ if df_weather is not None and "_precip_bucket" in df_weather.columns:
     fig.show()
 
 # %% [markdown]
-# **Interpretation:** The chart shows two precipitation buckets — dry (0 mm)
-# and light rain (0–5 mm). Median accident severity is identical across both
-# and interquartile ranges overlap completely. The effect size of precipitation
-# on severity is negligible in isolation, consistent with the low Cramér's V
-# (0.008).
+# **Interpretation:** The chart contains two populated precipitation buckets:
+# dry (0 mm) and light rain (0-5 mm). Median accident severity is identical and
+# the interquartile ranges overlap. Precipitation has negligible standalone
+# association with severity, consistent with Cramér's V of 0.008.
 
 # %%
 if df_weather is not None:
@@ -1528,12 +1459,12 @@ if df_weather is not None:
     fig.show()
 
 # %% [markdown]
-# **Interpretation:** All four weather features show a weak positive association
-# with accident severity. Wind speed has the highest Cramér's V (0.018),
-# followed by temperature (0.015); precipitation and visibility are tied at
-# 0.008. Effect sizes are modest across the board — weather features complement
-# primary predictors (UART, UTYP1) rather than replacing them, and their value
-# likely lies in interaction terms rather than standalone signal.
+# **Interpretation:** All four weather features have weak standalone
+# associations with accident severity. Wind speed has the highest Cramér's V
+# (0.018), followed by temperature (0.015); precipitation and visibility are
+# both 0.008. These effect sizes are modest. Weather features may complement
+# accident type and category through interactions, but this audit does not show
+# that they are strong predictors on their own.
 
 # %%
 if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
@@ -1585,34 +1516,30 @@ if df_weather is not None and "dwd_precip_mm" in df_weather.columns:
     fig.show()
 
 # %% [markdown]
-# > **Observation.** Cramér's V values: Windgeschwindigkeit = 0.018,
-# > Lufttemperatur = 0.015, Sichtweite = 0.008, Niederschlagsmenge = 0.008.
-# > All four fall below the 0.05 detectable-association threshold — none show
-# > a meaningful standalone association with UKATGEORIE. The monthly time series
-# > shows no consistent co-movement between precipitation and fatal-accident rate.
+# > **Observation.** The monthly series shows no consistent co-movement
+# > between precipitation and the fatal-accident rate. This temporal view adds
+# > no evidence of a stable precipitation relationship beyond the weak
+# > associations reported above.
 # >
-# > **Decision.** No feature meets the 0.05 criterion individually. Following
-# > the stated rationale — weather signal lies partly in interaction effects
-# > with time and location features — all four DWD variables are **included**
-# > in the A³ feature set. Wind/visibility missingness (50–54 %) is logged in
-# > §11; A³ must apply median imputation inside the Pipeline.
-#
-# ---
+# > **Decision.** No weather feature meets the 0.05 criterion individually. All
+# > four DWD variables remain available to A³ because interaction effects are
+# > plausible. Wind and visibility missingness of 50-54% is recorded in §11, and
+# > A³ must apply imputation inside the fitted pipeline.
 
 # %% [markdown]
-# ## 8.8 — OSM road-context enrichment
+# ## 8.8: OSM road-context enrichment
 #
 # `src/unfallatlas/features/spatial.py` and `src/unfallatlas/data/osm.py` add
 # road-context features aggregated per H3-8 cell (~0.7 km² hexagons):
 # dominant road class, mean/max speed limit, road density, and a
 # junction/complexity proxy (distinct-way count). Fetched once from
-# OpenStreetMap per Bundesland (16 states), cached to `data/raw/osm/`, then
+# OpenStreetMap per federal state (16 states), cached to `data/raw/osm/`, then
 # joined onto every accident by its H3 cell.
 #
 # **Known limitation:** OSM reflects the present-day road network; accidents
-# span 2016–2024 and some roads' classification/speed limits will have
-# changed since. This is an accepted approximation (same category as the DWD
-# weather join's day-of-month averaging, §8.5) — not solvable without a paid
+# span 2016-2024 and some roads' classification/speed limits will have
+# changed since. This is an accepted approximation (the same limitation class as the DWD
+# weather join's day-of-month averaging in §8.5). Resolving it is not possible without a paid
 # historical-OSM-snapshot service, out of scope here.
 
 # %%
@@ -1697,7 +1624,7 @@ fig.show()
 
 
 # %% [markdown]
-# ## 9 — Leakage and chronological-split audit
+# ## 9: Leakage and chronological-split audit
 #
 # The final audit combines three related safeguards: suspect-feature leakage,
 # chronological separation, and identifier overlap. DWD and OSM consistency checks
@@ -1706,7 +1633,7 @@ fig.show()
 # %% [markdown]
 # ### 9.1  Target-leakage probe
 #
-# `UART` (Unfallart) and `UTYP1` (Unfalltyp) describe *what kind of accident*
+# `UART` (source field for accident type) and `UTYP1` (source field for accident category) describe *what kind of accident*
 # happened. They are recorded after the event and may partially encode the
 # severity outcome. We measure the conditional-entropy reduction:
 #
@@ -1793,17 +1720,15 @@ save_fig(fig, "09_leakage_probe_bars")
 fig.show()
 
 # %% [markdown]
-# > **Observation.** All probed features reduce UKATGEORIE entropy by less
-# > than 5 %: Unfallart = 3.4 %, Unfalltyp = 2.2 %, USTUNDE = 0.3 %,
-# > Lichtverhältnisse = 0.1 %, Straßenzustand = 0.0 %. None approach the
-# > 50 % trigger threshold — no definitional leakage is present.
+# > **Observation.** All probed features reduce `UKATGEORIE` entropy by less
+# > than 5%: accident type 3.4%, accident category 2.2%, hour 0.3%, lighting
+# > conditions 0.1%, and road conditions 0.0%. None approaches the 50% trigger,
+# > so the audit finds no definitional leakage.
 # >
-# > **Decision rule.** A reduction > 50 % triggers a definitional review of
-# > the feature — does it encode information not available at the time of the
-# > police report? If yes, the feature is excluded in A³. If no (the
-# > association is genuine domain signal), the feature is retained but the
-# > finding is documented in the §10 decision table. **Verdict here: all
-# > features retained; no review triggered.**
+# > **Decision rule.** A reduction above 50% triggers a review of whether the
+# > feature encodes information unavailable when the police report is created.
+# > Such a feature is excluded. Genuine report-time signal is retained and
+# > documented in §10. No feature triggers review here.
 
 # %% [markdown]
 # ### 9.2  Chronological split verification
@@ -1836,7 +1761,7 @@ split_target = con.execute(f"""
 """).df()
 pivot = split_target.pivot(index="split", columns="UKATGEORIE", values="n")
 pct = pivot.div(pivot.sum(axis=1), axis=0) * 100
-pct.columns = ["1 Getötet", "2 Schwer", "3 Leicht"]
+pct.columns = ["1 Fatal", "2 Serious injury", "3 Slight injury"]
 pct.reindex(["train", "val", "test"]).round(2)
 
 # %% [markdown]
@@ -1871,7 +1796,7 @@ print("OBJECTIDs appearing in more than one split:", len(overlap))
 # ### 9.4  DWD temporal leakage probe
 #
 # DWD weather features represent meteorological conditions at the hour of the
-# accident. The join key is (station_id, year, month, hour-of-day) — all DWD
+# accident. The join key is (station_id, year, month, hour-of-day): all DWD
 # observations are historical records that precede or coincide with the accident
 # in real time. No future information enters by construction.
 #
@@ -1908,13 +1833,13 @@ else:
 # %% [markdown]
 # > **Verdict.** No temporal leakage from DWD features: the join is on
 # > historical hour-aligned observations. `dwd_station_dist_km` encodes rural
-# > character, not future information — it is retained as a feature, not
+# > character, not future information: it is retained as a feature, not
 # > removed as a leakage vector.
 #
 # ---
 
 # %% [markdown]
-# ### 9.5 — OSM feature consistency probe
+# ### 9.5: OSM feature consistency probe
 #
 # This check mirrors the conditional-entropy method in section 9.1. OSM describes
 # the road rather than the crash outcome, so an unexpectedly large entropy
@@ -1938,9 +1863,9 @@ else:
     print("OSM data not loaded — skipping §9.5 probe.")
 
 # %% [markdown]
-# ## 10 — Target viability and preprocessing decisions
+# ## 10: Target viability and preprocessing decisions
 #
-# ### Why the operational target becomes binary KSI
+# ### Why A³ must test the predefined KSI fallback
 #
 # The three-class audit produces a coherent feasibility warning:
 #
@@ -1949,13 +1874,14 @@ else:
 # - the strongest individual target association is only about Cramér's V = 0.13,
 #   and lighting, road condition, and weather are much weaker;
 # - the public dataset omits impact speed, occupant age, seat-belt use, and
-#   vehicle mass—the physical determinants most likely to separate fatal from
+#   vehicle mass, the physical determinants most likely to separate fatal from
 #   serious injury.
 #
-# The original three-class target therefore remains valuable as background and
-# negative evidence, but the operational target is **KSI (`UKATGEORIE ≤ 2`) versus
-# slight injury (`UKATGEORIE = 3`)**. This revision changes only the label. All
-# feature preparation and leakage controls below are target-independent.
+# These findings warn that the original target may be infeasible, but U does
+# not make the modelling decision. A³ must test the three-class gate first and
+# activate the predefined **KSI (`UKATGEORIE ≤ 2`) versus slight injury
+# (`UKATGEORIE = 3`)** fallback only if the evidence supports that decision. All
+# feature preparation and leakage controls below remain target-independent.
 #
 # ### Preprocessing contract
 #
@@ -1985,15 +1911,15 @@ else:
 #
 # | Feature | Missing strategy | Recommended transform | Recommended scaling | EDA finding that drives the decision |
 # |:---|:---|:---|:---|:---|
-# | `dwd_temp_air_2m` | median per (station, month) | none (near-symmetric) | `StandardScaler` | approximately normal (§8.6 histogram); annual seasonality captured by `UMONAT` sin/cos encoding above |
+# | `dwd_temp_air_2m` | median per (station, month) | none | `StandardScaler` | seasonally bimodal (§8.6); monthly cyclic encoding captures the annual cycle |
 # | `dwd_precip_mm` | zero-fill where station assigned; NaN otherwise | `log1p` | `StandardScaler` | strongly right-skewed (§8.6 histogram); majority of hours have zero or near-zero precipitation |
-# | `dwd_visibility_m` | median imputation | `log1p` | `StandardScaler` | strongly right-skewed (§8.6 histogram); low-visibility tail carries the fog/night signal |
-# | `dwd_wind_speed_ms` | median imputation | none | `StandardScaler` | approximately symmetric (§8.6 histogram) |
-# | `dwd_station_dist_km` | n/a (always computed) | `log` | none | rural-character proxy (§9.4); retain — removing it discards geographic signal not captured by `UKREIS` alone |
+# | `dwd_visibility_m` | median imputation | none | `StandardScaler` | broadly bell-shaped with a sparse low-visibility tail (§8.6) |
+# | `dwd_wind_speed_ms` | median imputation | `log1p` | `StandardScaler` | right-skewed with a tail near 15 m/s (§8.6) |
+# | `dwd_station_dist_km` | n/a (always computed) | `log` | none | rural-character proxy (§9.4); retain: removing it discards geographic signal not captured by `UKREIS` alone |
 #
 # > **Note.** All DWD features represent meteorological conditions at the hour of the accident
 # > (historical observations). The (year, month, hour-of-day) averaging introduces day-level
-# > noise but no future leakage — see §9.4. Actual `fit_transform` calls happen in A³, not here.
+# > noise but no future leakage: see §9.4. Actual `fit_transform` calls happen in A³, not here.
 #
 # ### OSM road-context features
 #
@@ -2002,13 +1928,13 @@ else:
 # | `osm_dominant_road_class` | mode (or a dedicated "unknown" category) | one-hot | n/a | 15 nominal road classes ranked by literature-established severity/speed association; §9.5 entropy-reduction check must clear the 50% trigger before inclusion |
 # | `osm_maxspeed_mean` | median imputation | none (already a natural km/h scale) | `StandardScaler` | speed limit is one of the strongest literature-documented predictors of crash severity specifically (not just occurrence) |
 # | `osm_maxspeed_max` | median imputation | none | `StandardScaler` | captures the fastest road touching a mixed-road-class cell, complementing the mean |
-# | `osm_road_density` | zero-fill (absence of OSM data in a cell most often reflects genuinely low road density, e.g. remote areas, not a data gap) | `log1p` (right-skewed - most cells have few road-vertex points) | `StandardScaler` | proxy for local traffic exposure |
-# | `osm_way_count` | zero-fill (same rationale as `osm_road_density`) | `log1p` | `StandardScaler` | junction/complexity proxy — cells with multiple distinct roads are more likely to be intersections |
+# | `osm_road_density` | zero-fill (absence of OSM data in a cell most often reflects genuinely low road density, e.g. remote areas, not a data gap) | `log1p` (right-skewed: most cells have few road-vertex points) | `StandardScaler` | proxy for local traffic exposure |
+# | `osm_way_count` | zero-fill (same rationale as `osm_road_density`) | `log1p` | `StandardScaler` | junction/complexity proxy: cells with multiple distinct roads are more likely to be intersections |
 #
 # > **Note.** OSM road-context reflects the *present-day* network; some roads'
 # > classification or posted speed limit will have changed since the earliest
-# > accidents in this dataset (2016). This is an accepted approximation — see
-# > §8.8 — not a defect to fix here; A³ should note it as a limitation when
+# > accidents in this dataset (2016). This is an accepted approximation: see
+# > §8.8. It is not a defect to fix here; A³ should note it as a limitation when
 # > interpreting SHAP importances for these features in Phase C.
 #
 # ### Imbalance handling
@@ -2020,27 +1946,28 @@ else:
 #
 # ### Cross-validation hint
 #
-# Time-series semantics. Within the 2016 – 2022 training window, A³ should use year-grouped or chronological folds inside the 2016–2022
+# Time-series semantics. Within the 2016-2022 training window, A³ should use year-grouped or chronological folds inside the 2016-2022
 # training window, never a random fold design that mixes future years into earlier
 # validation folds.
 #
 # ---
 
 # %% [markdown]
-# ## 11 — Risks, decisions, and A³ handoff
+# ## 11: Risks, decisions, and A³ handoff
 #
 # ### Evidence summary
 #
-# - **Coverage and quality:** about 2.09M accidents across 2016–2024; identifiers
+# - **Coverage and quality:** about 2.09M accidents across 2016-2024; identifiers
 #   are unique, geographic bounds are explicit, and missingness is concentrated
 #   in selected vehicle and weather fields.
 # - **Temporal validity:** severity shares are stable within roughly one
-#   percentage point. Train 2016–2022, Validation 2023, and Test 2024 have no
+#   percentage point. Train 2016-2022, Validation 2023, and Test 2024 have no
 #   `OBJECTID` overlap.
 # - **Target viability:** the original 1%/18%/81% target is informative for EDA,
 #   but standalone associations are weak (maximum target-related Cramér's V about
-#   0.13) and key physical severity determinants are absent. KSI versus slight
-#   injury is the justified operational target.
+#   0.13) and key physical severity determinants are absent. This evidence warns
+#   that the target may be infeasible and sends the predefined KSI fallback to
+#   A³ for a formal decision.
 # - **Enrichment:** DWD station coverage reaches 99%, but wind and visibility are
 #   missing for roughly half the rows. Present-day OSM context adds road class,
 #   speed-limit, density, and complexity proxies with a known historical-snapshot
@@ -2051,8 +1978,9 @@ else:
 #
 # ### Decisions carried into A³
 #
-# 1. Derive KSI from `UKATGEORIE` only after the chronological split, while
-#    retaining the original values for audit and comparison.
+# 1. Evaluate the original three-class gate first. Derive KSI from
+#    `UKATGEORIE` only after the chronological split if the predefined fallback
+#    is activated, while retaining the original values for audit and comparison.
 # 2. Apply every imputation, encoding, scaling, and target-encoding step inside a
 #    fitted pipeline; never learn preprocessing statistics from 2023 or 2024.
 # 3. Use year-aware validation within the training window and reserve 2024 for one
@@ -2064,5 +1992,5 @@ else:
 #
 # > **A³ handoff.** The data audit now yields one coherent modelling contract:
 # > target-independent preprocessing, a chronological evaluation boundary, the
-# > original three-class result as feasibility context, and binary KSI as the
-# > operational search target.
+# > original three-class target as the first feasibility test, and binary KSI
+# > as a predefined fallback whose activation belongs to A³.
