@@ -124,13 +124,13 @@ st.subheader("Try an example")
 ex1, ex2 = st.columns(2)
 ex1.button(
     "Load a clearly-not-KSI example",
-    use_container_width=True,
+    width="stretch",
     on_click=_load_scenario,
     args=(EXAMPLE_LOW_RISK,),
 )
 ex2.button(
     "Load a clearly-KSI example",
-    use_container_width=True,
+    width="stretch",
     on_click=_load_scenario,
     args=(EXAMPLE_HIGH_RISK,),
 )
@@ -149,16 +149,14 @@ st.caption(
     "can take a moment - that's expected, not a freeze."
 )
 picker_map = folium.Map(
-    location=[st.session_state["picked_lat"], st.session_state["picked_lon"]],
-    zoom_start=6,
-    tiles="cartodbdark_matter",
+    location=[st.session_state["picked_lat"], st.session_state["picked_lon"]], zoom_start=6
 )
 folium.Marker(
     [st.session_state["picked_lat"], st.session_state["picked_lon"]], tooltip="Selected location"
 ).add_to(picker_map)
 map_state = st_folium(
     picker_map,
-    height=350,
+    height=500,
     width=None,
     key="location_picker",
     returned_objects=["last_clicked"],

@@ -379,9 +379,7 @@ def build_severity_map(precision: float = 0.1):
     import folium
 
     grid_df = load_severity_grid(precision)
-    # Dark basemap to match the app's dark Streamlit theme instead of the
-    # default bright OSM tiles, which clashed visibly against it.
-    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6, tiles="cartodbdark_matter")
+    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
     ksi_group = folium.FeatureGroup(name="KSI-dominant cells", show=True)
     slight_group = folium.FeatureGroup(name="Slight-dominant cells", show=True)
     for _, cell in grid_df.iterrows():

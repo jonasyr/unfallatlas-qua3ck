@@ -34,9 +34,9 @@ st.markdown(
 
 col_a, col_b = st.columns(2)
 with col_a:
-    st.plotly_chart(plot_f1_recall_front(load_3class_comparison()), use_container_width=True)
+    st.plotly_chart(plot_f1_recall_front(load_3class_comparison()), width="stretch")
 with col_b:
-    st.plotly_chart(plot_binary_f1_recall_front(load_binary_comparison()), use_container_width=True)
+    st.plotly_chart(plot_binary_f1_recall_front(load_binary_comparison()), width="stretch")
 
 st.markdown("---")
 st.subheader("Where accidents happen: severity by location")
@@ -50,7 +50,7 @@ st.caption(
     "map) to show or hide each severity class."
 )
 severity_map = build_severity_map()
-st_folium(severity_map, height=640, width=None, key="overview_severity_map", returned_objects=[])
+st_folium(severity_map, height=720, width=None, key="overview_severity_map", returned_objects=[])
 
 with st.expander("Limitations"):
     st.markdown(LIMITATIONS_TEXT)

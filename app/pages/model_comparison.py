@@ -27,18 +27,18 @@ st.dataframe(
             "latency_ms_per_1k",
         ]
     ],
-    use_container_width=True,
+    width="stretch",
 )
 
 st.subheader("Pareto front: macro-F1 vs. Recall(KSI)")
-st.plotly_chart(plot_binary_f1_recall_front(load_binary_comparison()), use_container_width=True)
+st.plotly_chart(plot_binary_f1_recall_front(load_binary_comparison()), width="stretch")
 
 st.subheader("Champion confusion matrix (test 2024)")
 card = load_model_card()
 confusion_matrix = card["test_2024_metrics"]["confusion_matrix"]
 st.plotly_chart(
     plot_confusion_matrix_heatmap(confusion_matrix, labels=["KSI", "slight"]),
-    use_container_width=True,
+    width="stretch",
 )
 
 st.subheader("Finalist comparison: macro-F1, latency, robustness")
@@ -65,7 +65,7 @@ st.dataframe(
             "robustness_status",
         ]
     ],
-    use_container_width=True,
+    width="stretch",
 )
 
 with st.expander("Warum bleibt Random Forest der Champion? (German explanation)"):
