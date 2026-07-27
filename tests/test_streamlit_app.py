@@ -1,7 +1,10 @@
 from unfallatlas.viz.streamlit_app import (
+    DEFAULT_WIDGET_VALUES,
+    get_column_spec,
     load_3class_comparison,
     load_binary_comparison,
     load_candidate_metrics,
+    load_categorical_options,
     load_inference_contract,
     load_model_card,
     load_permutation_importance,
@@ -53,3 +56,33 @@ def test_load_permutation_importance_returns_top_15_sorted_by_rank():
 def test_load_permutation_importance_respects_top_n():
     df = load_permutation_importance(top_n=3)
     assert len(df) == 3
+
+
+def test_load_categorical_options_ukreis_has_87_sorted_values():
+    options = load_categorical_options("UKREIS")
+    assert len(options) == 87
+    assert options[0] == "01"
+    assert options == sorted(options)
+
+
+def test_get_column_spec_returns_matching_entry():
+    contract = load_inference_contract()
+    spec = get_column_spec(contract, "UMONAT")
+    assert spec["name"] == "UMONAT"
+    assert spec["min"] == 1.0
+    assert spec["max"] == 12.0
+
+
+def test_get_column_spec_raises_on_unknown_column():
+    contract = load_inference_contract()
+    try:
+        get_column_spec(contract, "NOT_A_COLUMN")
+        assert False, "expected KeyError"
+    except KeyError:
+        pass
+
+
+def test_default_widget_values_cover_every_required_column():
+    contract = load_inference_contract()
+    required_names = {col["name"] for col in contract["required_columns"]}
+    assert required_names.issubset(DEFAULT_WIDGET_VALUES.keys())
