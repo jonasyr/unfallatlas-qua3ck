@@ -3,7 +3,11 @@
 import pandas as pd
 import streamlit as st
 
-from unfallatlas.viz.streamlit_app import load_permutation_importance
+from unfallatlas.viz.streamlit_app import (
+    decode_feature_value,
+    display_feature_name,
+    load_permutation_importance,
+)
 
 st.title("Why This Prediction")
 
@@ -18,7 +22,8 @@ st.warning(
 )
 
 importance_df = load_permutation_importance()
-st.bar_chart(importance_df.set_index("feature")["importance_mean"])
+importance_df["display_name"] = importance_df["feature"].apply(display_feature_name)
+st.bar_chart(importance_df.set_index("display_name")["importance_mean"])
 
 st.subheader("Your inputs for the globally most influential features")
 st.caption(
@@ -26,11 +31,12 @@ st.caption(
     "features. This is context, not a causal explanation of this specific prediction."
 )
 top_features = importance_df["feature"].tolist()
-user_values = {
-    feature: last_prediction["inputs"][feature]
+rows = [
+    {
+        "feature": display_feature_name(feature),
+        "your value": decode_feature_value(feature, last_prediction["inputs"][feature]),
+    }
     for feature in top_features
     if feature in last_prediction["inputs"]
-}
-st.table(
-    pd.DataFrame({"feature": list(user_values.keys()), "your value": list(user_values.values())})
-)
+]
+st.table(pd.DataFrame(rows))
