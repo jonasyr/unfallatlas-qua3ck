@@ -73,6 +73,15 @@ uv run python scripts/export_notebooks.py --all
 
 <!-- END AUTO-MANAGED -->
 
+### Deploying to Streamlit Community Cloud (manual, one-time)
+
+This is a human action through Streamlit's web UI — no script or agent can complete it:
+
+1. Go to https://share.streamlit.io and sign in with the GitHub account that owns/has access to this repo.
+2. Click "New app", select this repo, branch `main`, main file path `app/streamlit_app.py`.
+3. Deploy. Streamlit Community Cloud auto-detects `requirements.txt` at the repo root and Git LFS objects (`data/accidents.parquet`, `data/processed/a3_binary_best_model.joblib`) automatically - no extra LFS configuration is needed.
+4. Once live, update the "Live app" link in `README.md` with the real `https://<app-name>.streamlit.app` URL (see the "Live Deployment" section).
+
 <!-- AUTO-MANAGED: architecture -->
 ## Architecture
 
