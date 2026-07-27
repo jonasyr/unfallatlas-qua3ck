@@ -192,6 +192,32 @@ def load_categorical_options(column: str) -> list[str]:
         raise
 
 
+@st.cache_data
+def nearest_uregbez_ukreis(lat: float, lon: float) -> tuple[str, str]:
+    """Find the UREGBEZ/UKREIS of the accident record nearest to a map click.
+
+    This dataset has no ULAND (Bundesland) column anywhere - not just excluded
+    from the model's feature set, it was never part of this extract at all -
+    so (UREGBEZ, UKREIS) codes can't be resolved to official Gemeindeschlüssel
+    or Bundesland/Kreis names. Deriving them from the nearest real accident
+    location at least ties a map click to a code combination that genuinely
+    co-occurs in the data, instead of asking the user to guess a raw pair.
+    """
+    try:
+        con = duckdb.connect()
+        query = f"""
+            SELECT UREGBEZ, UKREIS
+            FROM '{ACCIDENTS_PARQUET}'
+            ORDER BY (LAT - {lat}) * (LAT - {lat}) + (LON - {lon}) * (LON - {lon})
+            LIMIT 1
+        """  # noqa: S608
+        row = con.execute(query).fetchone()
+        return str(row[0]), str(row[1])
+    except Exception:
+        logger.exception(f"Failed to find nearest UREGBEZ/UKREIS for ({lat}, {lon})")
+        raise
+
+
 def precision_decimals(precision: float) -> int:
     """Convert a grid precision like 0.1 or 0.5 into a ROUND() decimal-places argument."""
     if precision <= 0:
@@ -231,6 +257,13 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
 def build_severity_map(precision: float = 0.1):
     """Build the folium severity map once and cache the Map object across reruns.
 
+    Uses `folium.Circle` (radius in metres) rather than `CircleMarker` (radius
+    in screen pixels) so a cell's marker stays the same size relative to the
+    real geography at every zoom level, instead of shrinking to a sliver of a
+    street once zoomed in. KSI-dominant and slight-dominant cells go into
+    separate `FeatureGroup`s so `LayerControl` lets the user toggle each
+    severity class on/off independently.
+
     folium.Map objects aren't relevant to compare by value, so this uses
     cache_resource (identity-cached singleton), not cache_data.
     """
@@ -238,13 +271,18 @@ def build_severity_map(precision: float = 0.1):
 
     grid_df = load_severity_grid(precision)
     severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+    ksi_group = folium.FeatureGroup(name="KSI-dominant cells", show=True)
+    slight_group = folium.FeatureGroup(name="Slight-dominant cells", show=True)
     for _, cell in grid_df.iterrows():
         ksi_share = cell["ksi_count"] / cell["total"]
-        color = SEVERITY_COLORS["KSI"] if ksi_share >= 0.5 else SEVERITY_COLORS["slight"]
-        folium.CircleMarker(
+        is_ksi_dominant = ksi_share >= 0.5
+        color = SEVERITY_COLORS["KSI"] if is_ksi_dominant else SEVERITY_COLORS["slight"]
+        target_group = ksi_group if is_ksi_dominant else slight_group
+        folium.Circle(
             location=[cell["lat_bin"], cell["lon_bin"]],
-            radius=min(15, 3 + cell["total"] / 500),
+            radius=min(5000, 300 + cell["total"] * 4),
             color=color,
+            weight=1,
             fill=True,
             fill_color=color,
             fill_opacity=0.5,
@@ -252,7 +290,10 @@ def build_severity_map(precision: float = 0.1):
                 f"KSI: {int(cell['ksi_count'])}, slight: {int(cell['slight_count'])}, "
                 f"total: {int(cell['total'])}"
             ),
-        ).add_to(severity_map)
+        ).add_to(target_group)
+    ksi_group.add_to(severity_map)
+    slight_group.add_to(severity_map)
+    folium.LayerControl(collapsed=False).add_to(severity_map)
     return severity_map
 
 
