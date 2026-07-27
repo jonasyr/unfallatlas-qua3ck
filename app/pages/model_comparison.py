@@ -44,10 +44,20 @@ st.plotly_chart(
 st.subheader("Finalist comparison: macro-F1, latency, robustness")
 contract = load_inference_contract()
 finalists_df = pd.DataFrame(contract["decision_evidence"]["finalist_measurements"])
+finalists_df = finalists_df.sort_values("macro_f1", ascending=False).reset_index(drop=True)
+champion_name = contract["decision_evidence"]["deployment_model"]
+finalists_df["champion"] = finalists_df["model"].apply(
+    lambda m: "\U0001f3c6 Deployed" if m == champion_name else ""
+)
+st.caption(
+    "Sorted by macro-F1 (validation 2023). The deployed champion is marked with "
+    "\U0001f3c6 even when it isn't the top-ranked row here - see why below."
+)
 st.dataframe(
     finalists_df[
         [
             "model",
+            "champion",
             "macro_f1",
             "recall_ksi",
             "latency_ms_per_1k",
@@ -57,8 +67,6 @@ st.dataframe(
     ],
     use_container_width=True,
 )
-
-st.info(contract["decision_evidence"]["preference_conclusion"]["statement"])
 
 with st.expander("Warum bleibt Random Forest der Champion? (German explanation)"):
     st.markdown(
