@@ -5,9 +5,21 @@ src/unfallatlas/viz/streamlit_app.py and the individual page modules under
 app/pages/ - this file stays a thin wiring layer.
 """
 
+import sys
 from pathlib import Path
 
-import streamlit as st
+# Prepend src/ so pages always import the repo's current `unfallatlas` source,
+# never a stale cached install. Streamlit Community Cloud reuses its pip
+# environment across deploys and can skip reinstalling this project's own
+# package (pyproject.toml's version doesn't change on every push), which has
+# caused "cannot import name X" errors for symbols that are genuinely present
+# in the committed source - this makes that class of staleness impossible
+# regardless of what's sitting in site-packages.
+_SRC_DIR = str(Path(__file__).parent.parent / "src")
+if _SRC_DIR not in sys.path:
+    sys.path.insert(0, _SRC_DIR)
+
+import streamlit as st  # noqa: E402
 
 st.set_page_config(
     page_title="Unfallatlas KSI Risk Console",

@@ -369,9 +369,20 @@ def build_severity_map(precision: float = 0.1):
     Uses `folium.Circle` (radius in metres) rather than `CircleMarker` (radius
     in screen pixels) so a cell's marker stays the same size relative to the
     real geography at every zoom level, instead of shrinking to a sliver of a
-    street once zoomed in. KSI-dominant and slight-dominant cells go into
-    separate `FeatureGroup`s so `LayerControl` lets the user toggle each
-    severity class on/off independently.
+    street once zoomed in.
+
+    Deliberately does NOT attach a `folium.LayerControl` here. An earlier
+    version called `.add_to(severity_map)` directly on FeatureGroups and a
+    LayerControl - that produced a JS `ReferenceError:
+    feature_group_<hash> is not defined` at runtime in the browser (silently
+    blanking the whole map, confirmed via a headless Playwright run),
+    because streamlit-folium's custom component re-injects the rendered map
+    into its own `map_div` execution context and only its own
+    `feature_group_to_add=`/`layer_control=` parameters on `st_folium()`
+    rewrite variable references correctly for that context - a LayerControl
+    baked into the cached Map object via plain `.add_to()` does not resolve.
+    If the KSI/slight toggle is wanted back, it must be wired through those
+    two `st_folium()` parameters, not through this cached Map object.
 
     folium.Map objects aren't relevant to compare by value, so this uses
     cache_resource (identity-cached singleton), not cache_data.
@@ -380,13 +391,9 @@ def build_severity_map(precision: float = 0.1):
 
     grid_df = load_severity_grid(precision)
     severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
-    ksi_group = folium.FeatureGroup(name="KSI-dominant cells", show=True)
-    slight_group = folium.FeatureGroup(name="Slight-dominant cells", show=True)
     for _, cell in grid_df.iterrows():
         ksi_share = cell["ksi_count"] / cell["total"]
-        is_ksi_dominant = ksi_share >= 0.5
-        color = SEVERITY_COLORS["KSI"] if is_ksi_dominant else SEVERITY_COLORS["slight"]
-        target_group = ksi_group if is_ksi_dominant else slight_group
+        color = SEVERITY_COLORS["KSI"] if ksi_share >= 0.5 else SEVERITY_COLORS["slight"]
         folium.Circle(
             location=[cell["lat_bin"], cell["lon_bin"]],
             radius=min(5000, 300 + cell["total"] * 4),
@@ -399,10 +406,7 @@ def build_severity_map(precision: float = 0.1):
                 f"KSI: {int(cell['ksi_count'])}, slight: {int(cell['slight_count'])}, "
                 f"total: {int(cell['total'])}"
             ),
-        ).add_to(target_group)
-    ksi_group.add_to(severity_map)
-    slight_group.add_to(severity_map)
-    folium.LayerControl(collapsed=False).add_to(severity_map)
+        ).add_to(severity_map)
     return severity_map
 
 

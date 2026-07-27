@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "unfallatlas-qua3ck"
-version = "0.1.0"
+version = "0.1.1"
 description = "ML-Portfolio: Verkehrsunfallschwere-Klassifikation auf dem deutschen Unfallatlas (QUA³CK-Framework)"
 readme = "README.md"
 license = { text = "MIT" }

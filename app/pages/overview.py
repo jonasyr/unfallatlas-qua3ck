@@ -46,8 +46,7 @@ st.caption(
     "cell - this marks the local *share*, not the accident count, so an "
     "isolated red cell can be a low-traffic rural spot rather than a hotspot. "
     "Teal = slight-injury accidents are the majority. Circle size scales with "
-    "the cell's total accident count. Use the layer control (top-right on the "
-    "map) to show or hide each severity class."
+    "the cell's total accident count."
 )
 severity_map = build_severity_map()
 st_folium(severity_map, height=720, width=None, key="overview_severity_map", returned_objects=[])
