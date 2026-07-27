@@ -59,3 +59,29 @@ st.dataframe(
 )
 
 st.info(contract["decision_evidence"]["preference_conclusion"]["statement"])
+
+with st.expander("Warum bleibt Random Forest der Champion? (German explanation)"):
+    st.markdown(
+        "**Deutsch:** Auf den hier gemessenen Validierungsdaten (2023) schneidet "
+        "XGBoost über die kombinierten Kriterien (Recall, Latenz, Robustheit) besser "
+        "ab als Random Forest — Random Forest wäre also nicht der bevorzugte Finalist, "
+        "wenn man ausschließlich diese Kennzahlen vergleicht. Random Forest bleibt "
+        "trotzdem das ausgelieferte Champion-Modell: Die Modellauswahl wurde bereits "
+        "vorher auf Basis der Validierungsdaten getroffen, und der separate "
+        "Testdatensatz (2024) darf danach nicht mehr benutzt werden, um zwischen "
+        "Kandidaten zu wählen - sonst waeren die fuer Random Forest bereits "
+        "berichteten Testmetriken nicht mehr unabhaengig (Data Leakage durch "
+        "Overfitting auf den Testdatensatz). Die urspruengliche Entscheidung fuer "
+        "Random Forest bleibt deshalb bestehen, auch wenn dieser spaetere "
+        "Robustheits-/Latenzvergleich XGBoost knapp vorne sieht.\n\n"
+        "**English gloss:** On the measured validation data, XGBoost beats Random "
+        "Forest on the combined criteria (recall, latency, robustness) - so Random "
+        "Forest isn't the preferred finalist by these numbers alone. It remains the "
+        "deployment champion anyway because model selection was already locked in "
+        "earlier using validation data; the held-out 2024 test set can't be reused "
+        "afterward to re-pick between candidates without invalidating the "
+        "independence of the test metrics already reported for Random Forest "
+        "(that would be data leakage from overfitting the model-selection process "
+        "to the test set). So the original Random Forest choice stands, even though "
+        "this later robustness/latency comparison shows XGBoost slightly ahead."
+    )
