@@ -175,3 +175,104 @@ explanation — none was computed for this project. The user's own input
 values are shown for context alongside the top-15 globally important
 features, explicitly captioned as such rather than framed as an
 explanation of that specific prediction.
+
+## Post-launch enhancements: readable labels, interactive maps, and deployment prep
+
+**Tool:** Claude Code (Sonnet 5)<br>
+**Model release:** June 30, 2026<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)<br>
+**Implementation plan:** [2026-07-27-phase-k-streamlit-enhancements.md](../superpowers/plans/2026-07-27-phase-k-streamlit-enhancements.md)
+
+### Recorded prompt
+
+After the initial four-page app above shipped, the user requested a set of
+follow-up improvements in the same session, given directly rather than via
+`/brainstorming` (the concepts were concrete UI fixes, not an open design
+choice):
+
+> for UREGBEZ and UKREIS not the numeric values but the actual meaning like
+> eg for UWOCHENTAG Monday because for these two only numbers are
+> selectable. and also it would be waaaay better to not select a LON and
+> LAT but rather have a map and be able to select a point on the map thatll
+> be converted to the representative Coordinates. [...] also for the Why
+> this prediction page the same thing instead of the actual labels use the
+> representative meaning eg for dwd_wind_speed_ms Wind Speed (m/s)
+
+> maybe for Overview an interactive OSM Map with severyti of accidents
+
+> and we need to deploy it on streamlit itself and referencer it in the
+> readme also maybe a reference from the streamlit app to the github pages
+> notebook htmls and from the notebook htmls to the streamlit app
+
+> use /writing-plans and sdd
+
+`superpowers:writing-plans` produced the linked 8-task implementation plan
+directly (no separate brainstorming pass, since the user's asks were already
+concrete), followed immediately by `superpowers:subagent-driven-development`
+execution: fresh implementer + independent reviewer per task, then a
+whole-branch review on the most capable available model, then a consolidated
+fix pass for the review's findings, then a second reviewer confirming the
+fixes.
+
+### A real, honest limitation surfaced during design (not silently worked around)
+
+The user's request for `UREGBEZ`/`UKREIS` to show "the actual meaning like
+... Monday" cannot be fully satisfied: unlike `UWOCHENTAG`, which decodes via
+a small fixed lookup, `UREGBEZ`/`UKREIS` require the Bundesland key (`ULAND`)
+to resolve to an official Gemeindeschlüssel/region name, and `ULAND` is not
+part of the model's feature set or the inference contract (`UREGBEZ` has
+only 10 categories, `UKREIS` is documented as "high-cardinality, 87 unique
+values, no fixed category list" in `data/processed/c_phase_inference_contract.json`).
+`docs/dataset/DSB_Unfallatlas.md` confirms the official code requires all
+three fields together. There is no offline name-lookup table in this repo
+and no permitted new dependency to build one within this session's "no new
+dependencies, no network calls" constraint. Rather than inventing plausible-
+looking but fake region names, the fix is transparency: the widget labels
+and a caption now explicitly say these are internal dataset codes, not
+official region names, and explain why.
+
+### What shipped
+
+- Honest `UREGBEZ`/`UKREIS` code labeling (with the limitation above stated
+  in-app), an interactive `folium`/`streamlit-folium` map picker replacing
+  the raw LON/LAT number inputs on Risk Predictor (with bounding-box
+  validation against the contract's real lat/lon ranges), an interactive
+  KSI-vs-slight severity map on Overview (DuckDB-aggregated into a ~0.1°
+  grid rather than rendering all 2.09M rows), human-readable feature names
+  and decoded category values on Why This Prediction, and a bilingual
+  (German + English) explanation of why Random Forest remains the
+  deployment champion even though a later robustness/latency comparison
+  ranks XGBoost ahead on the combined criteria (model selection was already
+  locked in on validation data; the held-out test set cannot be reused to
+  re-pick a champion without invalidating its own reported metrics).
+- `requirements.txt` and documented manual deployment steps for Streamlit
+  Community Cloud (which does not understand this repo's `uv.lock` or its
+  PEP 621/hatchling `pyproject.toml`, and would otherwise misparse it as
+  Poetry format), plus reciprocal links between the Streamlit app and the
+  GitHub Pages notebook-presentation site.
+- `folium`/`streamlit-folium` were already base dependencies before this
+  work (not the `geo` extra) — no new dependency was introduced.
+
+### Findings from the whole-branch review, and what was fixed
+
+The final review (dispatched on the most capable available model) found no
+Critical issues and three Important ones, all fixed in one consolidated
+follow-up commit: (1) the deployment doc only told the user to update the
+Streamlit-Cloud placeholder URL in one of four places it actually appears,
+now all four are listed; (2) the README's new "Live Deployment" section
+initially overclaimed that the GitHub Pages site already links back to the
+Streamlit app — it does only in the template, since the actually-committed,
+already-exported HTML was deliberately not regenerated this session (an
+explicit user instruction), so the README wording was corrected to state
+this accurately instead of overclaiming; (3) the Overview page's severity
+map (~4,857 markers) was rebuilt uncached on every rerun, measured at ~3.4s
+and ~4.9 MB of HTML — now built once behind `@st.cache_resource`. Five
+further Minor findings (a potentially misleading red/teal color reading on
+the severity map with no legend, a map-click warning that stays visible
+after the click that caused it, a stale page subheading left over from the
+LON/LAT-to-map-picker change, an unpinned `requirements.txt` versus the
+project's locked dependency versions, and an unverified claim about
+Streamlit Community Cloud's Git LFS handling) were logged rather than fixed,
+as explicitly lower-priority follow-ups for the project owner.
