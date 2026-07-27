@@ -185,16 +185,19 @@ if map_state and map_state.get("last_clicked"):
                 st.session_state["risk_osm_road_class"] = features["osm_dominant_road_class"]
             st.session_state["risk_dwd_station_id"] = features["dwd_station_id"]
             st.session_state["risk_h3_cell"] = features["h3_cell"]
+            # Only autofill fields that are genuinely properties of the
+            # location itself (road geometry, nearest weather station). The
+            # weather readings (temp/precip/visibility/wind) are properties
+            # of *when* an accident happens, not *where* - a given spot can
+            # see any weather depending on the day, so pulling them from
+            # whichever historical accident happens to be nearest would be
+            # misleading rather than helpful. Those sliders stay untouched.
             # The nearest record can have NaN in some optional columns (not
-            # every OSM way carries a maxspeed tag, not every accident has a
-            # nearby weather reading) - skip those fields rather than
-            # crashing _clamp() on a None, leaving the previous value in place.
+            # every OSM way carries a maxspeed tag) - skip those fields
+            # rather than crashing _clamp() on a None, leaving the previous
+            # value in place.
             for key, spec_name, spec in (
                 ("risk_dwd_station_dist_km", "dwd_station_dist_km", station_dist_spec),
-                ("risk_dwd_temp", "dwd_temp_air_2m", temp_spec),
-                ("risk_dwd_precip", "dwd_precip_mm", precip_spec),
-                ("risk_dwd_visibility", "dwd_visibility_m", vis_spec),
-                ("risk_dwd_wind", "dwd_wind_speed_ms", wind_spec),
                 ("risk_osm_maxspeed_mean", "osm_maxspeed_mean", maxspeed_mean_spec),
                 ("risk_osm_maxspeed_max", "osm_maxspeed_max", maxspeed_max_spec),
                 ("risk_osm_road_density", "osm_road_density", density_spec),
@@ -298,7 +301,11 @@ with st.form("risk_predictor_form"):
         ist_sonstig = st.checkbox("Other vehicle involved (IstSonstig)", key="risk_ist_sonstig")
 
     st.subheader("Weather")
-    st.caption("Auto-filled from the nearest recorded accident to your map click above.")
+    st.caption(
+        "Set manually - weather depends on when an accident happens, not "
+        "where, so it isn't derived from your map click (unlike the road "
+        "context below, which is a genuine property of the location)."
+    )
     c9, c10, c11, c12 = st.columns(4)
     with c9:
         dwd_temp_air_2m = st.slider(
