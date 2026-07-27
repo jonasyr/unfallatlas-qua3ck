@@ -35,12 +35,19 @@ with st.form("risk_predictor_form"):
     with c1:
         uregbez_categories = get_column_spec(contract, "UREGBEZ")["categories"]
         uregbez = st.selectbox(
-            "Regierungsbezirk (UREGBEZ)",
+            "Regierungsbezirk code (UREGBEZ)",
             options=uregbez_categories,
             index=uregbez_categories.index(defaults["UREGBEZ"]),
         )
         ukreis = st.selectbox(
-            "Kreis (UKREIS)", options=ukreis_options, index=ukreis_options.index(defaults["UKREIS"])
+            "Kreis code (UKREIS)",
+            options=ukreis_options,
+            index=ukreis_options.index(defaults["UKREIS"]),
+        )
+        st.caption(
+            "Dataset-internal codes, not official region names: the model's "
+            "feature set doesn't include the Bundesland key (ULAND) needed to "
+            "resolve these to an official Gemeindeschlüssel/region name."
         )
     with c2:
         umonat_spec = get_column_spec(contract, "UMONAT")
