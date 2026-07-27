@@ -67,3 +67,8 @@ st_folium(severity_map, height=450, width=None, key="overview_severity_map", ret
 
 with st.expander("Limitations"):
     st.markdown(LIMITATIONS_TEXT)
+
+st.markdown(
+    "[View the full Q/U/A3/C phase notebooks (GitHub Pages)]"
+    "(https://jonasyr.github.io/unfallatlas-qua3ck/)"
+)

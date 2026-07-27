@@ -63,6 +63,11 @@ vollständig (Code + interaktive Plotly-Outputs) als offlinefähiges HTML — oh
 | **C** | Conclude & Compare | [`04_C_Phase.ipynb`](notebooks/04_C_Phase.ipynb) · [HTML](https://jonasyr.github.io/unfallatlas-qua3ck/notebooks/04_C_Phase.html) | SHAP, Modellvergleich, Limitationen |
 | **K** | Knowledge Transfer | [`app/streamlit_app.py`](app/streamlit_app.py) | Interaktive Risikoprofil-App (Streamlit) |
 
+## Live Deployment
+
+- **Streamlit app:** https://REPLACE-WITH-REAL-STREAMLIT-CLOUD-URL.streamlit.app (deployed per `AGENTS.md`'s "Deploying to Streamlit Community Cloud" section) - interactive risk predictor, model comparison, and severity map.
+- **Notebook presentations (GitHub Pages):** the full Q/U/A³/C phase notebooks, rendered as static HTML, are linked from the Streamlit app's Overview page and from the notebook-presentation site itself (see below).
+
 ## Datensatz
 
 | | |
