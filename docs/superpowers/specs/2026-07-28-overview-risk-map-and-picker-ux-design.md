@@ -111,8 +111,8 @@ values were evaluated against the real 4,857-cell grid:
 
 `k = 10` still admits 6-accident cells into the ">2x" band, which is the noise the
 shrinkage exists to suppress. `k = 50` over-shrinks, collapsing the top band to 52 cells
-and pulling the map back toward uniformity. `k = 20` populates all five bands with no
-band exceeding 41% of cells.
+and pulling the map back toward uniformity. `k = 20` populates all five bands, with the
+largest band holding 41.5% of cells.
 
 **Bands** (fixed thresholds on `relative_risk`):
 

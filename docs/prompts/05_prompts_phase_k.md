@@ -331,8 +331,8 @@ national rate. Each cell's rate is therefore shrunk toward the national baseline
 with a pseudo-count `k`, and `k` was selected by measuring band populations over the
 real 4,857-cell grid: `k=10` still admitted 6-accident cells into the top band,
 `k=50` collapsed that band to 52 cells and re-flattened the map, and `k=20` filled
-all five bands (239 / 1,137 / 2,014 / 1,263 / 204) with no band exceeding 41% of
-cells. Sample size is additionally encoded as fill opacity in three discrete tiers,
+all five bands (239 / 1,137 / 2,014 / 1,263 / 204), with the largest band holding
+41.5% of cells. Sample size is additionally encoded as fill opacity in three discrete tiers,
 so shrinkage biasing small cells toward the average stays visible rather than hidden.
 
 ### Why the legend had disappeared, and the correct way to restore it

@@ -43,7 +43,7 @@ NATIONAL_KSI_RATE_FALLBACK = 0.1891444326398238
 # populations over the real 4857-cell grid: k=10 still admits 6-accident cells into
 # the top ">=2x" band (the noise shrinkage exists to suppress), while k=50
 # over-shrinks it to 52 cells and flattens the map. k=20 fills all five bands
-# (239 / 1137 / 2014 / 1263 / 204) with no band above 41% of cells.
+# (239 / 1137 / 2014 / 1263 / 204), with the largest band holding 41.5% of cells.
 SHRINKAGE_K = 20
 
 
