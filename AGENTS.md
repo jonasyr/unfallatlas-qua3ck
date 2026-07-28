@@ -174,6 +174,7 @@ Configured via `[tool.pytest.ini_options]` in `pyproject.toml` (`--cov=src/unfal
 - All paths via `pathlib.Path`, never raw strings
 - Model artefacts saved to `data/processed/`
 - Notebook outputs stripped before commits via `nbstripout`
+- Nothing handed to `st_folium()` (map or feature group) is ever `@st.cache_data`/`@st.cache_resource`-decorated — `st_folium` mutates any folium object it's given (attaches FeatureGroups/LayerControl, calls `.render()`), so a cached object accumulates stale layer state across reruns *and* across concurrent user sessions, producing a browser-side `ReferenceError: feature_group_<hash> is not defined` that AppTest cannot detect; see `build_severity_base_map`/`build_picker_base_map`/`build_severity_feature_groups` docstrings in `src/unfallatlas/viz/streamlit_app.py`
 
 **Notebook policy**
 - `notebooks/*.ipynb` are the **source of truth** — edit these, not the `.py` mirrors

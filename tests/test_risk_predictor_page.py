@@ -20,5 +20,7 @@ def test_risk_predictor_page_does_not_excuse_the_reload_pause():
 def test_risk_predictor_form_submits_a_prediction():
     at = AppTest.from_file("app/pages/risk_predictor.py", default_timeout=180)
     at.run()
-    at.button[-1].click().run()
+    submit = next(b for b in at.button if "Predict KSI risk" in b.label)
+    submit.click().run()
     assert not at.exception
+    assert any("Prediction:" in element.value for element in at.markdown)

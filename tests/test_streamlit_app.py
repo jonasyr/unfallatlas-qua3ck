@@ -4,10 +4,12 @@ import pytest
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
     FEATURE_DISPLAY_NAMES,
+    NATIONAL_KSI_RATE_FALLBACK,
     RISK_BANDS,
     SEVERITY_COLORS,
     UART_LABELS,
     build_input_row,
+    build_picker_base_map,
     build_severity_base_map,
     build_severity_feature_groups,
     confidence_opacity,
@@ -345,7 +347,7 @@ def test_confidence_opacity_tiers(total, expected_opacity):
 
 
 def test_severity_legend_markdown_states_every_band_and_the_baseline():
-    legend = severity_legend_markdown()
+    legend = severity_legend_markdown(0.1891444326398238)
     for band in RISK_BANDS:
         assert band.label in legend
         assert band.color in legend
@@ -358,6 +360,35 @@ def test_severity_legend_markdown_states_every_band_and_the_baseline():
 def test_load_national_ksi_rate_matches_the_measured_value():
     # 395766 KSI rows out of 2092401 in the committed parquet
     assert load_national_ksi_rate() == pytest.approx(0.1891444326398238)
+
+
+def test_load_national_ksi_rate_falls_back_when_the_query_fails(monkeypatch):
+    # A broken/unreadable parquet must degrade the Overview map to the measured
+    # fallback baseline, not crash the whole page.
+    import duckdb
+
+    load_national_ksi_rate.clear()
+
+    class _BrokenConnection:
+        def execute(self, *args, **kwargs):
+            raise RuntimeError("simulated duckdb failure")
+
+    monkeypatch.setattr(duckdb, "connect", lambda: _BrokenConnection())
+    try:
+        result = load_national_ksi_rate()
+    finally:
+        load_national_ksi_rate.clear()
+    assert result == NATIONAL_KSI_RATE_FALLBACK
+
+
+def test_folium_builders_are_never_cached():
+    # st_folium mutates every folium object handed to it, so a cached builder
+    # accumulates stale layer state that blanks the map in the browser. A cached
+    # function returns the same object every call; these must not.
+    # Note: the third assertion rebuilds 4,857 circles twice (~0.8s total).
+    assert build_severity_base_map() is not build_severity_base_map()
+    assert build_picker_base_map() is not build_picker_base_map()
+    assert build_severity_feature_groups() is not build_severity_feature_groups()
 
 
 def test_load_severity_grid_has_expected_shape_and_columns():

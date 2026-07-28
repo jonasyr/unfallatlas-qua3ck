@@ -3968,7 +3968,7 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.13" },
     { name = "shap", specifier = ">=0.45" },
     { name = "streamlit", specifier = ">=1.35" },
-    { name = "streamlit-folium", specifier = ">=0.20" },
+    { name = "streamlit-folium", specifier = ">=0.27.2" },
     { name = "tqdm", specifier = ">=4.66" },
     { name = "xgboost", specifier = ">=2" },
 ]

@@ -12,6 +12,7 @@ from unfallatlas.viz.streamlit_app import (
     load_3class_comparison,
     load_binary_comparison,
     load_model_card,
+    load_national_ksi_rate,
     severity_legend_markdown,
 )
 
@@ -42,16 +43,18 @@ with col_b:
     st.plotly_chart(plot_binary_f1_recall_front(load_binary_comparison()), width="stretch")
 
 st.markdown("---")
-st.subheader("Where severe accidents concentrate")
+st.subheader("Where accidents are disproportionately severe")
 st.caption(
     "Each circle aggregates the accidents inside a ~0.1 degree (~11 km) cell, drawn "
     "at the mean position of those accidents. Color shows how the cell's share of "
     "KSI (killed/seriously injured) accidents compares against the national average, "
     "not how many accidents it has - use the layer control to isolate a single risk "
     "band. Note the inversion this reveals: the lowest-risk cells carry a median of "
-    "1,339 accidents each while the highest-risk cells carry 91. Dense urban areas "
-    "produce many mostly-slight collisions; rural roads produce far fewer that are "
-    "far more often severe."
+    # Measured constants from the committed dataset/grid - update if the dataset
+    # or the 0.1-degree grid precision changes.
+    "1,339 accidents each while the highest-risk cells carry 91. The most likely "
+    "explanation: dense urban areas produce many mostly-slight collisions, while "
+    "rural roads produce far fewer accidents that are far more often severe."
 )
 st_folium(
     build_severity_base_map(),
@@ -63,16 +66,37 @@ st_folium(
     # cached: caching the map would let this attachment (and the FeatureGroups'
     # own internal .add_to() calls) persist into the next render, baking in
     # stale layer identifiers and reproducing the ReferenceError blank-map bug.
+    # build_severity_feature_groups() is likewise never cached (nothing handed to
+    # st_folium ever is) - see its docstring for the cross-session variant of the
+    # same failure.
     layer_control=folium.LayerControl(),
     height=720,
     width=None,
     key="overview_severity_map",
     returned_objects=[],
 )
-st.markdown(severity_legend_markdown(), unsafe_allow_html=True)
+st.markdown(severity_legend_markdown(load_national_ksi_rate()), unsafe_allow_html=True)
 
 with st.expander("Limitations"):
     st.markdown(LIMITATIONS_TEXT)
+    st.markdown(
+        "**Map-specific limitations**\n\n"
+        "- Shrinkage is a deliberate bias, not an accident: it deliberately pulls "
+        "thinly-sampled cells toward the national average, so a genuinely "
+        "dangerous cell with only a few recorded accidents will read as less "
+        "severe than it may actually be. The opacity channel exists to keep that "
+        "uncertainty visible instead of hiding it.\n"
+        "- The denominator is reporting-driven, not just traffic-driven: the "
+        "dataset holds police-reported personal-injury accidents only, so a "
+        "cell's total reflects both how much traffic passes through it and how "
+        "consistently accidents there get reported.\n"
+        "- Grid cells are not administrative units: a ~11 km cell can straddle a "
+        "city boundary and a rural road, blending two very different severity "
+        "regimes into a single number.\n"
+        "- Relative risk is not causal: a cell sitting at 2x the national rate is "
+        "not thereby shown to be dangerous *because of* its road layout - only "
+        "that its recorded outcomes skew more severe than average."
+    )
 
 st.markdown(
     "[View the full Q/U/A3/C phase notebooks (GitHub Pages)]"

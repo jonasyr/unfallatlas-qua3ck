@@ -157,6 +157,10 @@ folium.Marker(
 ).add_to(selected_marker_group)
 
 map_state = st_folium(
+    # selected_marker_group is built fresh above on every rerun and passed via
+    # feature_group_to_add, not attached to the map ahead of time - the same
+    # "nothing handed to st_folium is ever cached" invariant build_picker_base_map's
+    # docstring covers, applied to the marker as well as the base map.
     build_picker_base_map(),
     feature_group_to_add=selected_marker_group,
     height=500,

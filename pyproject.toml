@@ -38,7 +38,7 @@ dependencies = [
   "scipy>=1.13",
   "shap>=0.45",
   "streamlit>=1.35",
-  "streamlit-folium>=0.20",
+  "streamlit-folium>=0.27.2",
   "tqdm>=4.66",
   "xgboost>=2",
 ]
@@ -101,7 +101,7 @@ lint.isort.known-first-party = [
 [tool.pytest.ini_options]
 addopts = '--cov=src/unfallatlas --cov-report=xml --cov-report=term-missing -m "not browser"'
 markers = [
-  "browser: opt-in Playwright checks for exported presentation HTML",
+  "browser: opt-in Playwright checks that drive a real browser, including a live Streamlit server and exported presentation HTML",
 ]
 
 [tool.jupytext]

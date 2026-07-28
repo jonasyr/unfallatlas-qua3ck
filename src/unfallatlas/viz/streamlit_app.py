@@ -34,8 +34,10 @@ SEVERITY_COLORS = {"KSI": "#E63946", "slight": "#2A9D8F"}
 
 # Measured over the full committed data/accidents.parquet:
 # 395766 KSI rows (UKATGEORIE IN (1, 2)) out of 2092401 total.
-# Used only as a fallback if the DuckDB baseline query is unavailable; the live
-# value comes from load_national_ksi_rate().
+# Returned by load_national_ksi_rate() if the DuckDB baseline query fails (e.g.
+# an unreadable parquet), so the Overview map degrades to this stale-but-correct
+# baseline instead of crashing the whole page. Superseded by the live value
+# whenever the query succeeds.
 NATIONAL_KSI_RATE_FALLBACK = 0.1891444326398238
 
 # Pseudo-count for shrinking a cell's KSI rate toward the national baseline, so a
@@ -120,11 +122,16 @@ def confidence_opacity(total: int) -> float:
     return CONFIDENCE_OPACITY_MAX
 
 
-def severity_legend_markdown() -> str:
+def severity_legend_markdown(baseline: float) -> str:
     """Render the static map legend as markdown with inline color swatches.
 
     folium's LayerControl names the bands but cannot show their colors or explain the
     opacity convention, so this legend carries both.
+
+    `baseline` is the national KSI rate to state as the comparison point (pass
+    load_national_ksi_rate()) - kept as an argument rather than hardcoded so the
+    legend cannot silently drift from the value the bands are actually computed
+    against.
     """
     swatches = "\n".join(
         f'- <span style="display:inline-block;width:0.85rem;height:0.85rem;'
@@ -132,17 +139,22 @@ def severity_legend_markdown() -> str:
         f'vertical-align:middle;margin-right:0.5rem"></span>{band.label}'
         for band in RISK_BANDS
     )
+    low_threshold, mid_threshold = (
+        CONFIDENCE_OPACITY_TIERS[0][0],
+        CONFIDENCE_OPACITY_TIERS[1][0],
+    )
     return (
         "**Relative KSI risk** - each cell's share of killed/seriously-injured "
-        "accidents, compared against the national average of **18.9%**. "
+        f"accidents, compared against the national average of **{baseline:.1%}**. "
         f"A cell at 2x is twice as likely to be severe as Germany overall.\n\n"
         f"{swatches}\n\n"
         "Rates are shrunk toward the national average in proportion to how few "
         "accidents a cell has, so a single severe accident cannot mark a cell as "
         "high-risk. Fill opacity shows that confidence directly: cells with fewer "
-        "than 20 accidents are rendered faintest, under 100 mid-way, and 100 or "
-        "more at full strength. Circle size still scales with the cell's total "
-        "accident count."
+        f"than {low_threshold} accidents are rendered faintest, under {mid_threshold} "
+        "mid-way, and "
+        f"{mid_threshold} or more at strongest. Circle size still scales with the "
+        "cell's total accident count."
     )
 
 
@@ -456,6 +468,15 @@ def load_national_ksi_rate() -> float:
     This is the baseline the Overview map's relative-risk bands are measured
     against. Computed live from the committed parquet rather than hardcoded, so it
     stays correct if the dataset is ever revised.
+
+    Deliberately deviates from this module's other loaders' logger.exception +
+    raise pattern: if the query fails (e.g. the parquet is missing or unreadable),
+    this returns NATIONAL_KSI_RATE_FALLBACK instead of propagating the exception.
+    That is the right call specifically for this one value - a stale-but-correct
+    national constant is strictly better than blanking the entire Overview page,
+    since every downstream consumer (the risk bands, the legend) only needs a
+    single approximately-right number, not per-row data that could be silently
+    wrong.
     """
     try:
         con = duckdb.connect()
@@ -465,8 +486,8 @@ def load_national_ksi_rate() -> float:
         """  # noqa: S608
         return float(con.execute(query).fetchone()[0])
     except Exception:
-        logger.exception("Failed to load national KSI rate")
-        raise
+        logger.exception("Failed to load national KSI rate; using fallback baseline")
+        return NATIONAL_KSI_RATE_FALLBACK
 
 
 @st.cache_data
@@ -538,7 +559,6 @@ def build_severity_base_map():
     return folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
 
-@st.cache_resource
 def build_severity_feature_groups(precision: float = 0.1):
     """Build one toggleable FeatureGroup per relative-risk band.
 
@@ -553,8 +573,28 @@ def build_severity_feature_groups(precision: float = 0.1):
     geography at every zoom level. Cells are drawn at their accident centroid, not
     at the rounded grid-bin coordinate.
 
-    Cached because building ~4857 Circle objects costs roughly 3.4 s and 4.9 MB of
-    HTML, which is too slow to repeat on every rerun.
+    NOT cached, on purpose - do not add `@st.cache_resource` back here even though
+    building ~4857 Circle objects looks expensive enough to deserve one. Measured
+    with warm loaders (load_severity_grid/load_national_ksi_rate already cached),
+    the whole function body costs 0.38 s cold and 0.21 s warm - cheap enough that
+    there is nothing worth caching, and `st.cache_resource` is process-global, not
+    per-session. Streamlit runs each user session's script in its own
+    ScriptRunner thread, so with a cached singleton, two sessions' renders can
+    interleave: `st_folium` calls `.add_to(map)` and `.render()` on every
+    FeatureGroup it is given (streamlit_folium/__init__.py:172-176) as part of
+    building that session's map script. If session B's render() runs on the
+    shared cached groups between session A's render() and A's
+    generate_leaflet_string(), the `ElementAddToElement` child that render()
+    attaches captures B's map name, not A's - so A's emitted script ends up
+    referencing `feature_group_<hash>.addTo(map_<B's id>)`, a variable that does
+    not exist inside A's iframe. That is the same `ReferenceError:
+    feature_group_<hash> is not defined` blank-map bug that
+    build_severity_base_map's docstring describes for the single-session case,
+    just triggered by cross-session interleaving instead of same-session rerun.
+    A deepcopy-of-cached-template scheme does not help either: deepcopy of the
+    full 4857-circle structure was measured at 0.38 s, i.e. no cheaper than
+    rebuilding from the (already-cached) grid data. The invariant that actually
+    holds: nothing handed to `st_folium` is ever cached, full stop.
     """
     import folium
 
