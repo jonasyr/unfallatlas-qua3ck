@@ -20,7 +20,12 @@
   </header>
   <main class="index-shell">
     {# Canonical QUA³CK phase names (Hagenmeyer et al., KIT); the monogram is
-       derived from the entry title, so unknown titles simply omit the name. #}
+       derived from the entry title, so unknown titles simply omit the name.
+       Titles end in "<phase> Phase", so the phase letter is the second-to-last
+       word. Deriving it that way rather than by stripping a fixed "Unfallatlas
+       Deutschland" prefix keeps it correct for English titles too: the C-phase
+       notebook is titled "Unfallatlas Germany C Phase" and previously fell
+       through to the prefix-stripping fallback, which rendered "Un". #}
     {% set phase_names = {
       "Q": "Question",
       "U": "Understanding the Data",
@@ -40,7 +45,8 @@
       </div>
       <ol class="phase-list">
         {% for row in rows %}
-        {% set mark = (row.entry.title | replace("Unfallatlas Deutschland", "") | replace("Phase", "") | trim)[:2] | trim %}
+        {% set title_words = row.entry.title.split() %}
+        {% set mark = title_words[-2] if title_words | length >= 2 and title_words[-1] == "Phase" else (row.entry.title | replace("Unfallatlas Deutschland", "") | replace("Phase", "") | trim)[:2] | trim %}
         <li class="phase-row" data-state="{{ row.state }}">
           <span class="phase-mark" aria-hidden="true">{{ mark }}</span>
           <div class="phase-row-main">
