@@ -16,6 +16,7 @@ from unfallatlas.viz.streamlit_app import (
     UTYP1_LABELS,
     WEEKDAY_LABELS,
     build_input_row,
+    build_picker_base_map,
     get_column_spec,
     load_categorical_options,
     load_champion_model,
@@ -142,20 +143,26 @@ st.caption(
 
 st.subheader("Pick a location")
 st.caption(
-    "Click a point on the map to set the accident's longitude/latitude and "
-    "auto-fill the administrative codes and road/weather context below from "
-    "the nearest recorded accident. Clicks outside Germany's covered area are "
-    "ignored with a warning below. The map reloads after every click, which "
-    "can take a moment - that's expected, not a freeze."
+    "Click a point on the map to set the accident's longitude/latitude and auto-fill "
+    "the administrative codes and road context below from the nearest recorded "
+    "accident. Weather stays under your control - it depends on when an accident "
+    "happens, not where. Clicks outside Germany's covered area are ignored with a "
+    "warning."
 )
-picker_map = folium.Map(
-    location=[st.session_state["picked_lat"], st.session_state["picked_lon"]], zoom_start=6
-)
+
+selected_marker_group = folium.FeatureGroup(name="Selected location")
 folium.Marker(
-    [st.session_state["picked_lat"], st.session_state["picked_lon"]], tooltip="Selected location"
-).add_to(picker_map)
+    [st.session_state["picked_lat"], st.session_state["picked_lon"]],
+    tooltip="Selected location",
+).add_to(selected_marker_group)
+
 map_state = st_folium(
-    picker_map,
+    # selected_marker_group is built fresh above on every rerun and passed via
+    # feature_group_to_add, not attached to the map ahead of time - the same
+    # "nothing handed to st_folium is ever cached" invariant build_picker_base_map's
+    # docstring covers, applied to the marker as well as the base map.
+    build_picker_base_map(),
+    feature_group_to_add=selected_marker_group,
     height=500,
     width=None,
     key="location_picker",
@@ -164,9 +171,10 @@ map_state = st_folium(
 
 if map_state and map_state.get("last_clicked"):
     clicked = (map_state["last_clicked"]["lat"], map_state["last_clicked"]["lng"])
-    # Only act the first time a given click is seen - st_folium keeps replaying
-    # the same last_clicked value on every later rerun (e.g. form submission),
-    # which would otherwise re-show a stale out-of-bounds warning forever.
+    # Only act the first time a given click is seen - st_folium keeps replaying the
+    # same last_clicked value on every later rerun (e.g. form submission), which
+    # would otherwise re-show a stale out-of-bounds warning forever, and would make
+    # the st.rerun() below loop.
     if clicked != st.session_state["last_processed_click"]:
         st.session_state["last_processed_click"] = clicked
         clicked_lat, clicked_lon = clicked
@@ -176,7 +184,8 @@ if map_state and map_state.get("last_clicked"):
         ):
             st.session_state["picked_lat"] = clicked_lat
             st.session_state["picked_lon"] = clicked_lon
-            features = nearest_location_features(clicked_lat, clicked_lon)
+            with st.spinner("Reading road context for this location..."):
+                features = nearest_location_features(clicked_lat, clicked_lon)
             if features["UREGBEZ"] in uregbez_categories:
                 st.session_state["picked_uregbez"] = features["UREGBEZ"]
             if features["UKREIS"] in ukreis_options:
@@ -185,17 +194,15 @@ if map_state and map_state.get("last_clicked"):
                 st.session_state["risk_osm_road_class"] = features["osm_dominant_road_class"]
             st.session_state["risk_dwd_station_id"] = features["dwd_station_id"]
             st.session_state["risk_h3_cell"] = features["h3_cell"]
-            # Only autofill fields that are genuinely properties of the
-            # location itself (road geometry, nearest weather station). The
-            # weather readings (temp/precip/visibility/wind) are properties
-            # of *when* an accident happens, not *where* - a given spot can
-            # see any weather depending on the day, so pulling them from
-            # whichever historical accident happens to be nearest would be
-            # misleading rather than helpful. Those sliders stay untouched.
-            # The nearest record can have NaN in some optional columns (not
-            # every OSM way carries a maxspeed tag) - skip those fields
-            # rather than crashing _clamp() on a None, leaving the previous
-            # value in place.
+            # Only autofill fields that are genuinely properties of the location
+            # itself (road geometry, nearest weather station). The weather readings
+            # (temp/precip/visibility/wind) are properties of *when* an accident
+            # happens, not *where* - a given spot can see any weather depending on
+            # the day, so pulling them from whichever historical accident happens to
+            # be nearest would be misleading rather than helpful. Those sliders stay
+            # untouched. The nearest record can have NaN in some optional columns
+            # (not every OSM way carries a maxspeed tag) - skip those fields rather
+            # than crashing _clamp() on a None, leaving the previous value in place.
             for key, spec_name, spec in (
                 ("risk_dwd_station_dist_km", "dwd_station_dist_km", station_dist_spec),
                 ("risk_osm_maxspeed_mean", "osm_maxspeed_mean", maxspeed_mean_spec),
@@ -206,6 +213,12 @@ if map_state and map_state.get("last_clicked"):
                 raw_value = features[spec_name]
                 if raw_value is not None:
                     st.session_state[key] = _clamp(raw_value, spec["min"], spec["max"])
+            # Rerun so the marker, the coordinate readout, and every auto-filled
+            # widget reflect THIS click. Without it the page renders one click
+            # behind, which is what made the picker seem to need two clicks. The
+            # last_processed_click guard above makes this terminate: on the rerun,
+            # `clicked` equals the stored value and this branch is skipped.
+            st.rerun()
         else:
             st.warning(
                 f"Clicked point ({clicked_lat:.4f}, {clicked_lon:.4f}) is outside the "

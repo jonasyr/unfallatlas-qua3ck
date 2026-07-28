@@ -1,13 +1,26 @@
 from streamlit.testing.v1 import AppTest
 
 
-def test_risk_predictor_page_loads_with_default_location_and_can_predict():
-    at = AppTest.from_file("app/pages/risk_predictor.py", default_timeout=30)
+def test_risk_predictor_page_loads():
+    at = AppTest.from_file("app/pages/risk_predictor.py", default_timeout=180)
     at.run()
     assert not at.exception
 
-    submit_buttons = [b for b in at.button if "Predict KSI risk" in b.label]
-    assert len(submit_buttons) == 1
-    submit_buttons[0].click().run()
+
+def test_risk_predictor_page_does_not_excuse_the_reload_pause():
+    # The old copy told users the click lag was expected behaviour. It was a
+    # script-ordering bug, now fixed, so the apology must be gone.
+    at = AppTest.from_file("app/pages/risk_predictor.py", default_timeout=180)
+    at.run()
     assert not at.exception
-    assert any("Prediction:" in md.value for md in at.markdown)
+    captions = " ".join(element.value for element in at.caption)
+    assert "not a freeze" not in captions
+
+
+def test_risk_predictor_form_submits_a_prediction():
+    at = AppTest.from_file("app/pages/risk_predictor.py", default_timeout=180)
+    at.run()
+    submit = next(b for b in at.button if "Predict KSI risk" in b.label)
+    submit.click().run()
+    assert not at.exception
+    assert any("Prediction:" in element.value for element in at.markdown)

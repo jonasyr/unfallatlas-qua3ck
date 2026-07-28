@@ -4,8 +4,15 @@ import pytest
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
     FEATURE_DISPLAY_NAMES,
+    NATIONAL_KSI_RATE_FALLBACK,
+    RISK_BANDS,
+    SEVERITY_COLORS,
     UART_LABELS,
     build_input_row,
+    build_picker_base_map,
+    build_severity_base_map,
+    build_severity_feature_groups,
+    confidence_opacity,
     decode_feature_value,
     display_feature_name,
     get_column_spec,
@@ -16,9 +23,13 @@ from unfallatlas.viz.streamlit_app import (
     load_champion_model,
     load_inference_contract,
     load_model_card,
+    load_national_ksi_rate,
     load_permutation_importance,
     load_severity_grid,
     predict_ksi,
+    risk_band_index,
+    severity_legend_markdown,
+    shrunk_relative_risk,
 )
 
 
@@ -200,10 +211,228 @@ def test_load_severity_grid_respects_precision_parameter():
     assert len(coarse) < len(fine)
 
 
-def test_build_severity_map_returns_a_folium_map():
+def test_build_severity_base_map_has_no_layers_attached():
+    # Layers must reach the browser only via st_folium(feature_group_to_add=...).
+    # Anything attached here raises a JS ReferenceError and blanks the whole map.
+    # build_severity_base_map() is NOT cached (see its docstring): st_folium
+    # mutates whatever map it is given by attaching feature groups/layer control
+    # to it internally, so a cached map would carry those attachments into the
+    # next render and bake in stale, unresolved identifiers - the exact
+    # ReferenceError this test's invariant guards against. Since it is not
+    # cached, every call already returns a fresh, never-rendered map, so no
+    # cache-clearing is needed here.
     import folium
 
-    from unfallatlas.viz.streamlit_app import build_severity_map
+    base_map = build_severity_base_map()
+    children = base_map._children.values()
+    assert not any(isinstance(child, folium.FeatureGroup) for child in children)
+    assert not any(isinstance(child, folium.LayerControl) for child in children)
 
-    m = build_severity_map()
-    assert isinstance(m, folium.Map)
+
+def test_build_severity_feature_groups_returns_one_named_group_per_band():
+    groups = build_severity_feature_groups()
+    assert len(groups) == len(RISK_BANDS)
+    assert [group.layer_name for group in groups] == [band.label for band in RISK_BANDS]
+
+
+def test_build_severity_feature_groups_covers_every_grid_cell_exactly_once():
+    import folium
+
+    groups = build_severity_feature_groups()
+    # Count only Circle children, not folium's own `ElementAddToElement`
+    # bookkeeping child that st_folium's internal render() attaches to each
+    # group - that bookkeeping child is a fixed-key, idempotent artifact of
+    # rendering, not a grid cell, so counting it would make this assertion
+    # depend on whether some earlier test already rendered these (cached)
+    # groups through st_folium.
+    circles_per_group = [
+        sum(isinstance(child, folium.Circle) for child in group._children.values())
+        for group in groups
+    ]
+    assert sum(circles_per_group) == 4857
+    assert circles_per_group == [239, 1137, 2014, 1263, 204]
+
+
+def test_build_severity_map_is_gone():
+    # Replaced by build_severity_base_map + build_severity_feature_groups.
+    import unfallatlas.viz.streamlit_app as module
+
+    assert not hasattr(module, "build_severity_map")
+
+
+def test_shrunk_relative_risk_returns_baseline_ratio_for_empty_cell():
+    # A cell with no accidents is pure prior: shrunk rate == baseline, ratio == 1.0
+    assert shrunk_relative_risk(0, 0, 0.1891444326398238) == pytest.approx(1.0)
+
+
+def test_shrunk_relative_risk_converges_to_raw_rate_for_large_cell():
+    # 100_000 accidents at a 40% KSI rate: shrinkage of k=20 is negligible
+    result = shrunk_relative_risk(40_000, 100_000, 0.1891444326398238)
+    raw_ratio = 0.4 / 0.1891444326398238
+    assert result == pytest.approx(raw_ratio, rel=1e-3)
+
+
+def test_shrunk_relative_risk_pulls_small_noisy_cell_toward_baseline():
+    # 1 accident, and it was KSI. Raw rate is 100% (5.29x baseline) - pure noise.
+    # Shrinkage must pull it far down, below the "very high" 2.0x band threshold.
+    baseline = 0.1891444326398238
+    raw_ratio = 1.0 / baseline
+    shrunk = shrunk_relative_risk(1, 1, baseline)
+    assert raw_ratio > 5.0
+    assert shrunk < 2.0
+
+
+def test_shrunk_relative_risk_uses_explicit_k():
+    baseline = 0.2
+    # (ksi + k*baseline) / (total + k) / baseline
+    # k=0 disables shrinkage entirely -> raw ratio
+    assert shrunk_relative_risk(5, 10, baseline, k=0) == pytest.approx(0.5 / 0.2)
+
+
+def test_shrunk_relative_risk_rejects_non_positive_baseline():
+    with pytest.raises(ValueError, match="baseline"):
+        shrunk_relative_risk(1, 10, 0.0)
+
+
+def test_risk_bands_are_five_contiguous_ascending_ranges():
+    assert len(RISK_BANDS) == 5
+    assert RISK_BANDS[0].lower == 0.0
+    assert RISK_BANDS[-1].upper == float("inf")
+    for lower_band, upper_band in zip(RISK_BANDS[:-1], RISK_BANDS[1:], strict=True):
+        # contiguous: no gaps, no overlaps
+        assert lower_band.upper == upper_band.lower
+
+
+def test_risk_bands_endpoints_reuse_the_app_severity_palette():
+    assert RISK_BANDS[0].color == SEVERITY_COLORS["slight"]
+    assert RISK_BANDS[-1].color == SEVERITY_COLORS["KSI"]
+
+
+def test_risk_bands_all_have_distinct_colors_and_labels():
+    assert len({band.color for band in RISK_BANDS}) == 5
+    assert len({band.label for band in RISK_BANDS}) == 5
+
+
+@pytest.mark.parametrize(
+    ("relative_risk", "expected_index"),
+    [
+        (0.0, 0),
+        (0.74, 0),
+        (0.75, 1),  # boundaries are half-open [lower, upper): 0.75 lands in band 1
+        (1.0, 1),
+        (1.09, 1),
+        (1.1, 2),
+        (1.49, 2),
+        (1.5, 3),
+        (1.99, 3),
+        (2.0, 4),
+        (100.0, 4),
+    ],
+)
+def test_risk_band_index_uses_half_open_intervals(relative_risk, expected_index):
+    assert risk_band_index(relative_risk) == expected_index
+
+
+def test_risk_band_index_rejects_negative_risk():
+    with pytest.raises(ValueError, match="relative_risk"):
+        risk_band_index(-0.1)
+
+
+@pytest.mark.parametrize(
+    ("total", "expected_opacity"),
+    [(0, 0.25), (19, 0.25), (20, 0.45), (99, 0.45), (100, 0.65), (25_916, 0.65)],
+)
+def test_confidence_opacity_tiers(total, expected_opacity):
+    assert confidence_opacity(total) == expected_opacity
+
+
+def test_severity_legend_markdown_states_every_band_and_the_baseline():
+    legend = severity_legend_markdown(0.1891444326398238)
+    for band in RISK_BANDS:
+        assert band.label in legend
+        assert band.color in legend
+    # The national baseline must be stated as a percentage, so "2x average" is readable
+    assert "18.9" in legend
+    # The opacity convention must be explained, not left implicit
+    assert "20" in legend and "100" in legend
+
+
+def test_load_national_ksi_rate_matches_the_measured_value():
+    # 395766 KSI rows out of 2092401 in the committed parquet
+    assert load_national_ksi_rate() == pytest.approx(0.1891444326398238)
+
+
+def test_load_national_ksi_rate_falls_back_when_the_query_fails(monkeypatch):
+    # A broken/unreadable parquet must degrade the Overview map to the measured
+    # fallback baseline, not crash the whole page.
+    import duckdb
+
+    load_national_ksi_rate.clear()
+
+    class _BrokenConnection:
+        def execute(self, *args, **kwargs):
+            raise RuntimeError("simulated duckdb failure")
+
+    monkeypatch.setattr(duckdb, "connect", lambda: _BrokenConnection())
+    try:
+        result = load_national_ksi_rate()
+    finally:
+        load_national_ksi_rate.clear()
+    assert result == NATIONAL_KSI_RATE_FALLBACK
+
+
+def test_folium_builders_are_never_cached():
+    # st_folium mutates every folium object handed to it, so a cached builder
+    # accumulates stale layer state that blanks the map in the browser. A cached
+    # function returns the same object every call; these must not.
+    # Note: the third assertion rebuilds 4,857 circles twice (~0.8s total).
+    assert build_severity_base_map() is not build_severity_base_map()
+    assert build_picker_base_map() is not build_picker_base_map()
+    assert build_severity_feature_groups() is not build_severity_feature_groups()
+
+
+def test_load_severity_grid_has_expected_shape_and_columns():
+    grid = load_severity_grid()
+    assert len(grid) == 4857
+    assert {
+        "lat_bin",
+        "lon_bin",
+        "center_lat",
+        "center_lon",
+        "ksi_count",
+        "slight_count",
+        "total",
+    }.issubset(grid.columns)
+
+
+def test_load_severity_grid_counts_sum_to_the_full_dataset():
+    grid = load_severity_grid()
+    assert grid["total"].sum() == 2092401
+    assert (grid["ksi_count"] + grid["slight_count"] == grid["total"]).all()
+
+
+def test_load_severity_grid_centroids_lie_inside_their_own_cell():
+    # A centroid of points that all round to the same 0.1-degree bin cannot be more
+    # than half a bin width away from that bin's coordinate. Verified: 0 violations.
+    grid = load_severity_grid()
+    assert ((grid["center_lat"] - grid["lat_bin"]).abs() <= 0.05).all()
+    assert ((grid["center_lon"] - grid["lon_bin"]).abs() <= 0.05).all()
+
+
+def test_load_severity_grid_centroids_actually_differ_from_bin_coordinates():
+    # Guards against a regression that silently aliases center_lat back to lat_bin.
+    grid = load_severity_grid()
+    assert (grid["center_lat"] != grid["lat_bin"]).sum() > 4000
+
+
+def test_severity_grid_bands_populate_every_band():
+    # The whole point of the redesign: all five bands carry cells, instead of the
+    # old 50%-majority rule that colored only 123 of 4857 cells red.
+    grid = load_severity_grid()
+    baseline = load_national_ksi_rate()
+    indices = [
+        risk_band_index(shrunk_relative_risk(row.ksi_count, row.total, baseline))
+        for row in grid.itertuples()
+    ]
+    counts = {index: indices.count(index) for index in range(5)}
+    assert counts == {0: 239, 1: 1137, 2: 2014, 3: 1263, 4: 204}

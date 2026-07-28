@@ -12,6 +12,7 @@ import json
 import logging
 import math
 from pathlib import Path
+from typing import NamedTuple
 
 import duckdb
 import joblib
@@ -30,6 +31,132 @@ DEFAULT_H3_CELL = "881f15ad31fffff"
 DEFAULT_DWD_STATION_DIST_KM = 9.51
 
 SEVERITY_COLORS = {"KSI": "#E63946", "slight": "#2A9D8F"}
+
+# Measured over the full committed data/accidents.parquet:
+# 395766 KSI rows (UKATGEORIE IN (1, 2)) out of 2092401 total.
+# Returned by load_national_ksi_rate() if the DuckDB baseline query fails (e.g.
+# an unreadable parquet), so the Overview map degrades to this stale-but-correct
+# baseline instead of crashing the whole page. Superseded by the live value
+# whenever the query succeeds.
+NATIONAL_KSI_RATE_FALLBACK = 0.1891444326398238
+
+# Pseudo-count for shrinking a cell's KSI rate toward the national baseline, so a
+# cell with 1 accident cannot register as "100% KSI". Chosen by measuring band
+# populations over the real 4857-cell grid: k=10 still admits 6-accident cells into
+# the top ">=2x" band (the noise shrinkage exists to suppress), while k=50
+# over-shrinks it to 52 cells and flattens the map. k=20 fills all five bands
+# (239 / 1137 / 2014 / 1263 / 204), with the largest band holding 41.5% of cells.
+SHRINKAGE_K = 20
+
+
+class RiskBand(NamedTuple):
+    """One relative-risk band: a half-open [lower, upper) ratio range and its color."""
+
+    label: str
+    lower: float
+    upper: float
+    color: str
+
+
+# Diverging ramp anchored on the app's two existing brand colors
+# (SEVERITY_COLORS["slight"] teal -> SEVERITY_COLORS["KSI"] red) with a warm sand
+# midpoint. Deliberately hand-picked rather than RGB-interpolated: linear
+# interpolation between teal and red passes through muddy brown-grey (#886B6A at
+# the midpoint), which does not read as an ordered risk scale.
+RISK_BANDS = (
+    RiskBand("Well below average (<0.75x)", 0.0, 0.75, SEVERITY_COLORS["slight"]),
+    RiskBand("Around average (0.75-1.1x)", 0.75, 1.1, "#8FC7BE"),
+    RiskBand("Elevated (1.1-1.5x)", 1.1, 1.5, "#F2C879"),
+    RiskBand("High (1.5-2x)", 1.5, 2.0, "#EE8062"),
+    RiskBand("Very high (>=2x)", 2.0, float("inf"), SEVERITY_COLORS["KSI"]),
+)
+
+# Fill-opacity tiers by a cell's accident count, so a thinly-sampled cell reads as
+# uncertain instead of looking as confident as a well-sampled one. Three discrete
+# steps rather than a continuous fade, so the legend can state exactly what a pale
+# cell means instead of implying unearned precision.
+CONFIDENCE_OPACITY_TIERS = ((20, 0.25), (100, 0.45))
+CONFIDENCE_OPACITY_MAX = 0.65
+
+
+def shrunk_relative_risk(
+    ksi_count: int, total: int, baseline: float, k: int = SHRINKAGE_K
+) -> float:
+    """Return a cell's KSI rate relative to the national baseline, shrunk toward it.
+
+    An absolute "is KSI the local majority?" test is the wrong question: KSI is a
+    ~18.9% minority outcome nationally, so a cell must reach 2.64x the national rate
+    before crossing 50%. Only 123 of 4857 cells do, leaving 97.5% of the map a single
+    color. Relative risk asks the answerable question - "is this cell worse than
+    normal, and by how much?" - and the k-weighted shrinkage stops small cells from
+    reaching extremes on noise.
+
+    Returns 1.0 (exactly baseline) for an empty cell, since with no evidence the best
+    estimate is the prior.
+    """
+    if baseline <= 0:
+        raise ValueError(f"baseline must be positive, got {baseline}")
+    shrunk_rate = (ksi_count + k * baseline) / (total + k)
+    return shrunk_rate / baseline
+
+
+def risk_band_index(relative_risk: float) -> int:
+    """Return the index into RISK_BANDS for a relative-risk ratio.
+
+    Bands are half-open [lower, upper), so a ratio landing exactly on a boundary
+    falls into the higher band and every ratio maps to exactly one band.
+    """
+    if relative_risk < 0:
+        raise ValueError(f"relative_risk must be non-negative, got {relative_risk}")
+    for index, band in enumerate(RISK_BANDS):
+        if relative_risk < band.upper:
+            return index
+    return len(RISK_BANDS) - 1
+
+
+def confidence_opacity(total: int) -> float:
+    """Return the fill opacity for a cell, lower when its sample is thin."""
+    for threshold, opacity in CONFIDENCE_OPACITY_TIERS:
+        if total < threshold:
+            return opacity
+    return CONFIDENCE_OPACITY_MAX
+
+
+def severity_legend_markdown(baseline: float) -> str:
+    """Render the static map legend as markdown with inline color swatches.
+
+    folium's LayerControl names the bands but cannot show their colors or explain the
+    opacity convention, so this legend carries both.
+
+    `baseline` is the national KSI rate to state as the comparison point (pass
+    load_national_ksi_rate()) - kept as an argument rather than hardcoded so the
+    legend cannot silently drift from the value the bands are actually computed
+    against.
+    """
+    swatches = "\n".join(
+        f'- <span style="display:inline-block;width:0.85rem;height:0.85rem;'
+        f"background:{band.color};border:1px solid rgba(0,0,0,0.25);"
+        f'vertical-align:middle;margin-right:0.5rem"></span>{band.label}'
+        for band in RISK_BANDS
+    )
+    low_threshold, mid_threshold = (
+        CONFIDENCE_OPACITY_TIERS[0][0],
+        CONFIDENCE_OPACITY_TIERS[1][0],
+    )
+    return (
+        "**Relative KSI risk** - each cell's share of killed/seriously-injured "
+        f"accidents, compared against the national average of **{baseline:.1%}**. "
+        f"A cell at 2x is twice as likely to be severe as Germany overall.\n\n"
+        f"{swatches}\n\n"
+        "Rates are shrunk toward the national average in proportion to how few "
+        "accidents a cell has, so a single severe accident cannot mark a cell as "
+        "high-risk. Fill opacity shows that confidence directly: cells with fewer "
+        f"than {low_threshold} accidents are rendered faintest, under {mid_threshold} "
+        "mid-way, and "
+        f"{mid_threshold} or more at strongest. Circle size still scales with the "
+        "cell's total accident count."
+    )
+
 
 LIMITATIONS_TEXT = (
     "- The strongest available feature (accident type, `UART`) has a Cramer's V "
@@ -335,6 +462,35 @@ def precision_decimals(precision: float) -> int:
 
 
 @st.cache_data
+def load_national_ksi_rate() -> float:
+    """Return the share of all accidents that are KSI, across the whole dataset.
+
+    This is the baseline the Overview map's relative-risk bands are measured
+    against. Computed live from the committed parquet rather than hardcoded, so it
+    stays correct if the dataset is ever revised.
+
+    Deliberately deviates from this module's other loaders' logger.exception +
+    raise pattern: if the query fails (e.g. the parquet is missing or unreadable),
+    this returns NATIONAL_KSI_RATE_FALLBACK instead of propagating the exception.
+    That is the right call specifically for this one value - a stale-but-correct
+    national constant is strictly better than blanking the entire Overview page,
+    since every downstream consumer (the risk bands, the legend) only needs a
+    single approximately-right number, not per-row data that could be silently
+    wrong.
+    """
+    try:
+        con = duckdb.connect()
+        query = f"""
+            SELECT AVG(CASE WHEN UKATGEORIE IN (1, 2) THEN 1.0 ELSE 0.0 END)
+            FROM '{ACCIDENTS_PARQUET}'
+        """  # noqa: S608
+        return float(con.execute(query).fetchone()[0])
+    except Exception:
+        logger.exception("Failed to load national KSI rate; using fallback baseline")
+        return NATIONAL_KSI_RATE_FALLBACK
+
+
+@st.cache_data
 def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
     """Aggregate accidents.parquet into a lat/lon grid with per-cell KSI/slight counts.
 
@@ -343,6 +499,12 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
     in this file). Aggregation happens entirely in DuckDB so the ~2.09M-row
     parquet is never loaded into pandas row-by-row - only the grouped result
     (a few thousand rows at precision=0.1) crosses into pandas.
+
+    `lat_bin`/`lon_bin` are the grouping key only. `center_lat`/`center_lon` are the
+    mean coordinates of the accidents actually inside the cell, and are what callers
+    should plot: the rounded bin coordinate sits a mean of 1.71 km (p95 3.80 km, max
+    6.48 km) away from the cell's own accidents, because accidents are not uniformly
+    distributed inside a ~11 km cell.
     """
     try:
         con = duckdb.connect()
@@ -350,6 +512,8 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
             SELECT
                 ROUND(LAT, {precision_decimals(precision)}) AS lat_bin,
                 ROUND(LON, {precision_decimals(precision)}) AS lon_bin,
+                AVG(LAT) AS center_lat,
+                AVG(LON) AS center_lon,
                 SUM(CASE WHEN UKATGEORIE IN (1, 2) THEN 1 ELSE 0 END) AS ksi_count,
                 SUM(CASE WHEN UKATGEORIE = 3 THEN 1 ELSE 0 END) AS slight_count,
                 COUNT(*) AS total
@@ -362,52 +526,131 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
         raise
 
 
-@st.cache_resource
-def build_severity_map(precision: float = 0.1):
-    """Build the folium severity map once and cache the Map object across reruns.
+def build_severity_base_map():
+    """Return a fresh, empty folium map centred on Germany.
 
-    Uses `folium.Circle` (radius in metres) rather than `CircleMarker` (radius
-    in screen pixels) so a cell's marker stays the same size relative to the
-    real geography at every zoom level, instead of shrinking to a sliver of a
-    street once zoomed in.
+    Deliberately carries NO layers. Every marker layer reaches the browser through
+    `st_folium(feature_group_to_add=...)` instead. An earlier version attached
+    FeatureGroups and a LayerControl here with `.add_to()`, which raised
+    `ReferenceError: feature_group_<hash> is not defined` in the browser and blanked
+    the entire map (AppTest saw no exception at all - only a real browser catches
+    this).
 
-    Deliberately does NOT attach a `folium.LayerControl` here. An earlier
-    version called `.add_to(severity_map)` directly on FeatureGroups and a
-    LayerControl - that produced a JS `ReferenceError:
-    feature_group_<hash> is not defined` at runtime in the browser (silently
-    blanking the whole map, confirmed via a headless Playwright run),
-    because streamlit-folium's custom component re-injects the rendered map
-    into its own `map_div` execution context and only its own
-    `feature_group_to_add=`/`layer_control=` parameters on `st_folium()`
-    rewrite variable references correctly for that context - a LayerControl
-    baked into the cached Map object via plain `.add_to()` does not resolve.
-    If the KSI/slight toggle is wanted back, it must be wired through those
-    two `st_folium()` parameters, not through this cached Map object.
+    NOT cached, on purpose - do not add `@st.cache_resource` back here even though
+    it looks like a natural fit for a builder function. `st_folium` mutates
+    whatever map it is given: it calls `.add_to(map)` on every feature group
+    (streamlit_folium/__init__.py:177) and on the layer control
+    (streamlit_folium/__init__.py:202) as part of its own rendering. If this map
+    were a cache_resource singleton, the first render would leave it permanently
+    owning those FeatureGroups and the LayerControl. On the *second* render (any
+    Overview rerun, navigating away and back, or simply a second user session),
+    `st_folium` builds the main map script before re-attaching the feature groups,
+    so the already-attached children from the first render get baked into that
+    script referencing their old (now-stale) `feature_group_feature_group_<n>`
+    identifiers - while the fresh re-attachment gets a different, re-hashed
+    identifier. The stale reference is undefined in the rendered script's scope,
+    which reproduces the exact `ReferenceError: feature_group_<hash> is not
+    defined` blank-map bug this task exists to prevent. Constructing an empty
+    `folium.Map` costs microseconds, so there is nothing worth caching here -
+    correctness beats latency.
+    """
+    import folium
 
-    folium.Map objects aren't relevant to compare by value, so this uses
-    cache_resource (identity-cached singleton), not cache_data.
+    return folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+
+
+def build_severity_feature_groups(precision: float = 0.1):
+    """Build one toggleable FeatureGroup per relative-risk band.
+
+    Returned as a plain list for `st_folium(feature_group_to_add=...)`; the caller
+    must not attach these to a map (see build_severity_base_map). folium's
+    LayerControl over these groups doubles as the map's legend and lets a reader
+    isolate a single band - for example showing only ">=2x average" cells to see
+    where they cluster.
+
+    Uses `folium.Circle` (radius in metres) rather than `CircleMarker` (radius in
+    screen pixels) so a cell's marker keeps a constant size relative to the real
+    geography at every zoom level. Cells are drawn at their accident centroid, not
+    at the rounded grid-bin coordinate.
+
+    NOT cached, on purpose - do not add `@st.cache_resource` back here even though
+    building ~4857 Circle objects looks expensive enough to deserve one. Measured
+    with warm loaders (load_severity_grid/load_national_ksi_rate already cached),
+    the whole function body costs 0.38 s cold and 0.21 s warm - cheap enough that
+    there is nothing worth caching, and `st.cache_resource` is process-global, not
+    per-session. Streamlit runs each user session's script in its own
+    ScriptRunner thread, so with a cached singleton, two sessions' renders can
+    interleave: `st_folium` calls `.add_to(map)` and `.render()` on every
+    FeatureGroup it is given (streamlit_folium/__init__.py:172-176) as part of
+    building that session's map script. If session B's render() runs on the
+    shared cached groups between session A's render() and A's
+    generate_leaflet_string(), the `ElementAddToElement` child that render()
+    attaches captures B's map name, not A's - so A's emitted script ends up
+    referencing `feature_group_<hash>.addTo(map_<B's id>)`, a variable that does
+    not exist inside A's iframe. That is the same `ReferenceError:
+    feature_group_<hash> is not defined` blank-map bug that
+    build_severity_base_map's docstring describes for the single-session case,
+    just triggered by cross-session interleaving instead of same-session rerun.
+    A deepcopy-of-cached-template scheme does not help either: deepcopy of the
+    full 4857-circle structure was measured at 0.38 s, i.e. no cheaper than
+    rebuilding from the (already-cached) grid data. The invariant that actually
+    holds: nothing handed to `st_folium` is ever cached, full stop.
     """
     import folium
 
     grid_df = load_severity_grid(precision)
-    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
-    for _, cell in grid_df.iterrows():
-        ksi_share = cell["ksi_count"] / cell["total"]
-        color = SEVERITY_COLORS["KSI"] if ksi_share >= 0.5 else SEVERITY_COLORS["slight"]
+    baseline = load_national_ksi_rate()
+    groups = [folium.FeatureGroup(name=band.label, show=True) for band in RISK_BANDS]
+
+    for cell in grid_df.itertuples():
+        relative_risk = shrunk_relative_risk(cell.ksi_count, cell.total, baseline)
+        band_index = risk_band_index(relative_risk)
+        band = RISK_BANDS[band_index]
         folium.Circle(
-            location=[cell["lat_bin"], cell["lon_bin"]],
-            radius=min(5000, 300 + cell["total"] * 4),
-            color=color,
+            location=[cell.center_lat, cell.center_lon],
+            radius=min(5000, 300 + cell.total * 4),
+            color=band.color,
             weight=1,
             fill=True,
-            fill_color=color,
-            fill_opacity=0.5,
+            fill_color=band.color,
+            fill_opacity=confidence_opacity(cell.total),
             popup=(
-                f"KSI: {int(cell['ksi_count'])}, slight: {int(cell['slight_count'])}, "
-                f"total: {int(cell['total'])}"
+                f"{relative_risk:.2f}x national KSI rate ({band.label})<br>"
+                f"KSI: {int(cell.ksi_count)}, slight: {int(cell.slight_count)}, "
+                f"total: {int(cell.total)}"
             ),
-        ).add_to(severity_map)
-    return severity_map
+        ).add_to(groups[band_index])
+
+    return groups
+
+
+def build_picker_base_map():
+    """Return an empty folium map centred on Germany for the location picker.
+
+    Carries no marker: the selected-point marker is passed per rerun through
+    `st_folium(feature_group_to_add=...)`.
+
+    NOT cached, on purpose - do not add `@st.cache_resource` back here even though
+    it looks like a natural fit for a builder function. `st_folium` mutates
+    whatever map it is given: it calls `.add_to(map)` on the feature group
+    (streamlit_folium/__init__.py:177) as part of its own rendering. If this map
+    were a cache_resource singleton, the first render would leave it permanently
+    owning that FeatureGroup. On the *second* render (any Risk Predictor rerun,
+    navigating away and back, or simply a second user session), `st_folium`
+    builds the main map script before re-attaching the feature group, so the
+    already-attached child from the first render gets baked into that script
+    referencing its old (now-stale) `feature_group_feature_group_<n>` identifier -
+    while the fresh re-attachment gets a different, re-hashed identifier
+    (`feature_group_div_<n>`). The stale reference is undefined in the rendered
+    script's scope, producing `ReferenceError: feature_group_<hash> is not
+    defined` in the browser and blanking the entire map (AppTest cannot catch
+    this - it never runs the frontend). Constructing an empty `folium.Map` costs
+    microseconds, so there is nothing worth caching here - correctness beats
+    latency.
+    """
+    import folium
+
+    return folium.Map(location=[51.1657, 10.4515], zoom_start=6)
 
 
 def get_column_spec(contract: dict, name: str) -> dict:
