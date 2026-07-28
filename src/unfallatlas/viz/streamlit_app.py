@@ -12,6 +12,7 @@ import json
 import logging
 import math
 from pathlib import Path
+from typing import NamedTuple
 
 import duckdb
 import joblib
@@ -30,6 +31,120 @@ DEFAULT_H3_CELL = "881f15ad31fffff"
 DEFAULT_DWD_STATION_DIST_KM = 9.51
 
 SEVERITY_COLORS = {"KSI": "#E63946", "slight": "#2A9D8F"}
+
+# Measured over the full committed data/accidents.parquet:
+# 395766 KSI rows (UKATGEORIE IN (1, 2)) out of 2092401 total.
+# Used only as a fallback if the DuckDB baseline query is unavailable; the live
+# value comes from load_national_ksi_rate().
+NATIONAL_KSI_RATE_FALLBACK = 0.1891444326398238
+
+# Pseudo-count for shrinking a cell's KSI rate toward the national baseline, so a
+# cell with 1 accident cannot register as "100% KSI". Chosen by measuring band
+# populations over the real 4857-cell grid: k=10 still admits 6-accident cells into
+# the top ">=2x" band (the noise shrinkage exists to suppress), while k=50
+# over-shrinks it to 52 cells and flattens the map. k=20 fills all five bands
+# (239 / 1137 / 2014 / 1263 / 204) with no band above 41% of cells.
+SHRINKAGE_K = 20
+
+
+class RiskBand(NamedTuple):
+    """One relative-risk band: a half-open [lower, upper) ratio range and its color."""
+
+    label: str
+    lower: float
+    upper: float
+    color: str
+
+
+# Diverging ramp anchored on the app's two existing brand colors
+# (SEVERITY_COLORS["slight"] teal -> SEVERITY_COLORS["KSI"] red) with a warm sand
+# midpoint. Deliberately hand-picked rather than RGB-interpolated: linear
+# interpolation between teal and red passes through muddy brown-grey (#886B6A at
+# the midpoint), which does not read as an ordered risk scale.
+RISK_BANDS = (
+    RiskBand("Well below average (<0.75x)", 0.0, 0.75, SEVERITY_COLORS["slight"]),
+    RiskBand("Around average (0.75-1.1x)", 0.75, 1.1, "#8FC7BE"),
+    RiskBand("Elevated (1.1-1.5x)", 1.1, 1.5, "#F2C879"),
+    RiskBand("High (1.5-2x)", 1.5, 2.0, "#EE8062"),
+    RiskBand("Very high (>=2x)", 2.0, float("inf"), SEVERITY_COLORS["KSI"]),
+)
+
+# Fill-opacity tiers by a cell's accident count, so a thinly-sampled cell reads as
+# uncertain instead of looking as confident as a well-sampled one. Three discrete
+# steps rather than a continuous fade, so the legend can state exactly what a pale
+# cell means instead of implying unearned precision.
+CONFIDENCE_OPACITY_TIERS = ((20, 0.25), (100, 0.45))
+CONFIDENCE_OPACITY_MAX = 0.65
+
+
+def shrunk_relative_risk(
+    ksi_count: int, total: int, baseline: float, k: int = SHRINKAGE_K
+) -> float:
+    """Return a cell's KSI rate relative to the national baseline, shrunk toward it.
+
+    An absolute "is KSI the local majority?" test is the wrong question: KSI is a
+    ~18.9% minority outcome nationally, so a cell must reach 2.64x the national rate
+    before crossing 50%. Only 123 of 4857 cells do, leaving 97.5% of the map a single
+    color. Relative risk asks the answerable question - "is this cell worse than
+    normal, and by how much?" - and the k-weighted shrinkage stops small cells from
+    reaching extremes on noise.
+
+    Returns 1.0 (exactly baseline) for an empty cell, since with no evidence the best
+    estimate is the prior.
+    """
+    if baseline <= 0:
+        raise ValueError(f"baseline must be positive, got {baseline}")
+    shrunk_rate = (ksi_count + k * baseline) / (total + k)
+    return shrunk_rate / baseline
+
+
+def risk_band_index(relative_risk: float) -> int:
+    """Return the index into RISK_BANDS for a relative-risk ratio.
+
+    Bands are half-open [lower, upper), so a ratio landing exactly on a boundary
+    falls into the higher band and every ratio maps to exactly one band.
+    """
+    if relative_risk < 0:
+        raise ValueError(f"relative_risk must be non-negative, got {relative_risk}")
+    for index, band in enumerate(RISK_BANDS):
+        if relative_risk < band.upper:
+            return index
+    return len(RISK_BANDS) - 1
+
+
+def confidence_opacity(total: int) -> float:
+    """Return the fill opacity for a cell, lower when its sample is thin."""
+    for threshold, opacity in CONFIDENCE_OPACITY_TIERS:
+        if total < threshold:
+            return opacity
+    return CONFIDENCE_OPACITY_MAX
+
+
+def severity_legend_markdown() -> str:
+    """Render the static map legend as markdown with inline color swatches.
+
+    folium's LayerControl names the bands but cannot show their colors or explain the
+    opacity convention, so this legend carries both.
+    """
+    swatches = "\n".join(
+        f'- <span style="display:inline-block;width:0.85rem;height:0.85rem;'
+        f"background:{band.color};border:1px solid rgba(0,0,0,0.25);"
+        f'vertical-align:middle;margin-right:0.5rem"></span>{band.label}'
+        for band in RISK_BANDS
+    )
+    return (
+        "**Relative KSI risk** - each cell's share of killed/seriously-injured "
+        "accidents, compared against the national average of **18.9%**. "
+        f"A cell at 2x is twice as likely to be severe as Germany overall.\n\n"
+        f"{swatches}\n\n"
+        "Rates are shrunk toward the national average in proportion to how few "
+        "accidents a cell has, so a single severe accident cannot mark a cell as "
+        "high-risk. Fill opacity shows that confidence directly: cells with fewer "
+        "than 20 accidents are rendered faintest, under 100 mid-way, and 100 or "
+        "more at full strength. Circle size still scales with the cell's total "
+        "accident count."
+    )
+
 
 LIMITATIONS_TEXT = (
     "- The strongest available feature (accident type, `UART`) has a Cramer's V "

@@ -4,8 +4,11 @@ import pytest
 from unfallatlas.viz.streamlit_app import (
     DEFAULT_WIDGET_VALUES,
     FEATURE_DISPLAY_NAMES,
+    RISK_BANDS,
+    SEVERITY_COLORS,
     UART_LABELS,
     build_input_row,
+    confidence_opacity,
     decode_feature_value,
     display_feature_name,
     get_column_spec,
@@ -19,6 +22,9 @@ from unfallatlas.viz.streamlit_app import (
     load_permutation_importance,
     load_severity_grid,
     predict_ksi,
+    risk_band_index,
+    severity_legend_markdown,
+    shrunk_relative_risk,
 )
 
 
@@ -207,3 +213,100 @@ def test_build_severity_map_returns_a_folium_map():
 
     m = build_severity_map()
     assert isinstance(m, folium.Map)
+
+
+def test_shrunk_relative_risk_returns_baseline_ratio_for_empty_cell():
+    # A cell with no accidents is pure prior: shrunk rate == baseline, ratio == 1.0
+    assert shrunk_relative_risk(0, 0, 0.1891444326398238) == pytest.approx(1.0)
+
+
+def test_shrunk_relative_risk_converges_to_raw_rate_for_large_cell():
+    # 100_000 accidents at a 40% KSI rate: shrinkage of k=20 is negligible
+    result = shrunk_relative_risk(40_000, 100_000, 0.1891444326398238)
+    raw_ratio = 0.4 / 0.1891444326398238
+    assert result == pytest.approx(raw_ratio, rel=1e-3)
+
+
+def test_shrunk_relative_risk_pulls_small_noisy_cell_toward_baseline():
+    # 1 accident, and it was KSI. Raw rate is 100% (5.29x baseline) - pure noise.
+    # Shrinkage must pull it far down, below the "very high" 2.0x band threshold.
+    baseline = 0.1891444326398238
+    raw_ratio = 1.0 / baseline
+    shrunk = shrunk_relative_risk(1, 1, baseline)
+    assert raw_ratio > 5.0
+    assert shrunk < 2.0
+
+
+def test_shrunk_relative_risk_uses_explicit_k():
+    baseline = 0.2
+    # (ksi + k*baseline) / (total + k) / baseline
+    # k=0 disables shrinkage entirely -> raw ratio
+    assert shrunk_relative_risk(5, 10, baseline, k=0) == pytest.approx(0.5 / 0.2)
+
+
+def test_shrunk_relative_risk_rejects_non_positive_baseline():
+    with pytest.raises(ValueError, match="baseline"):
+        shrunk_relative_risk(1, 10, 0.0)
+
+
+def test_risk_bands_are_five_contiguous_ascending_ranges():
+    assert len(RISK_BANDS) == 5
+    assert RISK_BANDS[0].lower == 0.0
+    assert RISK_BANDS[-1].upper == float("inf")
+    for lower_band, upper_band in zip(RISK_BANDS[:-1], RISK_BANDS[1:], strict=True):
+        # contiguous: no gaps, no overlaps
+        assert lower_band.upper == upper_band.lower
+
+
+def test_risk_bands_endpoints_reuse_the_app_severity_palette():
+    assert RISK_BANDS[0].color == SEVERITY_COLORS["slight"]
+    assert RISK_BANDS[-1].color == SEVERITY_COLORS["KSI"]
+
+
+def test_risk_bands_all_have_distinct_colors_and_labels():
+    assert len({band.color for band in RISK_BANDS}) == 5
+    assert len({band.label for band in RISK_BANDS}) == 5
+
+
+@pytest.mark.parametrize(
+    ("relative_risk", "expected_index"),
+    [
+        (0.0, 0),
+        (0.74, 0),
+        (0.75, 1),  # boundaries are half-open [lower, upper): 0.75 lands in band 1
+        (1.0, 1),
+        (1.09, 1),
+        (1.1, 2),
+        (1.49, 2),
+        (1.5, 3),
+        (1.99, 3),
+        (2.0, 4),
+        (100.0, 4),
+    ],
+)
+def test_risk_band_index_uses_half_open_intervals(relative_risk, expected_index):
+    assert risk_band_index(relative_risk) == expected_index
+
+
+def test_risk_band_index_rejects_negative_risk():
+    with pytest.raises(ValueError, match="relative_risk"):
+        risk_band_index(-0.1)
+
+
+@pytest.mark.parametrize(
+    ("total", "expected_opacity"),
+    [(0, 0.25), (19, 0.25), (20, 0.45), (99, 0.45), (100, 0.65), (25_916, 0.65)],
+)
+def test_confidence_opacity_tiers(total, expected_opacity):
+    assert confidence_opacity(total) == expected_opacity
+
+
+def test_severity_legend_markdown_states_every_band_and_the_baseline():
+    legend = severity_legend_markdown()
+    for band in RISK_BANDS:
+        assert band.label in legend
+        assert band.color in legend
+    # The national baseline must be stated as a percentage, so "2x average" is readable
+    assert "18.9" in legend
+    # The opacity convention must be explained, not left implicit
+    assert "20" in legend and "100" in legend
