@@ -506,51 +506,70 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
 
 
 @st.cache_resource
-def build_severity_map(precision: float = 0.1):
-    """Build the folium severity map once and cache the Map object across reruns.
+def build_severity_base_map():
+    """Return an empty, cached folium map centred on Germany.
 
-    Uses `folium.Circle` (radius in metres) rather than `CircleMarker` (radius
-    in screen pixels) so a cell's marker stays the same size relative to the
-    real geography at every zoom level, instead of shrinking to a sliver of a
-    street once zoomed in.
+    Deliberately carries NO layers. Every marker layer reaches the browser through
+    `st_folium(feature_group_to_add=...)` instead. An earlier version attached
+    FeatureGroups and a LayerControl here with `.add_to()`, which raised
+    `ReferenceError: feature_group_<hash> is not defined` in the browser and blanked
+    the entire map (AppTest saw no exception at all - only a real browser catches
+    this). streamlit-folium re-injects the rendered map into its own `map_div`
+    execution context and only rewrites layer references for objects passed through
+    its own parameters, so layers baked in here do not resolve.
 
-    Deliberately does NOT attach a `folium.LayerControl` here. An earlier
-    version called `.add_to(severity_map)` directly on FeatureGroups and a
-    LayerControl - that produced a JS `ReferenceError:
-    feature_group_<hash> is not defined` at runtime in the browser (silently
-    blanking the whole map, confirmed via a headless Playwright run),
-    because streamlit-folium's custom component re-injects the rendered map
-    into its own `map_div` execution context and only its own
-    `feature_group_to_add=`/`layer_control=` parameters on `st_folium()`
-    rewrite variable references correctly for that context - a LayerControl
-    baked into the cached Map object via plain `.add_to()` does not resolve.
-    If the KSI/slight toggle is wanted back, it must be wired through those
-    two `st_folium()` parameters, not through this cached Map object.
-
-    folium.Map objects aren't relevant to compare by value, so this uses
+    folium.Map objects aren't meaningfully comparable by value, so this uses
     cache_resource (identity-cached singleton), not cache_data.
     """
     import folium
 
+    return folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+
+
+@st.cache_resource
+def build_severity_feature_groups(precision: float = 0.1):
+    """Build one toggleable FeatureGroup per relative-risk band.
+
+    Returned as a plain list for `st_folium(feature_group_to_add=...)`; the caller
+    must not attach these to a map (see build_severity_base_map). folium's
+    LayerControl over these groups doubles as the map's legend and lets a reader
+    isolate a single band - for example showing only ">=2x average" cells to see
+    where they cluster.
+
+    Uses `folium.Circle` (radius in metres) rather than `CircleMarker` (radius in
+    screen pixels) so a cell's marker keeps a constant size relative to the real
+    geography at every zoom level. Cells are drawn at their accident centroid, not
+    at the rounded grid-bin coordinate.
+
+    Cached because building ~4857 Circle objects costs roughly 3.4 s and 4.9 MB of
+    HTML, which is too slow to repeat on every rerun.
+    """
+    import folium
+
     grid_df = load_severity_grid(precision)
-    severity_map = folium.Map(location=[51.1657, 10.4515], zoom_start=6)
-    for _, cell in grid_df.iterrows():
-        ksi_share = cell["ksi_count"] / cell["total"]
-        color = SEVERITY_COLORS["KSI"] if ksi_share >= 0.5 else SEVERITY_COLORS["slight"]
+    baseline = load_national_ksi_rate()
+    groups = [folium.FeatureGroup(name=band.label, show=True) for band in RISK_BANDS]
+
+    for cell in grid_df.itertuples():
+        relative_risk = shrunk_relative_risk(cell.ksi_count, cell.total, baseline)
+        band_index = risk_band_index(relative_risk)
+        band = RISK_BANDS[band_index]
         folium.Circle(
-            location=[cell["lat_bin"], cell["lon_bin"]],
-            radius=min(5000, 300 + cell["total"] * 4),
-            color=color,
+            location=[cell.center_lat, cell.center_lon],
+            radius=min(5000, 300 + cell.total * 4),
+            color=band.color,
             weight=1,
             fill=True,
-            fill_color=color,
-            fill_opacity=0.5,
+            fill_color=band.color,
+            fill_opacity=confidence_opacity(cell.total),
             popup=(
-                f"KSI: {int(cell['ksi_count'])}, slight: {int(cell['slight_count'])}, "
-                f"total: {int(cell['total'])}"
+                f"{relative_risk:.2f}x national KSI rate ({band.label})<br>"
+                f"KSI: {int(cell.ksi_count)}, slight: {int(cell.slight_count)}, "
+                f"total: {int(cell.total)}"
             ),
-        ).add_to(severity_map)
-    return severity_map
+        ).add_to(groups[band_index])
+
+    return groups
 
 
 def get_column_spec(contract: dict, name: str) -> dict:

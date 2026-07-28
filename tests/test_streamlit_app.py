@@ -8,6 +8,8 @@ from unfallatlas.viz.streamlit_app import (
     SEVERITY_COLORS,
     UART_LABELS,
     build_input_row,
+    build_severity_base_map,
+    build_severity_feature_groups,
     confidence_opacity,
     decode_feature_value,
     display_feature_name,
@@ -207,13 +209,50 @@ def test_load_severity_grid_respects_precision_parameter():
     assert len(coarse) < len(fine)
 
 
-def test_build_severity_map_returns_a_folium_map():
+def test_build_severity_base_map_has_no_layers_attached():
+    # Layers must reach the browser only via st_folium(feature_group_to_add=...).
+    # Anything attached here raises a JS ReferenceError and blanks the whole map.
+    # Cache cleared first: st.cache_resource is a process-global singleton, and if
+    # this suite runs in the same process as an AppTest render of the Overview page
+    # (it does - see tests/test_overview_page.py), st_folium's own internals have
+    # already attached layers to the cached instance by the time this test runs.
+    # That attachment is legitimate (st_folium wires it up correctly, unlike the
+    # banned manual .add_to() pattern this test guards against) - clearing the
+    # cache here just ensures this assertion inspects a freshly built map.
     import folium
 
-    from unfallatlas.viz.streamlit_app import build_severity_map
+    build_severity_base_map.clear()
+    base_map = build_severity_base_map()
+    children = base_map._children.values()
+    assert not any(isinstance(child, folium.FeatureGroup) for child in children)
+    assert not any(isinstance(child, folium.LayerControl) for child in children)
 
-    m = build_severity_map()
-    assert isinstance(m, folium.Map)
+
+def test_build_severity_feature_groups_returns_one_named_group_per_band():
+    groups = build_severity_feature_groups()
+    assert len(groups) == len(RISK_BANDS)
+    assert [group.layer_name for group in groups] == [band.label for band in RISK_BANDS]
+
+
+def test_build_severity_feature_groups_covers_every_grid_cell_exactly_once():
+    # Cache cleared first: st_folium's internal render() adds one bookkeeping
+    # child per group the first time it renders a group (idempotent on repeat
+    # renders, but it would otherwise inflate this count by 1 per group if an
+    # AppTest render of the Overview page already ran in this process - see
+    # tests/test_overview_page.py - since st.cache_resource is a process-global
+    # singleton shared between AppTest and this direct call).
+    build_severity_feature_groups.clear()
+    groups = build_severity_feature_groups()
+    circles_per_group = [len(group._children) for group in groups]
+    assert sum(circles_per_group) == 4857
+    assert circles_per_group == [239, 1137, 2014, 1263, 204]
+
+
+def test_build_severity_map_is_gone():
+    # Replaced by build_severity_base_map + build_severity_feature_groups.
+    import unfallatlas.viz.streamlit_app as module
+
+    assert not hasattr(module, "build_severity_map")
 
 
 def test_shrunk_relative_risk_returns_baseline_ratio_for_empty_cell():

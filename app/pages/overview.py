@@ -1,15 +1,18 @@
 """Overview page: champion headline metrics and the 3-class vs. binary ceiling story."""
 
+import folium
 import streamlit as st
 from streamlit_folium import st_folium
 
 from unfallatlas.viz.metrics_viz import plot_binary_f1_recall_front, plot_f1_recall_front
 from unfallatlas.viz.streamlit_app import (
     LIMITATIONS_TEXT,
-    build_severity_map,
+    build_severity_base_map,
+    build_severity_feature_groups,
     load_3class_comparison,
     load_binary_comparison,
     load_model_card,
+    severity_legend_markdown,
 )
 
 st.title("Unfallatlas KSI Risk Console")
@@ -39,17 +42,30 @@ with col_b:
     st.plotly_chart(plot_binary_f1_recall_front(load_binary_comparison()), width="stretch")
 
 st.markdown("---")
-st.subheader("Where accidents happen: severity by location")
+st.subheader("Where severe accidents concentrate")
 st.caption(
-    "Each marker aggregates accidents within a ~0.1 degree (~11 km) grid cell. "
-    "Red = KSI (killed/seriously injured) accidents are the majority in that "
-    "cell - this marks the local *share*, not the accident count, so an "
-    "isolated red cell can be a low-traffic rural spot rather than a hotspot. "
-    "Teal = slight-injury accidents are the majority. Circle size scales with "
-    "the cell's total accident count."
+    "Each circle aggregates the accidents inside a ~0.1 degree (~11 km) cell, drawn "
+    "at the mean position of those accidents. Color shows how the cell's share of "
+    "KSI (killed/seriously injured) accidents compares against the national average, "
+    "not how many accidents it has - use the layer control to isolate a single risk "
+    "band. Note the inversion this reveals: the lowest-risk cells carry a median of "
+    "1,339 accidents each while the highest-risk cells carry 91. Dense urban areas "
+    "produce many mostly-slight collisions; rural roads produce far fewer that are "
+    "far more often severe."
 )
-severity_map = build_severity_map()
-st_folium(severity_map, height=720, width=None, key="overview_severity_map", returned_objects=[])
+st_folium(
+    build_severity_base_map(),
+    feature_group_to_add=build_severity_feature_groups(),
+    # streamlit-folium 0.27's `layer_control` parameter takes a folium.LayerControl
+    # instance (not a bool) and attaches it to the map itself, internally, with its
+    # own variable-rewriting - we never call .add_to() on it ourselves.
+    layer_control=folium.LayerControl(),
+    height=720,
+    width=None,
+    key="overview_severity_map",
+    returned_objects=[],
+)
+st.markdown(severity_legend_markdown(), unsafe_allow_html=True)
 
 with st.expander("Limitations"):
     st.markdown(LIMITATIONS_TEXT)
