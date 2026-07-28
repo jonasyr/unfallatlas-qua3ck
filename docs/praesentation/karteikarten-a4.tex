@@ -1,0 +1,20 @@
+% Druckfassung: legt je zwei A5-Karten aus karteikarten.pdf auf eine A4-Seite
+% und zeichnet eine Schnittlinie in die Blattmitte.
+% Reihenfolge: pdflatex karteikarten.tex  ->  pdflatex karteikarten-a4.tex
+\documentclass[a4paper]{article}
+\usepackage[margin=0pt]{geometry}
+\usepackage{pdfpages}
+\usepackage{tikz}
+
+\begin{document}
+
+\includepdf[pages=-,nup=1x2,noautoscale=false,
+            frame=false,delta=0mm 0mm,
+            picturecommand={%
+              \begin{tikzpicture}[remember picture,overlay]
+                \draw[gray!45,dash pattern=on 2mm off 2mm,line width=0.2pt]
+                  ([yshift=0.5\paperheight]current page.south west) --
+                  ([yshift=0.5\paperheight]current page.south east);
+              \end{tikzpicture}}]{karteikarten.pdf}
+
+\end{document}

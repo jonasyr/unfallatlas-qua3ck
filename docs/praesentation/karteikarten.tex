@@ -1,0 +1,1250 @@
+% Karteikarten zur Projektpräsentation "Unfallatlas Deutschland (QUA3CK)"
+% Eine Karte pro Seite im Format A5 quer (210 x 148,5 mm).
+% Für den Druck 2 Karten pro A4-Seite: karteikarten-a4.tex kompilieren.
+\documentclass[9pt]{extarticle}
+
+\usepackage[paperwidth=210mm,paperheight=148.5mm,
+            left=9mm,right=9mm,top=7mm,bottom=7mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage[autostyle,german=quotes]{csquotes}
+\usepackage{microtype}
+\usepackage[scale=0.94]{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{xcolor}
+\usepackage[skins]{tcolorbox}
+\usepackage{enumitem}
+\usepackage{amssymb}
+
+\tolerance=9999
+\setlength{\emergencystretch}{3em}
+\hyphenpenalty=200
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+
+\definecolor{Accent}{HTML}{315F7D}
+\definecolor{AccentDark}{HTML}{24475F}
+\definecolor{AccentPale}{HTML}{EAF0F5}
+\definecolor{Demo}{HTML}{B85C00}
+\definecolor{DemoPale}{HTML}{FDF2E6}
+\definecolor{KSI}{HTML}{C22B38}
+\definecolor{Grau}{HTML}{5A6672}
+
+% ---------------------------------------------------------------- Kartenkopf
+% \karte{Nummer}{Phasenkürzel}{Titel}
+\newcommand{\karte}[3]{%
+  \clearpage
+  {\color{Accent}\rule{\linewidth}{2.4pt}}\par\vspace{2.5pt}
+  {\fontsize{8}{9}\selectfont\bfseries\color{Accent}%
+   FOLIE #1\hspace{1.2em}\textbar\hspace{1.2em}#2}\par\vspace{1pt}
+  {\fontsize{16}{18}\selectfont\bfseries\color{AccentDark}#3}\par\vspace{3pt}
+  {\color{Accent!45}\rule{\linewidth}{0.5pt}}\par\vspace{4pt}%
+}
+
+% Karte ohne Foliennummer (Cockpit- und Notfallkarten)
+\newcommand{\metakarte}[2]{%
+  \clearpage
+  {\color{AccentDark}\rule{\linewidth}{2.4pt}}\par\vspace{2.5pt}
+  {\fontsize{8}{9}\selectfont\bfseries\color{AccentDark}#1}\par\vspace{1pt}
+  {\fontsize{16}{18}\selectfont\bfseries\color{AccentDark}#2}\par\vspace{3pt}
+  {\color{Accent!45}\rule{\linewidth}{0.5pt}}\par\vspace{4pt}%
+}
+
+\newcommand{\rubrik}[1]{%
+  \vspace{3.5pt}{\fontsize{7.5}{8.5}\selectfont\bfseries\color{Grau}%
+  \MakeUppercase{#1}}\par\vspace{1.5pt}}
+
+% ------------------------------------------------------------------- Boxen
+\newcommand{\kernsatz}[1]{%
+  \begin{tcolorbox}[enhanced,sharp corners,boxrule=0pt,
+    leftrule=2.2pt,colframe=Accent,colback=AccentPale,
+    left=5pt,right=5pt,top=3.5pt,bottom=3.5pt,before skip=1pt,after skip=2pt]
+    \color{AccentDark}\itshape #1
+  \end{tcolorbox}}
+
+\newcommand{\zeigen}[1]{%
+  \begin{tcolorbox}[enhanced,sharp corners,boxrule=0pt,
+    leftrule=2.2pt,colframe=Demo,colback=DemoPale,
+    left=5pt,right=5pt,top=3.5pt,bottom=3.5pt,before skip=3pt,after skip=2pt]
+    {\fontsize{7.5}{8.5}\selectfont\bfseries\color{Demo}JETZT ZEIGEN}\par\vspace{2pt}
+    #1
+  \end{tcolorbox}}
+
+\newcommand{\merksatz}[1]{%
+  \vspace{2pt}{\color{KSI}$\blacktriangleright$}\ \textbf{\color{KSI}#1}\par}
+
+% ------------------------------------------------------------------ Listen
+\newlist{sag}{itemize}{2}
+\setlist[sag]{leftmargin=1.05em,labelsep=0.4em,label=\textcolor{Accent}{\textbullet},
+  itemsep=1.3pt,topsep=1pt,parsep=0pt,partopsep=0pt}
+\setlist[sag,2]{leftmargin=0.95em,label=\textcolor{Accent!60}{\raisebox{0.25ex}{\rule{0.45em}{0.5pt}}},topsep=1pt,itemsep=0.8pt}
+
+\newlist{begriff}{itemize}{1}
+\setlist[begriff]{leftmargin=1.05em,labelsep=0.4em,label=\textcolor{Grau}{\textbullet},
+  itemsep=1.1pt,topsep=1pt,parsep=0pt,partopsep=0pt}
+
+\newcommand{\bg}[2]{\item \textbf{#1:} #2}
+\newcommand{\frage}[2]{\item \textbf{\color{AccentDark}#1} #2}
+
+% Zweispaltige Kurzlisten auf engem Raum
+\usepackage{multicol}
+
+\begin{document}
+
+% ============================================================ COCKPIT-KARTE
+\metakarte{Cockpit}{Ablauf, Zeit und Sprungpunkte}
+
+\rubrik{Zeitbudget, 37 Folien in 30 bis 40 Minuten}
+\begin{multicols}{2}
+\begin{sag}[itemsep=0.9pt]
+  \item Einstieg (1-4): 4 Min
+  \item Q-Phase (5-8): 5 Min
+  \item U-Phase (9-16): 9 Min
+  \item A\textsuperscript{3}-Phase (17-24): 9 Min
+  \item C-Phase (25-31): 8 Min
+  \item K-Phase (32-34): 4 Min
+  \item Fazit, Quellen, Dank (35-37): 2 Min
+\end{sag}
+\end{multicols}
+
+\rubrik{Kürzen erlaubt, niemals kürzen}
+\begin{sag}
+  \item Kürzbar bei Zeitnot: Folie 11 (Datenqualität), 24 (Threshold), 31 (Contract).
+  \item Niemals kürzen: Folie 16 (Machbarkeitswarnung), 20 (arithmetische Decke),
+        21 (Reframing), 27 (Champion bleibt).
+\end{sag}
+
+\zeigen{%
+\begin{sag}[itemsep=1.1pt]
+  \item Nach \textbf{14}: Live-Report, U-Phase, Abschnitt 6 \enquote{Bivariate analysis}, Cram\'ers-V-Heatmap. 30 Sek.
+  \item Nach \textbf{22}: App, \textit{Model Comparison}, \enquote{Pareto front: macro-F1 vs. Recall(KSI)}. 45 Sek.
+  \item Nach \textbf{27}: App, \textit{Model Comparison}, Aufklapper \enquote{Warum bleibt Random Forest der Champion?}. 30 Sek.
+  \item Nach \textbf{32}: App, \textit{Risk Predictor}, \enquote{Try an example} anklicken, Vorhersage zeigen. 60 Sek.
+  \item Nach \textbf{33}: App, \textit{Overview}, \enquote{Where accidents are disproportionately severe}, Risikobänder umschalten. 45 Sek.
+\end{sag}}
+
+\rubrik{Vor dem Start prüfen}
+\begin{sag}
+  \item Drei Tabs offen: Repo (github.com/jonasyr/unfallatlas-qua3ck),
+        Live-Report (jonasyr.github.io/unfallatlas-qua3ck), App (Streamlit Cloud).
+  \item App einmal vorher aufrufen. Kaltstart dauert bis zu 30 Sekunden.
+\end{sag}
+
+% ==================================================================== TEIL 1
+\karte{1}{Einstieg}{Titel}
+
+\kernsatz{Ich habe die Schwere von Verkehrsunfällen in Deutschland aus öffentlichen
+Daten vorhergesagt und methodische Sauberkeit wichtiger genommen als eine hohe Zahl.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Name, Titel, Datengrundlage in einem Satz. Nicht die Folie vorlesen.
+  \item Drei Live-Artefakte ankündigen: Repository, Live-Report, Streamlit-App.
+  \item Ansagen, dass ich an passenden Stellen kurz hineinspringe.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{QUA\textsuperscript{3}CK}{Prozessmodell für ML-Projekte. Question, Understanding,
+      Algorithm/Adapt/Adjust, Conclude \& Compare, Knowledge Transfer.}
+  \bg{Unfallatlas}{Offener Datensatz der Statistischen Ämter des Bundes und der Länder.
+      Jeder polizeilich erfasste Unfall mit Personenschaden seit 2016, eine Zeile pro Unfall.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{2}{Einstieg}{Agenda}
+
+\kernsatz{Die Präsentation folgt exakt dem QUA\textsuperscript{3}CK-Prozess, weil das
+Projekt so entstanden ist.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Die fünf Phasen kurz durchgehen, nicht erklären.
+  \item Spannungsbogen setzen: \enquote{Die A\textsuperscript{3}-Phase ist die interessanteste,
+        weil dort das ursprüngliche Ziel gescheitert ist und ich es begründet ändern musste.}
+\end{sag}
+
+% --------------------------------------------------------------------------
+\karte{3}{Einstieg}{Das QUA\textsuperscript{3}CK-Prozessmodell}
+
+\kernsatz{QUA\textsuperscript{3}CK zwingt dazu, die Erfolgskriterien festzulegen, bevor man
+die Daten kennt, und macht ein Scheitern damit überhaupt erst erkennbar.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Jeden Buchstaben einmal aussprechen.
+  \item Kernpunkt: Das Modell ist \textbf{iterativ}. Spätere Phasen dürfen frühere
+        Entscheidungen widerlegen.
+  \item Betonen: Genau das ist hier passiert. Das ist kein Fehler im Prozess, das ist der Prozess.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{A\textsuperscript{3}}{Drei Tätigkeiten in einer Phase. \textit{Algorithm}: Welche Modellfamilie?
+      \textit{Adapt}: Wie passe ich die Daten an, vor allem an das Klassenungleichgewicht?
+      \textit{Adjust}: Wie stelle ich die Hyperparameter ein?}
+  \bg{Iterativ}{Kein einmaliger linearer Durchlauf, sondern Rücksprung, wenn eine spätere
+      Phase eine frühere Annahme widerlegt.}
+\end{begriff}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Warum QUA\textsuperscript{3}CK und nicht CRISP-DM?}{Kursvorgabe, inhaltlich sehr ähnlich.
+    QUA\textsuperscript{3}CK trennt die drei A-Tätigkeiten explizit, CRISP-DM fasst sie unter
+    \enquote{Modeling}. Gemeinsamer Kern: Die Fachfrage steht vor der Modellierung.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{4}{Einstieg}{Motivation}
+
+\kernsatz{Kommunen entscheiden über Verkehrssicherheit meist auf Basis von Unfallzahlen,
+nicht auf Basis von Bedingungsprofilen. Genau diese Lücke adressiert das Projekt.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Einstieg mit der Zahl: rund 270.000 Unfälle mit Personenschaden pro Jahr.
+  \item Verteilung nennen, sie prägt die ganze Präsentation: \textbf{1 / 18 / 81 Prozent}.
+  \item Nutzen: Ein Modell, das aus Bedingungen auf Schwere schließt, kann priorisieren
+        statt nur zählen.
+  \item Bewusste Ausschlüsse deutlich sagen: keine individuellen Fahrer-Risikoscores,
+        keine Versicherungstarifierung. Vorab festgelegt.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Vision Zero}{Ursprünglich schwedisches, heute EU-weites Ziel: bis 2050 keine
+      Verkehrstoten und Schwerverletzten. Der politische Rahmen solcher Analysen.}
+  \bg{BASt}{Bundesanstalt für Straßenwesen. Gibt jährlich \enquote{Unfallentwicklung auf
+      deutschen Straßen} heraus.}
+  \bg{DVR}{Deutscher Verkehrssicherheitsrat.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{5}{Q}{Die Forschungsfrage}
+
+\kernsatz{Die Frage war von Anfang an gestuft formuliert, mit vorab definiertem Ausweichpfad.
+Die spätere Zieleänderung ist damit Teil des Designs, keine nachträgliche Rechtfertigung.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Die Frage einmal langsam vorlesen, sie ist lang.
+  \item Entscheidender Punkt: Sie startet mit dem Drei-Klassen-Ziel und bleibt explizit offen
+        für eine \enquote{evidenzgetriebene operative Umformulierung}.
+  \item Vorhergesagt wird aus Bedingungen, die zum Zeitpunkt der Protokollerstellung vorliegen.
+  \item In der A\textsuperscript{3}-Phase auf diese Folie zurückverweisen.
+\end{sag}
+
+\merksatz{\enquote{Das ist kein nachträglicher Rettungsanker. Das stand in Phase Q im Notebook,
+bevor das erste Modell trainiert wurde.}}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Sagt das Modell vorher, ob ein Unfall passiert?}{Nein. Es setzt voraus, dass ein Unfall
+    passiert ist, und schätzt, wie schwer er ausgeht. Unfallvorhersage bräuchte Expositionsdaten,
+    also Verkehrsmengen. Die hat dieser Datensatz nicht.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{6}{Q}{Hypothesen}
+
+\kernsatz{Drei überprüfbare Hypothesen: zu Zeit und Wetter, zu Ortskontext und zur
+gestuften Machbarkeit.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item H1 und H2 sind inhaltlich, H3 ist methodisch.
+  \item Bei H2 die Einschränkung mitsprechen: Geschwindigkeit, Infrastrukturqualität und
+        Rettungszeit sind plausible Mechanismen, werden aber nicht gemessen. Kein Kausalanspruch.
+  \item Ergebnis in einem Halbsatz vorwegnehmen:
+  \begin{sag}
+    \item H1 nur schwach bestätigt, die Wetter-Assoziationen sind sehr klein.
+    \item H2 in der schwachen Form bestätigt, Ortsmerkmale tragen messbar bei.
+    \item H3 ist der eigentliche Befund der Arbeit.
+  \end{sag}
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Hypothese}{Vorab formulierte, überprüfbare Aussage. Entscheidend ist die
+      Falsifizierbarkeit: Sie muss durch die Daten widerlegbar sein.}
+  \bg{Baseline}{Bewusst einfaches Vergleichsmodell. Schlägt das komplexe Modell die Baseline
+      nicht, hat der Aufwand keinen Nutzen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{7}{Q}{Zielmetriken und Akzeptanzkriterien}
+
+\kernsatz{Macro-F1 als Primärmetrik plus ein zweites Gate auf dem Recall der seltensten Klasse,
+damit kein Modell dadurch gut aussieht, dass es die kritischste Klasse ignoriert.}
+
+\rubrik{Macro-F1 von unten aufbaün}
+\begin{sag}
+  \item \textbf{Precision} einer Klasse: Von allen als diese Klasse vorhergesagten Fällen,
+        wie viele waren es wirklich?
+  \item \textbf{Recall} einer Klasse: Von allen Fällen, die wirklich diese Klasse sind,
+        wie viele hat das Modell gefunden?
+  \item \textbf{F1}: Harmonisches Mittel aus beiden. Harmonisch, weil es bestraft, wenn einer
+        der beiden Werte sehr klein ist.
+  \item \textbf{Macro-F1}: Einfacher Durchschnitt der F1-Werte über alle Klassen. Jede Klasse
+        zählt gleich viel, egal wie selten sie ist.
+\end{sag}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Schlüsselbeispiel: Ein Modell, das immer \enquote{Leichtverletzt} sagt, hat 81 Prozent
+        Accuracy. Klingt gut, ist wertlos. Macro-F1 etwa 0,30, Recall auf die tödliche Klasse null.
+  \item Selbst Macro-F1 könnte man theoretisch über die beiden häufigen Klassen erreichen.
+  \item Das Recall-Gate auf Klasse 1 verhindert genau das.
+  \item Auswahldisziplin ansagen: Modellwahl und Schwellenwert nur auf Validierung 2023.
+        Test 2024 wird genau einmal geöffnet. \textbf{Wird auf Folie 27 gebraucht.}
+\end{sag}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Warum harmonisches Mittel bei F1?}{Das arithmetische Mittel von Precision 1,0 und
+    Recall 0,0 wäre 0,5, obwohl das Modell nutzlos ist. Das harmonische Mittel ergibt hier 0.
+    Es bestraft Ungleichgewicht zwischen beiden Größen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{8}{Q}{Rahmenbedingungen und Ethik}
+
+\kernsatz{Interpretierbarkeit war eine harte Vorgabe, keine Kür. Die Ergebnisse informieren
+Infrastrukturentscheidungen, nicht Urteile über Personen.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Zügig durchgehen, das ist eine Absicherungsfolie. Nur zwei Punkte betonen.
+  \item \textbf{Interpretierbarkeitsvorgabe}: Sie erklärt, warum kein neuronales Netz im
+        Kandidatenfeld ist. Ein Verkehrsplaner muss nachvollziehen können, warum ein Ort
+        als Risiko markiert wurde.
+  \item \textbf{Ethische Rahmung}: Merkmalswichtigkeiten sind Assoziationen, keine Ursachen.
+        Dieser Hinweis steht auch in der App selbst.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Batch-Inferenz}{Vorhersagen werden gebündelt für viele Fälle berechnet, nicht in
+      Echtzeit einzeln. Senkt die Anforderungen deutlich.}
+  \bg{DSGVO-Konformität quellseitig}{Der Datensatz enthält von vornherein keine
+      personenbezogenen Daten. Keine Namen, kein Alter, kein Geschlecht. Die Frage der
+      Anonymisierung stellt sich damit gar nicht.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{9}{U}{Der Datensatz im Steckbrief}
+
+\kernsatz{2,09 Millionen Unfälle über neun Jahre, 21 Spalten, öffentlich lizenziert,
+vollständig ohne Personenbezug.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Tabelle nicht vorlesen. Drei Zahlen nennen: \textbf{2.092.401 Zeilen, 21 Spalten,
+        2016 bis 2024}.
+  \item Merkmalsgruppen in einem Durchgang: Zeit, Unfallcharakter, Umgebung, Beteiligung, Raum.
+  \item COVID-Beleg, zeigt dass ich die Daten wirklich angeschaut habe: 2020 bricht ein,
+        2024 ist mit 268.519 wieder auf dem Niveau von 2019 mit 268.370.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{UKATGEORIE}{Die Zielvariable. Im Quelldatensatz steht tatsächlich \enquote{UKATGEORIE}
+      mit Tippfehler statt \enquote{UKATEGORIE}. Die Schreibweise der Quelle wurde bewusst
+      unverändert übernommen.}
+  \bg{UART vs. UTYP1}{UART ist die \textit{Unfallart}, also die Kollisionsform (Auffahrunfall,
+      Zusammenstoß mit Fußgänger). UTYP1 ist der \textit{Unfalltyp}, also die auslösende
+      Konfliktsituation (Abbiegeunfall, Fahrunfall). Beide werden nach dem Unfall vergeben.}
+  \bg{Parquet}{Spaltenorientiertes Dateiformat. Speichert Spalte für Spalte statt Zeile für
+      Zeile, dadurch sehr schnelle Abfragen auf wenige Spalten und starke Kompression.}
+  \bg{Git LFS}{Large File Storage. Git-Erweiterung, die große Binärdateien außerhalb der
+      Versionsgeschichte speichert und im Repository nur einen Zeiger ablegt.}
+  \bg{DuckDB}{Eingebettete analytische Datenbank, konzeptionell wie SQLite, aber
+      spaltenorientiert. Führt SQL direkt auf Parquet aus, ohne Import.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{10}{U}{Zielvariable und Imbalance}
+
+\kernsatz{Ein Klassenverhältnis von 1 zu 18 zu 81 macht Accuracy wertlos und führt ohne
+Gegenmaßnahme zum Mehrheitsklassen-Kollaps.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Verteilung nennen, sofort die Konsequenz: Ein Modell, das nichts lernt, bekommt
+        81 Prozent Accuracy geschenkt.
+  \item \textbf{Stabilität über die Jahre}: Die Klassenanteile schwanken über neun Jahrgänge
+        um weniger als einen Prozentpunkt. Das rechtfertigt den chronologischen Split. Gäbe es
+        starke Drift, wäre Training auf alten Jahren wertlos.
+  \item \textbf{Dunkelziffer} aktiv ansprechen, ehrlichster Punkt der Datenphase: Was wir sehen,
+        ist auch eine Verteilung des Meldeverhaltens, nicht nur der Realität. Leichte Unfälle
+        werden seltener gemeldet. Aus dem Datensatz heraus nicht korrigierbar.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Klassenungleichgewicht}{Die Klassen sind sehr unterschiedlich häufig. Das Problem ist
+      nicht die Ungleichheit selbst, sondern dass Standardverfahren die Gesamtfehlerrate
+      minimieren und deshalb die seltene Klasse ignorieren.}
+  \bg{Mehrheitsklassen-Kollaps}{Das Modell hat gelernt, immer die häufigste Klasse
+      vorherzusagen, weil das die Fehlerrate minimiert.}
+  \bg{Dunkelziffer}{Die unbekannte Zahl nie gemeldeter Unfälle.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{11}{U}{Datenqualität und Plausibilisierung \textnormal{\small(kürzbar)}}
+
+\kernsatz{Fünf Klassen von Prüfungen wurden systematisch durchgeführt, und imputiert wurde
+bewusst erst später in der Pipeline, nicht hier.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Bei Zeitnot: nur den letzten Punkt machen.
+  \item \textbf{Warum in Phase U nicht imputiert wird}: Eine Imputation über den gesamten
+        Datensatz zieht Information aus Validierung und Test ins Training. Der Median einer
+        Spalte über alle Daten enthält Information aus dem Testjahr 2024. Das ist Leakage.
+  \item Konsequenz: Jede Imputation wandert in die sklearn-Pipeline und wird dort pro Fold
+        nur auf Trainingsdaten gefittet.
+  \item Ehrlichkeitspunkt: 8 Prozent Geokodierungsausfall. Der Datensatz ist bereits
+        vorgefiltert, bevor wir ihn bekommen, und diese Filterung ist nicht zufällig.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Sentinel-Wert}{Ein spezieller Zahlenwert, der \enquote{kein Messwert} bedeutet, etwa
+      minus 999. Wird er nicht erkannt, rechnet das Modell mit einer echten Temperatur von
+      minus 999 Grad.}
+  \bg{Imputation}{Auffüllen fehlender Werte, zum Beispiel mit dem Median.}
+  \bg{Selektionsverzerrung}{Die Stichprobe ist nicht zufällig aus der Grundgesamtheit gezogen.
+      Hier: Nur geokodierbare Unfälle sind enthalten, und Geokodierbarkeit hängt vermutlich
+      mit dem Ortstyp zusammen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{12}{U}{Anreicherung 1: DWD-Wetterdaten}
+
+\kernsatz{Jeder Unfall wurde über einen k-d-Baum mit der nächsten Wetterstation verknüpft,
+mit 99 Prozent räumlicher Abdeckung, aber erheblichen Lücken bei Wind und Sicht.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item k-d-Baum erklären: Naiv bräuchte man für 2,09 Mio. Unfälle die Distanz zu rund
+        400 Stationen, also fast eine Milliarde Berechnungen. Ein k-d-Baum teilt den Raum
+        rekursiv auf, sodass ganze Teilbäume beim Suchen ausgeschlossen werden. Laufzeit
+        unter 30 Sekunden.
+  \item \textbf{Join-Detail, das oft übersehen wird}: Der Unfallatlas hat kein Tagesdatum,
+        nur Jahr, Monat, Stunde. Also wird über alle Tage eines Monat-Stunde-Buckets gemittelt.
+        Unfall am 3. Juli um 14 Uhr bekommt das Mittel aller 14-Uhr-Messungen im Juli.
+  \item Das ist Rauschen, aber kein Leakage: Die Zukunft fließt nicht ein.
+  \item \textbf{Ehrlichkeitspunkt aktiv nennen}: Windgeschwindigkeit fehlt zu 50,8 Prozent,
+        Sichtweite zu 54,4 Prozent. Dokumentiert und an A\textsuperscript{3} als Risiko übergeben.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{k-d-Baum}{Datenstruktur zur schnellen Nächste-Nachbarn-Suche in mehrdimensionalen Räumen.}
+  \bg{CDC}{Climate Data Center, das Open-Data-Portal des DWD. \textbf{GeoNutzV}: die Verordnung,
+      unter der DWD-Daten frei nutzbar sind.}
+  \bg{Proxy-Variable}{Ein Merkmal, das für etwas anderes steht, das man nicht direkt messen kann.
+      \texttt{dwd\_station\_dist\_km} ist ein Proxy für ländliche Lage. Geprüft: Die Todesrate
+      fernab von Stationen liegt über 20 Prozent höher. Deshalb bewusst behalten, obwohl es
+      eigentlich ein Datenqualitäts-Artefakt ist.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{13}{U}{Anreicherung 2: OSM-Straßenkontext über H3}
+
+\kernsatz{Statt für 2,09 Millionen Punkte einzeln die nächste Straße zu suchen, wurde das
+Straßennetz einmal auf ein Hexagon-Gitter aggregiert.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Erst das Problem: Ein Nächste-Straße-Lookup für 2,09 Mio. Punkte gegen das gesamte
+        deutsche Straßennetz ist auf einem Laptop nicht praktikabel.
+  \item H3 erklären: Uber-System, zerlegt die Erdoberfläche hierarchisch in Sechsecke.
+        Auf Stufe 8 ist eine Zelle etwa 0,7 Quadratkilometer groß.
+  \item \textbf{Warum Sechsecke und nicht Quadrate?} Bei Sechsecken haben alle sechs Nachbarn
+        denselben Mittelpunktsabstand. Bei Quadraten sind die diagonalen Nachbarn weiter weg
+        als die orthogonalen. Für Nachbarschaftsanalysen sauberer.
+  \item Der Trick: Straßennetz einmal pro Bundesland laden und auf Zellen aggregieren. Danach
+        ist der Join pro Unfall nur noch ein Nachschlagen der Zellen-ID, praktisch kostenlos.
+  \item \textbf{Dokumentierte Näherung offen ansprechen}: OSM bildet das heutige Netz ab, die
+        Unfälle reichen bis 2016 zurück. Ein Tempolimit kann sich geändert haben. Akzeptierte
+        Approximation, kein Leakage, weil OSM-Daten nicht vom Unfallausgang abhängen.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{H3}{Hexagonales hierarchisches Geo-Indexsystem von Uber.}
+  \bg{OSM}{OpenStreetMap, offenes von Freiwilligen gepflegtes Kartenprojekt. Lizenz ODbL.}
+  \bg{Expositionsproxy}{\texttt{osm\_road\_density} steht indirekt für Verkehrsaufkommen.
+      Wo mehr Straße ist, fährt in der Regel mehr Verkehr.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{14}{U}{Zentrale EDA-Befunde}
+
+\kernsatz{Kein einziges Merkmal erreicht auch nur Cram\'ers V von 0,15 zur Zielvariable.
+Das schwache Signal ist der zentrale Befund der Datenphase.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Diese Folie ist die Vorbereitung auf das spätere Scheitern. Sorgfältig machen.
+  \item Cram\'ers V erklären: Maß für den Zusammenhang zweier kategorialer Variablen,
+        abgeleitet aus dem Chi-Quadrat-Test, normiert auf 0 bis 1.
+  \item Einordnung liefern: unter 0,1 vernachlässigbar, 0,1 bis 0,3 schwach, 0,3 bis 0,5 mittel,
+        darüber stark. \textbf{0,13 ist also am unteren Rand von schwach, und das ist der beste
+        Wert im ganzen Datensatz.}
+  \item Anschaulichster Teil, die zeitlichen Muster: Die meisten Unfälle passieren im
+        Nachmittagsverkehr, die schwersten nachts. Wer zählt, sieht den Nachmittag.
+        Wer Schwere betrachtet, sieht die Nacht.
+  \item Negativbefund bewusst nennen: Monatlicher Niederschlag und monatliche Todesrate bewegen
+        sich nicht gemeinsam. Ein berichtetes Nullergebnis ist ein Qualitätsmerkmal.
+\end{sag}
+
+\zeigen{Live-Report $\rightarrow$ \textit{U Phase} $\rightarrow$ Abschnitt \textbf{6 Bivariate
+analysis: feature $\times$ target}. Nur die \textbf{Cram\'ers-V-Heatmap} zeigen, auf die
+dunkelste Zelle (UART) deuten und die 0,13 vorlesen. Nicht scrollen. 30 Sekunden.}
+
+\rubrik{Begriffe und wenn gefragt}
+\begin{begriff}
+  \bg{EDA}{Exploratory Data Analysis. Das systematische Anschaün der Daten vor der Modellierung.}
+  \frage{Warum nicht Korrelation?}{Pearson setzt metrische Variablen und einen linearen
+    Zusammenhang voraus. Unfallart ist nominal, ohne Ordnung. Da ist Korrelation nicht definiert.
+    Cram\'ers V ist das passende Gegenstück für kategoriale Variablen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{15}{U}{Leakage-Prüfung und chronologischer Split}
+
+\kernsatz{Leakage wurde aktiv gemessen, nicht angenommen. Der Split ist chronologisch, weil ein
+Zufallssplit bei Zeitreihendaten die Realität verfälschen würde.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Leakage zürst definieren, danach wird am ehesten gefragt: Informationen, die zum
+        Vorhersagezeitpunkt nicht verfügbar wären, gelangen ins Training. Folge sind
+        Leistungswerte, die im echten Einsatz nicht halten.
+  \item Konkrete Sorge hier: UART und UTYP1 werden nach dem Unfall vergeben. Steckt in diesen
+        Kategorien die Schwere schon implizit? Dann wäre es ein Zirkelschluss.
+  \item Die Sonde, bedingte Entropiereduktion: Entropie misst Unsicherheit. H(Y) ist die
+        Unsicherheit über die Schwere ohne Wissen, H(Y\,\textbar\,X) die verbleibende
+        Unsicherheit, wenn Merkmal X bekannt ist. Die Reduktion sagt, wie viel Prozent der
+        Unsicherheit das Merkmal wegnimmt.
+  \item Ergebnis: UART nimmt 3,4 Prozent weg, UTYP1 2,2 Prozent. Weit unter der
+        50-Prozent-Auslöseschwelle. Kein Merkmal musste raus.
+  \item Split begründen: Bei einem Zufallssplit könnte das Modell auf 2024er-Daten trainieren
+        und auf 2019er-Daten getestet werden. Das entspricht nicht dem Einsatz, wo man immer
+        in die Zukunft vorhersagt.
+  \item Verifikation erwähnen: Keine OBJECTID kommt in mehr als einem Split vor. Geprüft,
+        nicht angenommen.
+\end{sag}
+
+% --------------------------------------------------------------------------
+\karte{16}{U}{Die Machbarkeitswarnung \textnormal{\small(nicht kürzen)}}
+
+\kernsatz{Die Datenphase endete mit einer dokumentierten Warnung, dass das ursprüngliche Ziel
+möglicherweise nicht erreichbar ist. Und zwar bevor das erste Modell trainiert wurde.}
+
+\rubrik{Sagen, Wendepunkt der Präsentation, Zeit nehmen}
+\begin{sag}
+  \item Erstens: Die tödliche Klasse ist etwa 1 Prozent der Daten.
+  \item Zweitens: Die stärkste Assoziation ist Cram\'ers V von 0,13, also schwach.
+  \item Drittens, der eigentliche Grund, hier langsam werden: Die physikalisch entscheidenden
+        Determinanten fehlen komplett. Aufzählen: Aufprallgeschwindigkeit, Alter der Insassen,
+        Gurtnutzung, Fahrzeugmasse, Anstoßgeometrie.
+\end{sag}
+
+\merksatz{\enquote{Ob ein Unfall tödlich endet, entscheidet sich vor allem an der kinetischen
+Energie und daran, wie verletzlich der Mensch im Fahrzeug ist. Genau diese Größen enthält der
+öffentliche Datensatz nicht. Was er enthält, ist der Kontext drumherum.}}
+
+\merksatz{\enquote{Diese Warnung wurde dokumentiert, bevor das erste Modell trainiert wurde. Das
+ist der Unterschied zwischen einer belegten Vorhersage und einer nachträglichen Ausrede.}}
+
+% --------------------------------------------------------------------------
+\karte{17}{A\textsuperscript{3}}{Aufbau der Modellierung}
+
+\kernsatz{Alles läuft in einer sklearn-Pipeline, damit Vorverarbeitung niemals über die
+Split-Grenzen leckt.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item \textbf{Pipeline}, der methodisch wichtigste Punkt: Verkettet Vorverarbeitung und Modell
+        zu einem Objekt mit gemeinsamem \texttt{fit} und \texttt{predict}. Fittet die
+        Kreuzvalidierung das Objekt pro Fold neu, werden auch Skalierung, Encoding und Imputation
+        nur auf dem Trainingsteil dieses Folds gefittet.
+  \item \textbf{Zyklische Kodierung}, lohnt 20 Sekunden: Stunde 23 und Stunde 0 liegen eine Stunde
+        auseinander, als Zahlen aber 23. Kodiert man die Stunde als Sinus-Kosinus-Paar auf einem
+        Kreis, ist der Abstand wieder korrekt.
+  \item \textbf{Target-Encoding}: Statt 87 Kreis-Spalten per One-Hot wird jeder Kreis durch den
+        mittleren Zielwert seiner Trainingszeilen ersetzt, mit Glättung gegen Überanpassung
+        bei seltenen Kreisen.
+  \item \textbf{GroupKFold}: Gruppiert nach Unfalljahr, damit kein Modell im selben Jahr trainiert
+        und validiert.
+  \item \textbf{Audit-Modus}, starker Punkt: Das Notebook bricht ab, wenn eine persistierte Metrik
+        nicht auf 1e-9 genau reproduziert wird. Die Zahlen in dieser Präsentation sind nicht
+        abgetippt, sie werden bei jedem Lauf gegengeprüft.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{One-Hot-Encoding}{Eine Kategorie mit k Ausprägungen wird zu k Null-Eins-Spalten.}
+  \bg{Kardinalität}{Anzahl verschiedener Ausprägungen einer Kategorie.}
+  \bg{Seed}{Startwert des Zufallszahlengenerators. Fixiert man ihn, sind Zufallsentscheidungen
+      reproduzierbar.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{18}{A\textsuperscript{3}}{19 Konfigurationen gegen das Drei-Klassen-Ziel}
+
+\kernsatz{Keine der 19 getesteten Konfigurationen erreicht den zulässigen Bereich. Die beste
+Macro-F1 liegt bei 0,424 gegenüber der geforderten 0,55.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Tabelle nicht vorlesen, stattdessen das Muster zeigen. Es gibt zwei Gruppen:
+  \begin{sag}
+    \item Brauchbare Macro-F1, miserabler Recall auf die tödliche Klasse. Oben Random Forest
+          balanced mit 0,424 und 0,212.
+    \item Brauchbarer Recall, schlechte Macro-F1. XGBoost und LightGBM balanced mit rund 0,60
+          Recall, aber nur 0,37 Macro-F1.
+  \end{sag}
+  \item Einwand vorwegnehmen: Auch eine nachträgliche Verschiebung der Entscheidungsgrenze über
+        einen zweidimensionalen Offset-Sweep erreicht das Gate nicht. Es wurde also nicht nur
+        \enquote{nicht genug getunt}.
+\end{sag}
+
+\merksatz{\enquote{Das Gate verlangt beides gleichzeitig. Und genau die Kombination existiert
+nicht. Es gibt keinen Punkt im zulässigen Quadranten.}}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{balanced (Klassengewichtung)}{Fehler auf seltenen Klassen werden im Trainingsverlust
+      stärker gewichtet, typischerweise umgekehrt proportional zur Klassenhäufigkeit.}
+  \bg{Threshold Moving}{Nachträgliches Verschieben der Entscheidungsschwelle, ohne das Modell
+      neu zu trainieren.}
+  \bg{Offset-Sweep}{Systematisches Durchprobieren additiver Verschiebungen auf den Logits der
+      Minderheitsklassen, um zu prüfen, ob irgendein Arbeitspunkt das Gate erreicht.}
+\end{begriff}
+
+% ==================================================================== TEIL 2
+\karte{19}{A\textsuperscript{3}}{Warum Oversampling das Problem verschlimmert}
+
+\kernsatz{SMOTE und ADASYN lassen den Recall auf die tödliche Klasse auf ein bis drei Prozent
+kollabieren. Nur Klassengewichtung wirkt überhaupt.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item \textbf{SMOTE} erklären: Synthetic Minority Over-sampling Technique. Statt seltene
+        Beispiele zu duplizieren, sucht SMOTE zu einem Minderheitsbeispiel seine nächsten
+        Nachbarn derselben Klasse und erzeugt neue Punkte auf den Verbindungslinien dazwischen.
+  \item \textbf{ADASYN}: adaptive Variante, erzeugt mehr Beispiele dort, wo die Klassifikation
+        schwer ist.
+  \item \textbf{Frank-Hall-Zerlegung}: Nutzt aus, dass die Klassen geordnet sind. Statt drei
+        Klassen direkt zu lernen, lernt man zwei binäre Fragen: \enquote{schwerer als 1?} und
+        \enquote{schwerer als 2?}. Elegant, aber hier mit Recall 0,003 die schlechteste Strategie.
+  \item Schluss: Nur Klassengewichtung hebt den Recall über 0,50. Ein Befund, der der Intuition
+        widerspricht, denn SMOTE gilt als Standardwerkzeug.
+  \item Wichtig: SMOTE darf nur auf Trainingsdaten angewendet werden, niemals auf Validierung
+        oder Test. Sonst Leakage.
+\end{sag}
+
+\merksatz{\enquote{SMOTE interpoliert zwischen echten Beispielen. Das funktioniert, wenn die
+Klassen im Merkmalsraum getrennt liegen. Hier überlappen sie fast vollständig, weil das Signal
+so schwach ist. Ein interpolierter Punkt zwischen zwei tödlichen Unfällen landet mitten in einer
+Wolke aus Leichtverletzten. Man erzeugt kein Signal, man erzeugt Rauschen.}}
+
+% --------------------------------------------------------------------------
+\karte{20}{A\textsuperscript{3}}{Die arithmetische Decke \textnormal{\small(Schlüsselfolie)}}
+
+\kernsatz{Unabhängig vom Modell lässt sich ausrechnen, dass das Gate eine etwa 90-fache
+Odds-Anhebung erfordert, die ein Signal von Cram\'ers V 0,13 nicht liefern kann.}
+
+\rubrik{Die vier Schritte langsam durchgehen}
+\begin{sag}
+  \item \textbf{Schritt 1}: F1 auf der Mehrheitsklasse liegt bei etwa 0,72. Macro-F1 ist der
+        Durchschnitt über drei Klassen. Damit er 0,55 erreicht, müssen die anderen beiden
+        zusammen im Mittel etwa 0,46 beitragen.
+  \item \textbf{Schritt 2}: Klasse 1 macht 0,94 Prozent aus. Für F1 von 0,46 bei Recall
+        mindestens 0,50 braucht man Precision von etwa 0,42. Also: Von allen als tödlich
+        vorhergesagten Unfällen müssten 42 Prozent wirklich tödlich sein.
+  \item \textbf{Schritt 3}, Odds-Rechnung: Odds sind Wahrscheinlichkeit geteilt durch
+        Gegenwahrscheinlichkeit. Basisrate 0,94 Prozent ergibt Odds von etwa 0,0095.
+        Precision 0,42 ergibt Odds von etwa 0,72. Faktor dazwischen: rund 90.
+  \item \textbf{Schritt 4}: Die stärkste Assoziation im Datensatz liegt bei Cram\'ers V von 0,13.
+        Ein so schwaches Signal kann diese Konzentration nicht erzeugen.
+  \item Abschluss: Empirische Front und arithmetische Anforderung zeigen unabhängig voneinander
+        auf dasselbe Ergebnis.
+\end{sag}
+
+\merksatz{\enquote{Das Modell müsste eine Teilgruppe finden, in der ein Unfall rund 90-mal
+wahrscheinlicher tödlich endet als im Durchschnitt. Nicht 90 Prozent mehr. 90-mal.}}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Ist die 90 exakt?}{Nein, eine Größenordnungsrechnung. Je nach Rundung landet man
+    zwischen 76 und 90. Der Punkt ist nicht die zweite Nachkommastelle, sondern die
+    Größenordnung: Es braucht eine Konzentration um fast zwei Zehnerpotenzen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{21}{A\textsuperscript{3}}{Das Reframing auf binäres KSI \textnormal{\small(Schlüsselfolie)}}
+
+\kernsatz{Die Zielvariable wurde auf KSI gegen Leichtverletzt umgestellt. Vorab definiert,
+sicherheitsrelevant und mit unverändertem Split.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Entscheidung: Das Drei-Klassen-Ziel bleibt als dokumentierter Hintergrund, ist aber nicht
+        länger primär. Begründung in einem Satz: Weiteres Tuning würde dieselbe Suche in
+        schwachem Signal wiederholen, ohne die verfügbare Information zu verändern.
+  \item \textbf{KSI}: Killed or Seriously Injured, getötet oder schwerverletzt. Etablierter
+        Begriff in der Verkehrssicherheitsarbeit, weil er die planerisch relevante Grenze zieht.
+  \item Die drei Rechtfertigungen sicher können:
+  \begin{sag}
+    \item \textbf{Vorab definiert}. Verweis zurück auf Folie 5 und H3. Der Fallback stand im
+          Q-Phase-Notebook, bevor modelliert wurde.
+    \item \textbf{Sicherheitsrelevant}. Der Unterschied zwischen schwer und leicht verletzt ist
+          der Unterschied, an dem sich Maßnahmen entscheiden.
+    \item \textbf{Statistisch tragfähig}. Aus 1 Prozent positiver Klasse werden etwa 19 Prozent.
+  \end{sag}
+  \item Methodische Sauberkeit zeigen: Der zeitliche Split und die Leakage-Grenze bleiben
+        unverändert. Es wird nichts nachträglich angepasst außer der Zielvariable selbst.
+\end{sag}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Ist das nicht einfach das Problem leichter machen?}{Ja, die Aufgabe wird leichter, und
+    das sage ich offen. Der Unterschied zu unsauberem Vorgehen ist dreifach: Der Pfad war vorab
+    definiert. Die ursprüngliche Zielverfehlung wird vollständig berichtet, nicht gelöscht.
+    Die neue Aufgabe bleibt inhaltlich relevant.}
+  \frage{Warum nicht Getötet gegen Rest?}{Das hätte genau das 1-Prozent-Seltenheitsproblem
+    behalten. KSI ist die in der Verkehrssicherheitsliteratur übliche Zusammenfassung und löst
+    das Häufigkeitsproblem, ohne die planerische Relevanz zu verlieren.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{22}{A\textsuperscript{3}}{Zehn Kandidaten im binären Setting}
+
+\kernsatz{Zehn Modellfamilien von der Zufallsbaseline bis zu drei Boosting-Verfahren, alle auf
+identischer Merkmalsbasis und nur auf Validierung verglichen.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Baselines zürst, sie zeigen dass das Modell wirklich etwas lernt: Zufallsraten 0,439,
+        Mehrheitsklasse 0,453. Das ist die Latte, alles darüber ist echter Lerngewinn.
+  \item \textbf{Random Forest}: Viele Entscheidungsbäume, jeder auf einer Zufallsstichprobe der
+        Daten und einer Zufallsauswahl der Merkmale, am Ende wird gemittelt. Idee: Einzelne
+        Bäume überanpassen, aber ihre Fehler sind unkorreliert und mitteln sich weg.
+  \item \textbf{Gradient Boosting}: Bäume werden nacheinander gebaut, jeder neue korrigiert die
+        Fehler der bisherigen Summe. XGBoost, LightGBM, CatBoost sind optimierte Implementierungen.
+  \item \textbf{SVM}: Support Vector Machine, sucht die trennende Hyperebene mit maximalem Abstand
+        zu den nächsten Punkten.
+  \item Ehrlicher Rechenhinweis aktiv nennen: Der RBF-Kernel-SVM skaliert kubisch mit der
+        Zeilenzahl. Bei 1,55 Mio. Trainingszeilen nicht machbar, deshalb auf 8.000 Zeilen gesampelt.
+\end{sag}
+
+\zeigen{App $\rightarrow$ \textit{Model Comparison} $\rightarrow$ Abschnitt
+\textbf{\enquote{Pareto front: macro-F1 vs. Recall(KSI)}}. Auf den Gate-Bereich deuten und zeigen,
+welche Kandidaten ihn erfüllen. Tabelle \enquote{All 10 candidates} nur kurz streifen. 45 Sekunden.}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Bagging vs. Boosting}{Bagging (Random Forest) trainiert viele Modelle parallel auf
+      Zufallsstichproben und mittelt. Boosting trainiert sequenziell, jedes Modell korrigiert
+      die Fehler der Vorgänger.}
+  \bg{Blattweises Wachstum (LightGBM)}{Der Baum wächst dort weiter, wo der Gewinn am größten
+      ist, statt Ebene für Ebene. Schneller, aber überanpassungsanfälliger.}
+  \bg{Kernel-Trick, RBF}{Erlaubt nichtlineare Trennung, indem implizit in einen
+      höherdimensionalen Raum abgebildet wird, ohne diesen explizit zu berechnen. RBF (Radial
+      Basis Function) ist der gebräuchlichste nichtlineare Kernel.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{23}{A\textsuperscript{3}}{Champion-Auswahl mit Gate-Logik}
+
+\kernsatz{Random Forest gewinnt als Kandidat mit der höchsten Macro-F1 unter denen, die das
+Recall-Gate erfüllen. Das Gate ist Vorbedingung, nicht Zielfunktion.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Die Regel präzise: Nimm alle Kandidaten mit Recall(KSI) von mindestens 0,50. Unter
+        diesen nimm den mit der höchsten Macro-F1.
+  \item \textbf{Den scheinbaren Widerspruch selbst ansprechen}: Random Forest hat mit 0,540 den
+        \textit{niedrigsten} KSI-Recall aller Baum- und SVM-Kandidaten. Trotzdem gewinnt er,
+        weil er das Gate erfüllt und unter allen, die es erfüllen, die höchste Macro-F1 hat.
+  \item \textbf{Optuna}: Framework für Hyperparameter-Optimierung, das nicht stumpf ein Gitter
+        durchprobiert, sondern modellbasiert sucht. Der Tree-structured Parzen Estimator baut aus
+        den bisherigen Versuchen ein Wahrscheinlichkeitsmodell darüber, welche Parameterbereiche
+        gute Ergebnisse liefern, und probiert dort weiter.
+  \item 20 Trials ergaben 180 Bäume, Tiefe 23, mindestens 8 Beobachtungen pro Blatt. Das hob die
+        Macro-F1 von 0,6011 auf 0,6083.
+\end{sag}
+
+\merksatz{\enquote{Das Gate ist eine Vorbedingung, keine Zielfunktion. Es sortiert aus, es
+optimiert nicht.}}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Hyperparameter}{Einstellungen, die vor dem Training festgelegt werden, im Gegensatz zu
+      Parametern, die das Modell aus den Daten lernt.}
+  \bg{max\_depth}{Maximale Tiefe eines Baums. Begrenzt Komplexität, wirkt gegen Überanpassung.}
+  \bg{min\_samples\_leaf}{Mindestanzahl Beobachtungen in einem Blatt. Verhindert, dass Blätter
+      auf einzelne Ausreißer gefittet werden.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{24}{A\textsuperscript{3}}{Schwellenwert und Negativbefund \textnormal{\small(kürzbar)}}
+
+\kernsatz{Der Schwellenwert wurde systematisch über 81 Kandidaten optimiert, und ein zweiter
+Tuning-Versuch wurde nach einer klaren Regel verworfen statt schöngerechnet.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Punkt, den viele nicht auf dem Schirm haben: Ein Klassifikator gibt eine
+        Wahrscheinlichkeit aus. Erst der Schwellenwert macht daraus eine Entscheidung.
+        Der Default 0,5 ist eine Konvention, keine Optimierung.
+  \item 81 Werte geprüft, der beste unter der Nebenbedingung Recall $\geq$ 0,50: \textbf{0,49860}.
+  \item Interessantes Detail: Der optimale Wert liegt sehr nah an 0,5. Kein Zufall, sondern Folge
+        der Klassengewichtung, die die Wahrscheinlichkeiten schon vorher grob ausbalanciert hat.
+  \item \textbf{Promotionsregel}: Der neue Versuch wird nur übernommen, wenn er auf
+        \textit{beiden} Achsen nicht schlechter ist. Der Multi-Objective-Versuch hatte besseren
+        Recall (0,5187 gegen 0,5053), aber schlechtere Macro-F1 (0,6057 gegen 0,6083).
+        Also verworfen.
+\end{sag}
+
+\merksatz{\enquote{Ich hätte auch die Regel nachträglich ändern und den besseren Recall
+berichten können. Die Regel stand aber vorher fest, und der Versuch ist als gescheiterte Evidenz
+dokumentiert statt gelöscht.}}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Multi-Objective-Optimierung}{Optimierung mehrerer Zielgrößen gleichzeitig. Ergebnis ist
+      keine einzelne beste Lösung, sondern eine Pareto-Menge.}
+  \bg{Pareto-Front}{Die Menge der Lösungen, bei denen man eine Zielgröße nur verbessern kann,
+      indem man eine andere verschlechtert.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{25}{C}{Das Testergebnis 2024}
+
+\kernsatz{Macro-F1 0,604 und Recall(KSI) 0,515 auf einem nie zuvor benutzten Jahr, beide Gates
+erfüllt, minimaler Abstand zur Validierung.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Zürst betonen, wie der Test verwendet wurde: genau einmal geöffnet, für genau ein
+        Modell, mit dem vorher festgelegten Schwellenwert.
+  \item Wichtigster Vergleich, Validierung gegen Test: Macro-F1 0,6083 gegen 0,6039. Beim Recall
+        sogar leicht besser, 0,5053 gegen 0,5151.
+  \item Ausdrücklich sagen, warum das gut ist: Wäre das Modell auf der Validierung deutlich
+        besser als auf dem Test, hätte man den Validierungssatz überangepasst. Hier ist der
+        Abstand minimal.
+  \item Konfusionsmatrix in Worte fassen: Von rund 44.200 echten KSI-Unfällen wurden 22.767
+        erkannt und 21.431 übersehen. Von rund 224.300 Leichtunfällen wurden 172.434 korrekt
+        erkannt und 51.887 fälschlich als KSI markiert.
+\end{sag}
+
+\merksatz{\enquote{Rund 21.400 KSI-Unfälle werden übersehen. Das Modell ist ein
+Priorisierungswerkzeug, kein Sicherheitssystem. Im echten Einsatz müsste die Kostenfunktion des
+Anwenders den Schwellenwert bestimmen, nicht Macro-F1. Wenn ein übersehener schwerer Unfall
+zehnmal teurer ist als ein Fehlalarm, gehört der Schwellenwert deutlich nach unten.}}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{False Negative}{Ein KSI-Unfall, der als leicht eingestuft wurde. Hier der teure Fehler.}
+  \bg{False Positive}{Ein Leichtunfall, der als KSI eingestuft wurde. Hier der billigere Fehler,
+      kostet nur Aufmerksamkeit.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{26}{C}{Die Entscheidungsmatrix}
+
+\kernsatz{Über vier gewichtete Kriterien führt XGBoost, nicht das ausgelieferte Modell.
+Dieses unbequeme Ergebnis wird berichtet statt versteckt.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Methodik zürst: Sechs Kriterien waren nominal vorgesehen, jedes mit einem Gewicht. Jedes
+        wird min-max-normalisiert, also auf 0 bis 1 skaliert. Kostenkriterien wie Latenz werden
+        invertiert, weil dort niedriger besser ist.
+  \item \textbf{Methodische Sorgfalt zeigen}: Zwei Kriterien, Interpretierbarkeit und
+        Trainingskosten, wurden nie gemessen. Statt sie subjektiv zu schätzen und damit das
+        Ergebnis zu färben, wurden sie automatisch ausgeschlossen und die restlichen Gewichte
+        renormalisiert.
+  \item Ergebnis offensiv nennen: XGBoost führt mit 0,561, Random Forest ist Letzter mit 0,500.
+        XGBoost hat mehr Recall und ist dreieinhalbmal schneller.
+  \item Ankündigen, dass die nächste Folie erklärt, warum trotzdem nicht gewechselt wird.
+        Das erzeugt Spannung und verhindert eine vorschnelle Frage.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Min-Max-Normalisierung}{Skalierung auf 0 bis 1 über (Wert minus Minimum) geteilt durch
+      (Maximum minus Minimum).}
+  \bg{Kostenkriterium}{Ein Kriterium, bei dem kleiner besser ist, hier die Latenz. Wird invertiert,
+      damit größer immer besser bedeutet.}
+  \bg{Latenz ms/1k}{Millisekunden für 1.000 Vorhersagen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{27}{C}{Warum der Champion Champion bleibt \textnormal{\small(Schlüsselfolie)}}
+
+\kernsatz{Den Champion jetzt zu wechseln würde den Testsatz in den Auswahlprozess ziehen und
+damit genau die Unabhängigkeit zerstören, die ihn wertvoll macht.}
+
+\rubrik{Vier Schritte, 90 Sekunden, wichtigste Folie der Präsentation}
+\begin{sag}
+  \item \textbf{1. Ausgangslage}: Die Modellauswahl fiel in Phase A\textsuperscript{3} auf Basis
+        der Validierungsdaten 2023. Zu diesem Zeitpunkt war Test 2024 unberührt, reserviert für
+        genau einen Zweck: eine bereits eingefrorene Entscheidung zu bestätigen.
+  \item \textbf{2. Was ein Wechsel bedeuten würde}: Wollte ich XGBoost ausliefern, müsste ich
+        für ihn eine Testzahl berichten. Also müsste ich Test 2024 auch für XGBoost auswerten.
+  \item \textbf{3. Warum das den Test entwertet}: Dann ist der Testsatz Teil der Auswahl geworden.
+        Ich habe zwei Modelle auf dem Test gemessen und das bessere genommen. Die berichtete Zahl
+        ist das Maximum aus zwei Versuchen, keine unverzerrte Schätzung der
+        Generalisierungsleistung mehr. Rückwirkend wäre auch die Random-Forest-Zahl nicht mehr
+        unabhängig.
+  \item \textbf{4. Der Name des Problems}: Data Leakage auf der Ebene der Modellauswahl. Subtiler
+        als Leakage auf Merkmalsebene, weil kein einziger Datenpunkt ins Training wandert.
+        Trotzdem sickert Information aus dem Test in die Entscheidung. In der Praxis die
+        häufigere Form.
+  \item Konsequenz: Random Forest bleibt für diesen Zyklus. XGBoost ist dokumentiert als Kandidat
+        für einen zukünftigen, vorab registrierten Vergleich.
+\end{sag}
+
+\merksatz{\enquote{Die Validierung entscheidet. Der Test bestätigt nur.}}
+
+\zeigen{App $\rightarrow$ \textit{Model Comparison} $\rightarrow$ ganz unten den Aufklapper
+\textbf{\enquote{Warum bleibt Random Forest der Champion? (German explanation)}} öffnen. Nur
+zeigen, dass die Überlegung im Produkt steht, nicht vorlesen. 30 Sekunden.}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Warum nicht einfach einen neuen Testsatz nehmen?}{Es gibt keinen, 2024 ist das letzte
+    verfügbare Jahr. Sobald 2025 veröffentlicht ist, wäre genau das der saubere Weg: vorab
+    festlegen, dass XGBoost gegen Random Forest auf 2025 verglichen wird, und dann einmal messen.}
+  \frage{Ist das nicht übertrieben streng?}{Es ist der Standard, der reproduzierbare Forschung
+    von Zahlenpolitur trennt. Der ganze Wert eines Holdout-Sets liegt darin, dass es genau einmal
+    benutzt wird.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{28}{C}{Permutation Importance}
+
+\kernsatz{Unfallart und Unfalltyp dominieren, gefolgt von der Beteiligung ungeschützter
+Verkehrsteilnehmer. Modellagnostisch gemessen, damit alle vier Finalisten vergleichbar sind.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Verfahren zürst, es ist intuitiv: Nimm eine Merkmalsspalte und mische ihre Werte über
+        alle Zeilen zufällig durch. Der Zusammenhang zum Ziel ist zerstört, die Verteilung der
+        Spalte bleibt unverändert. Dann miss, wie stark die Modellleistung einbricht. Großer
+        Einbruch bedeutet: Das Modell war auf dieses Merkmal angewiesen.
+  \item Vorteil gegenüber der eingebauten Feature Importance von Bäumen: modellagnostisch. Man
+        kann Random Forest, XGBoost, LightGBM und CatBoost auf derselben Stichprobe und mit
+        derselben Metrik vergleichen.
+  \item Rangliste plausibilisieren: Unfallart und Unfalltyp vorn. Ein Frontalzusammenstoß ist
+        strukturell gefährlicher als ein Auffahrunfall im Stau. Dann Motorrad- und
+        Fahrradbeteiligung, also ungeschützte Verkehrsteilnehmer. Das bestätigt H2 in der
+        schwachen Form.
+  \item \textbf{Warum nicht SHAP?} SHAP erklärt, wie ein \textit{einzelnes} Modell seine
+        transformierten Merkmale nutzt. Für einen Vergleich \textit{zwischen} Modellen das falsche
+        Werkzeug, weil jedes Modell einen anderen transformierten Merkmalsraum hat. Permutation
+        Importance arbeitet auf den Rohspalten und ist deshalb vergleichbar.
+  \item Ehrlicher Zusatz, falls Zeit ist: Die Rangordnungen der vier Modelle stimmen nur mässig
+        überein. Mittlere Spearman-Korrelation zum Champion 0,37, Top-10-Überschneidung etwa
+        40 Prozent. Die Modelle sind sich einig, \textit{dass} Unfallart wichtig ist, aber uneinig
+        über die zweite Reihe. Die Rangliste also nicht überinterpretieren.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{SHAP}{SHapley Additive exPlanations. Verteilt die Abweichung einer Vorhersage vom Mittelwert
+      additiv auf die Merkmale, basierend auf dem Shapley-Wert aus der kooperativen Spieltheorie.}
+  \bg{Spearman-Korrelation}{Korrelation der Ränge statt der Werte. Passend beim Vergleich von
+      Rangordnungen.}
+  \bg{Jaccard-Index}{Größe der Schnittmenge geteilt durch Größe der Vereinigungsmenge.
+      Hier: Wie stark überlappen zwei Top-10-Listen?}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{29}{C}{Robustheit und Modell-Uneinigkeit}
+
+\kernsatz{Random Forest ist mit 3,77 Prozent gekippten Vorhersagen das stabilste Modell bei
+fehlenden Merkmalen, und die Boosting-Modelle sind sich untereinander deutlich einiger als mit ihm.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Robustheitssonde erklären: Fünf Merkmale, die im echten Betrieb realistisch ausfallen
+        können, werden einzeln komplett auf NaN gesetzt. Also: Was passiert, wenn die
+        OSM-Anreicherung ausfällt oder die Wetterstation keine Daten liefert? Gemessen wird,
+        wie viele Vorhersagen dadurch ihre Klasse wechseln.
+  \item Ergebnis: Random Forest 3,77 Prozent, die Boosting-Modelle zwischen 7 und 9 Prozent.
+  \item Eindrücklicher Vergleichswert: SVM über 52 Prozent gekippte Vorhersagen bei einem
+        einzigen fehlenden Merkmal. Starkes praktisches Argument für Baumensembles im Betrieb.
+  \item Paarweise Uneinigkeit: Random Forest gegen die Boosting-Modelle rund 13 Prozent,
+        die Boosting-Modelle untereinander nur 5 Prozent.
+  \item Interpretation: Die drei Boosting-Modelle sind faktisch Varianten derselben Idee. Random
+        Forest ist der methodische Ausreißer, er optimiert auf ausgewogene Klassenleistung und
+        drängt nicht so stark auf KSI-Recall.
+  \item Schlussfolgerung anbieten: Für ein Ensemble wäre Random Forest plus ein Boosting-Modell
+        interessanter als zwei Boosting-Modelle, weil unkorrelierte Fehler sich besser ausgleichen.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{NaN}{Not a Number, die Standardkodierung für fehlende Werte.}
+  \bg{Paarweise Uneinigkeit}{Anteil der Fälle mit unterschiedlicher harter Klassenzuweisung
+      zwischen zwei Modellen.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{30}{C}{Limitationen}
+
+\kernsatz{Die Leistungsgrenze liegt in den Daten, nicht im Modell, und alle wesentlichen
+Einschränkungen sind dokumentiert.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Zügig, aber vollständig. Das ist eine Stärke, keine Schwäche. Offen benannte
+        Limitationen werden positiv bewertet.
+  \item Wichtigster Punkt sind die fehlenden Merkmale. Zurückverweisen auf Folie 16 und 20:
+        Das ist die Ursache der Leistungsdecke, und sie ist nicht durch bessere Modellierung
+        behebbar.
+  \item Konzeptionell interessanter Schluss: Der Schwellenwert ist eine Wertentscheidung, keine
+        technische. Er kodiert implizit, wie teuer ein übersehener schwerer Unfall im Vergleich
+        zu einem Fehlalarm ist. Diese Abwägung gehört dem Anwender, nicht dem Entwickler.
+\end{sag}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Was würde die Leistung am meisten verbessern?}{Eindeutig zusätzliche Merkmale, keine
+    besseren Algorithmen. Am wertvollsten wären Aufprallgeschwindigkeit und Insassenalter. Beide
+    sind in Unfallforschungsdatenbanken vorhanden, aber nicht im offenen Datensatz, weil sie
+    personenbezogen oder erhebungsaufwendig sind.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{31}{C}{Der Inference Contract \textnormal{\small(kürzbar)}}
+
+\kernsatz{Eine maschinenlesbare Vertragsdatei fixiert Schema, Wertebereiche, Schwellenwert und
+Artefakt-Prüfsumme, damit die App ohne Notebook-Ausführung korrekt arbeitet.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Problem: Wer eine Anwendung auf ein Modell aufsetzt, muss wissen, welche Spalten in
+        welchem Typ und Wertebereich erwartet werden, welcher Schwellenwert gilt und welche
+        Modelldatei die richtige ist. Normalerweise steht das verstreut in Notebooks und wird
+        beim Nachbau falsch rekonstruiert.
+  \item Lösung: eine JSON-Datei, die all das enthält, generiert aus den echten Trainingsdaten,
+        nicht aus Annahmen. 30 Pflichtspalten mit Typ, Herkunft und Wertebereich.
+  \item \textbf{Stärkster Einzelpunkt, SHA-256}: Beim Laden wird die Prüfsumme jeder Modelldatei
+        neu berechnet und gegen den Eintrag verglichen. Passt sie nicht, bricht die Analyse ab.
+        Damit ist ausgeschlossen, dass die Metadaten ein Modell beschreiben, das inzwischen ein
+        anderes ist.
+\end{sag}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{SHA-256}{Kryptografische Hashfunktion. Erzeugt aus beliebigem Inhalt einen Fingerabdruck
+      fester Länge. Schon eine minimale Änderung am Inhalt ändert den Hash vollständig.}
+  \bg{Schema}{Die formale Beschreibung, welche Spalten mit welchen Typen erwartet werden.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{32}{K}{Die Streamlit-Anwendung}
+
+\kernsatz{Vier Seiten, die jeweils eine konkrete Nutzerfrage beantworten, lauffähig allein aus
+eingecheckten Artefakten.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Die vier Seiten kurz benennen, jeweils mit der Frage, die sie beantwortet. Nicht alle
+        Details vorlesen.
+  \item Wichtigster technischer Punkt: Die App braucht keine Notebook-Ausführung. Alle Artefakte,
+        also Modell, Contract, Kennzahlen und Kartendaten, liegen im Repository. Ein Prüfer kann
+        klonen und starten.
+\end{sag}
+
+\zeigen{App $\rightarrow$ \textit{Risk Predictor}. In dieser Reihenfolge:
+\begin{sag}[itemsep=0.9pt]
+  \item Abschnitt \textbf{\enquote{Try an example}}, ein Szenario anklicken. Das füllt alle Felder.
+  \item Kurz durch \textbf{\enquote{Pick a location}} (Kartenklick) und
+        \textbf{\enquote{Accident characteristics}} scrollen, nicht erklären.
+  \item \textbf{\enquote{Predict KSI risk}} drücken, Wahrscheinlichkeit und Schwellenwert zeigen.
+  \item Optional: Seite \textit{Why This Prediction}, Balkendiagramm der Merkmalswichtigkeiten.
+\end{sag}
+Rückfalloption: Startet die App nicht, bleibt diese Folie stehen und ich rede einfach weiter.
+60 Sekunden.}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Streamlit}{Python-Framework, das aus einem Skript eine Web-App macht. Bei jeder Interaktion
+      läuft das Skript komplett neu, Caching verhindert die Wiederholung teurer Berechnungen.}
+  \bg{Artefakt}{Eine gespeicherte Datei als Ergebnis eines Analyseschritts, hier Modelle,
+      Kennzahlen-CSVs und die Contract-JSON.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{33}{K}{Die Risikokarte und die Glättung}
+
+\kernsatz{Statt absoluter Anteile zeigt die Karte relatives Risiko mit Bayes'scher Glättung,
+weil sonst 97,5 Prozent der Fläche einfarbig wären.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Problem zürst, es ist anschaulich: KSI macht bundesweit 18,91 Prozent aus. Färbt man
+        eine Zelle erst rot, wenn die Mehrheit der Unfälle KSI ist, bräuchte sie das 2,64-Fache
+        des Durchschnitts. Das schaffen 123 von 4.857 Zellen. Die Karte wäre praktisch einfarbig.
+  \item Lösung: Nicht \enquote{ist die Mehrheit schwer?}, sondern \enquote{ist diese Zelle
+        schlechter als der Durchschnitt, und um wie viel?}.
+  \item Zweites Problem, das Glättung nötig macht: Eine Zelle mit drei Unfällen, davon zwei KSI,
+        hätte eine Rate von 67 Prozent, also das 3,5-Fache des Durchschnitts. Das ist reines
+        Rauschen bei drei Beobachtungen.
+  \item \textbf{Shrinkage}: Man tut so, als hätte man zusätzlich k Pseudo-Unfälle beobachtet,
+        die exakt dem Bundesdurchschnitt entsprechen. Bei vielen echten Beobachtungen fallen sie
+        kaum ins Gewicht, bei wenigen ziehen sie die Schätzung stark zum Durchschnitt. Im Kern
+        eine Bayes'sche Schätzung mit dem Bundesdurchschnitt als Prior.
+  \item \textbf{Warum k gleich 20}, empirisch bestimmt, nicht geraten: Bei k gleich 10 rutschen
+        noch 6-Unfall-Zellen ins höchste Band, bei k gleich 50 bleiben nur 52 Zellen übrig und
+        die Karte wird flach. Bei 20 sind alle fünf Bänder sinnvoll besetzt.
+  \item Schöner UX-Punkt: Zellen mit wenig Evidenz werden blasser gezeichnet. Der Nutzer sieht
+        nicht nur den Schätzwert, sondern auch, wie sicher er ist.
+\end{sag}
+
+\zeigen{App $\rightarrow$ \textit{Overview} $\rightarrow$ Abschnitt \textbf{\enquote{Where
+accidents are disproportionately severe}}. Ein oberes Risikoband aus- und wieder einschalten,
+damit man sieht, wie stark es ausdünnt. Auf eine blasse Zelle deuten und die Konfidenz-Codierung
+erklären. 45 Sekunden.}
+
+\rubrik{Wenn gefragt}
+\begin{begriff}
+  \frage{Ist das nicht Manipulation der Daten?}{Nein, eine bewusste dokumentierte Verzerrung
+    zugunsten der Robustheit. Ohne Glättung wären die auffälligsten Zellen systematisch die mit
+    den wenigsten Beobachtungen, weil kleine Stichproben die extremsten Raten produzieren. Bei
+    Karten seltener Ereignisse ist das in der Epidemiologie Standard.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{34}{K}{Engineering und Qualitätssicherung}
+
+\kernsatz{Ein Fehler, den die Standard-Tests nicht sehen konnten, führte zu einem zusätzlichen
+Browser-Test als Pflicht-Gate.}
+
+\rubrik{Sagen, die Geschichte kurz erzählen, sie bleibt hängen}
+\begin{sag}
+  \item Die Kartenbibliothek verändert die Objekte, die man ihr übergibt, während sie rendert.
+        Speichert man diese Objekte zwischen, um Zeit zu sparen, referenziert ein späterer Aufruf
+        eine JavaScript-Variable, die es nicht mehr gibt. Die Karte bleibt weiß.
+  \item \textbf{Der tückische Teil}: Streamlits eigenes Test-Framework führt keinen Browser aus.
+        Es hat null Fehler gemeldet, während die Karte im Browser kaputt war. Der Test war grün,
+        das Produkt war defekt.
+  \item Konsequenz: ein Headless-Browser-Test, der eine echte Browser-Instanz startet und auf
+        JavaScript-Fehler prüft. Plus ein Test, der die Invariante absichert, dass diese Objekte
+        nie zwischengespeichert werden.
+  \item Restliche Qualitätssicherung kurz: über 440 Tests, Linting, Pre-Commit, CI bei jedem
+        Push, Notebooks im Audit-Modus.
+\end{sag}
+
+\merksatz{\enquote{Ein grüner Test ist nur so viel wert wie das, was er tatsächlich ausführt.}}
+
+\rubrik{Begriffe}
+\begin{begriff}
+  \bg{Headless Browser}{Ein echter Browser ohne sichtbare Oberfläche, für automatisierte Tests.}
+  \bg{CI}{Continuous Integration. Automatische Ausführung von Tests und Prüfungen bei jeder
+      Änderung im Repository.}
+  \bg{Linting}{Statische Codeprüfung auf Stil- und Fehlerpotenzial. \textbf{Pre-Commit-Hook}:
+      Prüfung, die vor jedem Commit automatisch läuft.}
+\end{begriff}
+
+% --------------------------------------------------------------------------
+\karte{35}{Schluss}{Fazit}
+
+\kernsatz{Das Modell funktioniert, aber der eigentliche Beitrag liegt in der methodischen
+Disziplin an drei Stellen, an denen sie etwas gekostet hat.}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Ergebnis nennen: 0,604 und 0,515, beide Gates erfüllt.
+  \item Dann die drei Punkte, jeweils mit der Betonung, dass sie etwas gekostet haben:
+  \begin{sag}
+    \item \textbf{Der Negativbefund wurde nicht versteckt.} Es wäre einfacher gewesen, die
+          Drei-Klassen-Ergebnisse wegzulassen und nur das binäre Modell zu zeigen.
+    \item \textbf{Das Reframing war vorab definiert.} Das hat Arbeit gemacht in Phase Q, als noch
+          niemand wusste, dass man es brauchen würde.
+    \item \textbf{Die Test-Trennung wurde eingehalten, obwohl sie wehtat.} Die Entscheidungsmatrix
+          bevorzugt XGBoost. Es wäre attraktiver gewesen, das bessere Modell zu präsentieren.
+  \end{sag}
+  \item Ausblick kurz, vier Stichpunkte, nicht ausführen.
+\end{sag}
+
+\merksatz{\enquote{Was die Grenze setzt, sind die Daten, nicht das Modell. Kein Algorithmus kann
+Information erzeugen, die nicht in den Daten steckt.}}
+
+% --------------------------------------------------------------------------
+\karte{36}{Schluss}{Quellen}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Nicht vorlesen. Ein Satz genügt: Datensätze oben, Methodenquellen unten, alle im
+        APA-7-Stil.
+\end{sag}
+
+\rubrik{Wenn nach Fachliteratur zur Unfallforschung gefragt wird}
+\merksatz{\enquote{Ich zitiere hier bewusst nur Quellen, die ich vollständig belegen kann, also
+die Datensätze und die Methodenpapiere zu den eingesetzten Verfahren. Für den Vergleich mit
+publizierten Ergebnissen aus der Unfallforschung gilt ohnehin eine Einschränkung, die im
+Repository dokumentiert ist: Solche Studien arbeiten meist mit Personen- und Fahrzeugmerkmalen,
+die dieser Datensatz nicht hat, oder mit einem anderen Zielformat. Ein direkter Zahlenvergleich
+wäre deshalb irreführend.}}
+
+\rubrik{Warum das eine starke Antwort ist}
+\begin{sag}
+  \item Sie benennt die Grenze der Vergleichbarkeit selbst, statt sie zu verschweigen.
+\end{sag}
+
+% --------------------------------------------------------------------------
+\karte{37}{Schluss}{Vielen Dank}
+
+\rubrik{Sagen}
+\begin{sag}
+  \item Kurz halten.
+  \item Auf die drei Artefakte verweisen: Repository, Live-Report, Streamlit-App.
+  \item Fragen einladen.
+  \item Die App im Hintergrund offen lassen, um bei Fragen direkt hineinspringen zu können.
+\end{sag}
+
+\zeigen{Bei Fragen zur Umsetzung: App $\rightarrow$ \textit{Why This Prediction} zeigt für die
+zuletzt berechnete Vorhersage die global wichtigsten Merkmale mit den eigenen Eingabewerten.
+Gute Antwort auf \enquote{Woran sieht man, was das Modell benutzt hat?}.}
+
+% ============================================================== NOTFALLKARTE
+\metakarte{Notfall}{Die härteste Rückfrage in je einem Satz}
+
+\begin{begriff}
+  \frage{Warum nicht Accuracy?}{81 Prozent Accuracy bekommt man geschenkt, wenn man immer die
+    häufigste Klasse sagt. Macro-F1 gewichtet jede Klasse gleich.}
+  \frage{Warum ist das Modell so schwach?}{Weil die physikalischen Determinanten fehlen:
+    Aufprallgeschwindigkeit, Insassenalter, Gurtnutzung, Fahrzeugmasse. Die Grenze liegt in den
+    Daten, nicht im Algorithmus.}
+  \frage{Haben Sie das Ziel geändert, weil es nicht funktioniert hat?}{Ja, und das ist
+    dokumentiert. Entscheidend ist: Der Ausweichpfad stand in Phase Q, bevor das erste Modell
+    trainiert wurde, und die ursprüngliche Zielverfehlung wird vollständig berichtet.}
+  \frage{Warum liefern Sie nicht das bessere Modell aus?}{Weil ich dafür den Testsatz ein zweites
+    Mal benutzen müsste. Damit wäre er Teil der Auswahl und keine unabhängige Schätzung mehr.
+    Die Validierung entscheidet, der Test bestätigt nur.}
+  \frage{Ist Cram\'ers V 0,13 nicht zu wenig für ein Modell?}{Für die Drei-Klassen-Aufgabe ja,
+    das ist der berichtete Negativbefund. Für die binäre KSI-Aufgabe reicht es, weil die
+    positive Klasse dort 19 statt 1 Prozent ausmacht.}
+  \frage{Kann man damit einzelne Personen bewerten?}{Nein, und das war eine vorab festgelegte
+    Ausschlussentscheidung. Der Datensatz enthält keine Personendaten, und die Ergebnisse
+    informieren Infrastrukturentscheidungen.}
+  \frage{Sind die Merkmalswichtigkeiten Ursachen?}{Nein, Assoziationen. Dieser Hinweis steht auch
+    in der App.}
+  \frage{Warum kein neuronales Netz?}{Interpretierbarkeit war eine harte Vorgabe. Ein
+    Verkehrsplaner muss nachvollziehen können, warum ein Ort als Risiko markiert wurde.}
+\end{begriff}
+
+\end{document}
