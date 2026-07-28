@@ -151,8 +151,19 @@ st.caption(
 )
 
 selected_marker_group = folium.FeatureGroup(name="Selected location")
-folium.Marker(
+# folium.Marker's default icon is a PNG that Leaflet resolves against an image
+# path it infers from its own stylesheet URL. Inside streamlit-folium's srcdoc
+# iframe that inference fails, so the pin renders as a broken-image icon.
+# CircleMarker is a pure SVG vector with no image dependency, so it always
+# draws, and it matches the vector circles the Overview map already uses.
+folium.CircleMarker(
     [st.session_state["picked_lat"], st.session_state["picked_lon"]],
+    radius=8,
+    color="#FFFFFF",
+    weight=3,
+    fill=True,
+    fill_color=SEVERITY_COLORS["KSI"],
+    fill_opacity=1.0,
     tooltip="Selected location",
 ).add_to(selected_marker_group)
 
