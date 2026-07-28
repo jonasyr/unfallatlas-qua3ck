@@ -276,3 +276,105 @@ LON/LAT-to-map-picker change, an unpinned `requirements.txt` versus the
 project's locked dependency versions, and an unverified claim about
 Streamlit Community Cloud's Git LFS handling) were logged rather than fixed,
 as explicitly lower-priority follow-ups for the project owner.
+
+## Map-correctness follow-up: relative-risk banding and first-click picker
+
+**Tool:** Claude Code (Opus 5)<br>
+**Model release:** 2026<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)<br>
+**Design spec:** [2026-07-28-overview-risk-map-and-picker-ux-design.md](../superpowers/specs/2026-07-28-overview-risk-map-and-picker-ux-design.md)<br>
+**Implementation plan:** [2026-07-28-overview-risk-map-and-picker-ux.md](../superpowers/plans/2026-07-28-overview-risk-map-and-picker-ux.md)
+
+### Recorded prompt
+
+The user reviewed the shipped Overview map and questioned its statistical basis
+directly, rather than reporting it as a visual complaint:
+
+> the thing is for one the legend is gone again where i can enable/disable
+> sligh/ksi cells. additionally im not sure the current coloring is sufficient
+> because it colors it red if KSI >= slight if im correct and thats it and the
+> circles are drawn systematically and increase size for count but are placed not
+> really at the location of these accidents correct? Why not make the cells red if
+> KSI > as the expected percentage eg expected percentage 10% KSI if in that cell
+> 15% KSI red or redder do you know what i mean or is this not an ideal approach?
+
+And on the Risk Predictor:
+
+> eg the map in risk predictor is shit i need to click twice for the point to add
+> after some short freeze that is bad ui/ux for example
+
+`superpowers:brainstorming` was used to validate each claim against the real data
+before designing anything, then `superpowers:writing-plans` produced the linked
+6-task plan, executed via `superpowers:subagent-driven-development`.
+
+### All three user observations were correct, and measurement confirmed each
+
+The user's proposed fix (compare a cell against the expected KSI percentage
+rather than against 50%) is the statistically sound one, and the measurements show
+why the original was worse than it looked:
+
+- The national KSI rate is **0.18914** (395,766 of 2,092,401 accidents). The
+  `ksi_share >= 0.5` rule therefore only fired at **2.64x** the national rate.
+- Just **123 of 4,857** grid cells (2.5%) passed it, so 97.5% of the map rendered in
+  a single color and a cell at 1.9x the national rate was drawn identically to the
+  safest cell in Germany. This was a loss of real signal, not a cosmetic issue.
+- Marker placement used the rounded `ROUND(LAT, 1)` bin coordinate rather than the
+  accidents' own centroid, a measured mean offset of **1.71 km** (p95 3.80 km, max
+  6.48 km).
+
+### Shrinkage constant chosen by measurement, not taste
+
+Relative risk alone would let a cell with one KSI accident render as 5.29x the
+national rate. Each cell's rate is therefore shrunk toward the national baseline
+with a pseudo-count `k`, and `k` was selected by measuring band populations over the
+real 4,857-cell grid: `k=10` still admitted 6-accident cells into the top band,
+`k=50` collapsed that band to 52 cells and re-flattened the map, and `k=20` filled
+all five bands (239 / 1,137 / 2,014 / 1,263 / 204) with no band exceeding 41% of
+cells. Sample size is additionally encoded as fill opacity in three discrete tiers,
+so shrinkage biasing small cells toward the average stays visible rather than hidden.
+
+### Why the legend had disappeared, and the correct way to restore it
+
+The missing legend was the visible remnant of a real bug, not an oversight. An
+earlier iteration attached `folium.FeatureGroup` layers and a `folium.LayerControl`
+to the `@st.cache_resource`-cached `folium.Map` with `.add_to()`, which raised
+`ReferenceError: feature_group_<hash> is not defined` in the browser and blanked the
+entire map; the layers were removed wholesale to restore a working map.
+`streamlit-folium` re-injects the rendered map into its own `map_div` execution
+context and only rewrites layer references for objects passed through its own
+`st_folium(feature_group_to_add=..., layer_control=...)` parameters. The toggles are
+therefore restored through those parameters, with the base map kept completely
+layer-free.
+
+### A finding the new map surfaces that the old one hid
+
+Median accidents per cell is **1,339** in the lowest-risk band and **91** in the
+highest. The cells with the most accidents are the least severe: dense urban areas
+produce many mostly-slight collisions while rural roads produce far fewer that are
+far more often KSI. The 50%-threshold map could not show this at all.
+
+### The picker bug was script ordering, not latency
+
+`app/pages/risk_predictor.py` built the map and its marker from session state at
+line 151, but the click handler that updates that state ran at line 165, after it.
+Click #1 therefore rendered the marker at the previous position, and only the rerun
+caused by click #2 reflected click #1. The fix moves the marker out of the map object
+into a per-rerun `FeatureGroup` and adds an explicit `st.rerun()` after a
+state-changing click. The accompanying pause was measured rather than assumed: the
+`nearest_location_features` DuckDB lookup takes 0.26 s and is not the cause (the
+rerun round-trip is), but it was unlabeled dead air and now shows a spinner. The
+page caption that had described the lag as expected behaviour was deleted, since it
+documented a bug rather than a constraint.
+
+### Verification
+
+`streamlit.testing.v1.AppTest` provably cannot catch this class of defect: it
+reported zero exceptions while the earlier blank-map JS error was live. Because this
+work deliberately reintroduces the same `feature_group_to_add`/`layer_control` API,
+a headless-Playwright gate was added (`tests/test_streamlit_browser.py`, opt-in via
+`-m browser`) that asserts zero `pageerror` events, that all five band toggles appear
+in the layer control, that the map survives navigating away and back (proving the
+cached FeatureGroups re-render safely), and that one click on the picker moves the
+selected point, a direct regression test for the two-click bug.
