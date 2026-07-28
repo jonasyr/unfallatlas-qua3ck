@@ -584,6 +584,35 @@ def build_severity_feature_groups(precision: float = 0.1):
     return groups
 
 
+def build_picker_base_map():
+    """Return an empty folium map centred on Germany for the location picker.
+
+    Carries no marker: the selected-point marker is passed per rerun through
+    `st_folium(feature_group_to_add=...)`.
+
+    NOT cached, on purpose - do not add `@st.cache_resource` back here even though
+    it looks like a natural fit for a builder function. `st_folium` mutates
+    whatever map it is given: it calls `.add_to(map)` on the feature group
+    (streamlit_folium/__init__.py:177) as part of its own rendering. If this map
+    were a cache_resource singleton, the first render would leave it permanently
+    owning that FeatureGroup. On the *second* render (any Risk Predictor rerun,
+    navigating away and back, or simply a second user session), `st_folium`
+    builds the main map script before re-attaching the feature group, so the
+    already-attached child from the first render gets baked into that script
+    referencing its old (now-stale) `feature_group_feature_group_<n>` identifier -
+    while the fresh re-attachment gets a different, re-hashed identifier
+    (`feature_group_div_<n>`). The stale reference is undefined in the rendered
+    script's scope, producing `ReferenceError: feature_group_<hash> is not
+    defined` in the browser and blanking the entire map (AppTest cannot catch
+    this - it never runs the frontend). Constructing an empty `folium.Map` costs
+    microseconds, so there is nothing worth caching here - correctness beats
+    latency.
+    """
+    import folium
+
+    return folium.Map(location=[51.1657, 10.4515], zoom_start=6)
+
+
 def get_column_spec(contract: dict, name: str) -> dict:
     """Return the required_columns entry for one column name."""
     for col in contract["required_columns"]:
