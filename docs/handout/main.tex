@@ -1,0 +1,451 @@
+% !TeX program = pdflatex
+% Handout: Unfallatlas Germany (QUA³CK Q→K), Projektpräsentation.
+\documentclass[11pt,a4paper]{article}
+
+% ---------- Sprache, Schrift, Mikrotypografie ----------
+\usepackage[a4paper,margin=2.1cm,top=2.2cm,bottom=2.2cm]{geometry}
+\usepackage[ngerman]{babel}
+\usepackage{microtype}
+\tolerance=9999
+\setlength{\emergencystretch}{3em}
+\hyphenpenalty=200
+\exhyphenpenalty=50
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[scale=0.94]{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+
+% ---------- Farbschema (Projekt-Branding, siehe README/streamlit_app.py) ----------
+\usepackage{xcolor}
+\definecolor{Accent}{HTML}{315F7D}   % steel blue - Primärfarbe der App/Notebooks
+\definecolor{AccentDark}{HTML}{24475F}
+\definecolor{KSI}{HTML}{E63946}      % Getötet/Schwerverletzt (severity encoding)
+\definecolor{Slight}{HTML}{2A9D8F}   % Leichtverletzt
+\definecolor{TextGray}{HTML}{2E2E2E}
+\definecolor{BoxBg}{HTML}{F1F5F8}
+\color{TextGray}
+
+% ---------- Absätze, Listen ----------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\usepackage{enumitem}
+\setlist[itemize]{nosep,leftmargin=1.2em,topsep=2pt,itemsep=2pt,parsep=0pt}
+
+% ---------- Tabellen ----------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\renewcommand{\arraystretch}{1.15}
+
+% ---------- Boxen ----------
+\usepackage[skins]{tcolorbox}
+\tcbset{
+  basebox/.style={
+    colback=BoxBg, colframe=Accent, boxrule=0.5pt, arc=1.5pt,
+    left=6pt, right=6pt, top=4pt, bottom=4pt, boxsep=1pt,
+    fontupper=\small
+  }
+}
+
+% ---------- Überschriften ----------
+\usepackage{titlesec}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{Accent}}
+  {\thesection}{0.5em}{}
+  [{\color{Accent}\titlerule[1.1pt]}]
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{AccentDark}}
+  {}{0em}{}
+\titlespacing*{\subsection}{0pt}{8pt}{3pt}
+
+% ---------- Kopf-/Fußzeile ----------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{Accent}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\footnotesize\color{Accent}\bfseries Unfallatlas Germany: QUA\textsuperscript{3}CK}
+\fancyhead[R]{\footnotesize\color{Accent} Jonas Weirauch}
+\fancyfoot[C]{\footnotesize\thepage\,/\,\pageref{LastPage}}
+
+% ---------- Links, Symbole ----------
+\usepackage{amssymb}
+\usepackage[hidelinks,colorlinks=true,linkcolor=Accent,urlcolor=Accent]{hyperref}
+\usepackage{lastpage}
+
+% ---------- Kleine Helfer ----------
+\newcommand{\code}[1]{\texttt{\small #1}}
+
+\begin{document}
+\thispagestyle{empty}
+
+\begin{center}
+  {\Huge\bfseries\color{Accent} Unfallatlas Deutschland}\par\vspace{4pt}
+  {\Large\bfseries Schweregrad-Klassifikation von Verkehrsunfällen in Deutschland}\par\vspace{6pt}
+  {\small Projekt-Handout nach dem QUA\textsuperscript{3}CK-Prozessmodell\\
+  Question~\textrightarrow{}~Understanding the Data~\textrightarrow{}~Algorithm/Adapt/Adjust~\textrightarrow{}~Conclude \& Compare~\textrightarrow{}~Knowledge Transfer\par\vspace{3pt}
+  Jonas Weirauch \textbar{} IU Internationale Hochschule, B.Sc. Data Analytics / Big Data\par
+  \href{https://github.com/jonasyr/unfallatlas-qua3ck}{github.com/jonasyr/unfallatlas-qua3ck} \textbar{}
+  \href{https://jonasyr.github.io/unfallatlas-qua3ck/}{Live-Report (GitHub Pages)} \textbar{}
+  \href{https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app}{Streamlit-App}}
+\end{center}
+
+\begin{tcolorbox}[basebox]
+\textbf{Kurzfassung:} Aus 2{,}09~Mio. Unfallatlas-Datensätzen (2016-2024) plus offen
+lizenzierten Wetter- (DWD) und Straßennetz-Daten (OSM) wird die
+Unfallschwere vorhergesagt. Das ursprüngliche 3-Klassen-Ziel erweist
+sich als mit den verfügbaren Merkmalen nicht erreichbar
+(Ceiling Macro-F1~$=0{,}424$) und wird auf eine binäre KSI-Variable
+(getötet/schwerverletzt vs.\ leichtverletzt) reframt. Der finale
+Random-Forest-Champion erreicht auf dem unberührten Testjahr~2024
+Macro-F1~$=0{,}604$ und Recall(KSI)~$=0{,}515$, beide Zielkriterien
+erfüllt. Das Ergebnis ist als interaktive Streamlit-App und als
+statische Notebook-Präsentation live nutzbar.
+\end{tcolorbox}
+
+% =====================================================================
+\section{Q: Frage}
+\textbf{Forschungsfrage:} Welche raumzeitlichen, infrastrukturellen und
+meteorologischen Faktoren bestimmen die Schwere eines Verkehrsunfalls in
+Deutschland, und lässt sich diese Schwere zuverlässig aus öffentlich
+verfügbaren Daten mittels interpretierbarer Machine-Learning-Modelle
+vorhersagen?
+
+\textbf{Hypothesen:} (H1) Unfallzeitpunkt (Wochentag, Stunde, Monat)
+korreliert mit der Schwere, z.\,B.\ höhere Schwere bei Nachtfahrten
+oder außerorts. (H2) Beteiligungsart (Fußgänger, Rad, Motorrad) ist ein
+stärkerer Schwere-Prädiktor als reine Ortsmerkmale, da ungeschützte
+Verkehrsteilnehmer überproportional betroffen sind. (H3) Wetter- und
+Straßeninfrastrukturmerkmale liefern einen messbaren, aber
+untergeordneten Zusatzbeitrag gegenüber Unfallart/-typ.
+
+\textbf{Datenquelle:} Unfallatlas Deutschland (GovData/Mobilithek,
+Statistisches Bundesamt), Datenlizenz Deutschland, Namensnennung~2.0,
+2016-2024, rund 2{,}09~Mio. polizeilich erfasste Unfälle mit
+Personenschaden. Zielvariable \code{UKATGEORIE}: 1~=~Getötet~(1\,\%),
+2~=~Schwerverletzt~(18\,\%), 3~=~Leichtverletzt~(81\,\%): eine stark
+unbalancierte 3-Klassen-Variable.
+
+\textbf{Teststrategie:} Chronologischer Split statt Zufallssplit, da die
+Daten Zeitreihencharakter haben (Unfallzahlen, Fahrzeugbestand und
+Infrastruktur verändern sich über die Jahre): Train 2016-2022,
+Validierung 2023, Test 2024. Damit wird das Modell stets an
+\emph{zukünftigen}, nie an zufällig gemischten Daten geprüft, ein
+realistischeres Szenario für ein produktiv genutztes Frühwarn- oder
+Priorisierungswerkzeug als ein zufälliger Train/Test-Split.
+
+\textbf{Relevanz \& Einordnung:} Interpretierbare Schwere-Vorhersage
+ist für Verkehrssicherheitsplanung (Ressourcenpriorisierung bei
+Unfallhäufungsstellen), Versicherungswesen und Rettungsdienst-Planung
+relevant. Die bewusste Wahl klassischer, gut erklärbarer Modelle
+(Random~Forest, Boosting, lineare Modelle) statt Deep-Learning-Ansätzen
+folgt der Anforderung, dass Entscheidungsträger:innen die
+Vorhersagegründe nachvollziehen können müssen (siehe C-Phase,
+Permutation Importance).
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{Yr}
+\toprule
+\textbf{Zielmetrik} & \textbf{Schwelle} \\
+\midrule
+Macro-F1 (Test 2024) & $\geq 0{,}55$ \\
+Recall Klasse~1 (Getötet) & $\geq 0{,}50$ \\
+Baseline Macro-F1 (Mehrheitsklasse) & $\approx 0{,}30$ \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\clearpage
+
+% =====================================================================
+\section{U: Untersuchung der Daten}
+Explorative Datenanalyse (EDA) und Feature-Engineering ergänzen die
+21~Rohspalten des Unfallatlas um externe, offen lizenzierte Quellen,
+alles offline reproduzierbar über \code{duckdb} auf dem konsolidierten
+Parquet (\code{data/accidents.parquet}, 65~MB, verwaltet via Git~LFS),
+ohne die 2{,}09~Mio. Zeilen vollständig nach pandas laden zu müssen.
+
+\begin{itemize}
+\item \textbf{Wetter (DWD, CDC Open Data):} Windgeschwindigkeit,
+  Niederschlag; je Unfall wird die räumlich/zeitlich nächste
+  DWD-Station verknüpft (\code{dwd\_station\_id}, \code{dwd\_station\_dist\_km}).
+\item \textbf{Straßennetz (OpenStreetMap, ODbL):} Straßendichte und
+  zulässige Höchstgeschwindigkeit im Umkreis, aggregiert über
+  H3-Hexagon-Zellen statt teurer Punkt-für-Punkt-Lookups gegen das
+  OSM-Straßennetz: notwendig, um den Join auf 2{,}09~Mio. Punkten in
+  vertretbarer Zeit auf einem normalen Laptop durchzuführen.
+\item \textbf{Zeitliche Merkmale:} Wochentag (\code{UWOCHENTAG}),
+  Stunde (\code{USTUNDE}), Monat (\code{UMONAT}): die EDA zeigt klare
+  Spitzen im Berufsverkehr sowie saisonale Schwankungen.
+\item \textbf{Räumliche Merkmale:} Regierungsbezirk-/Kreis-Code
+  (\code{UREGBEZ}/\code{UKREIS}), Breiten-/Längengrad. Ohne
+  Bundesland-Schlüssel (\code{ULAND}) im Inference-Contract sind
+  (\code{UREGBEZ},\code{UKREIS})-Paare \emph{nicht} global eindeutig auf
+  einen amtlichen Kreisnamen abbildbar; die App zeigt sie deshalb
+  bewusst als dataset-interne Codes statt erfundener Kreisnamen.
+\item \textbf{Beteiligungsmerkmale:} Binärflags je Verkehrsmittel
+  (\code{IstPKW}, \code{IstRad}, \code{IstKrad}, \code{IstFuss},
+  \code{IstGkfz}, \code{IstSonstig}).
+\item \textbf{Unfalltyp \& Zustand:} Unfallart/-typ (\code{UART},
+  \code{UTYP1}), Lichtverhältnisse (\code{ULICHTVERH}) und
+  Straßenzustand (\code{STRZUSTAND}).
+\end{itemize}
+
+\textbf{Zentraler EDA-Befund:} Die Zielverteilung ist extrem
+unbalanciert (1\,\% Getötet, 81\,\% Leichtverletzt), und einzelne
+Merkmale korrelieren nur schwach mit der Schwere (Cramér's~V
+$\leq 0{,}13$ für die stärksten Merkmale). Diese schwache
+Merkmals-Ziel-Assoziation ist der entscheidende Vorbote für den
+Ceiling-Befund der A\textsuperscript{3}-Phase.
+
+\textbf{Datenqualität:} Vor der Modellierung wurden Plausibilitätsprüfungen
+durchgeführt (Wertebereiche der Koordinaten gegen die Landesgrenzen
+Deutschlands, Konsistenz der Kategorie-Codes gegen die amtliche
+Datensatzbeschreibung \code{DSB\_Unfallatlas.md}, Duplikatsprüfung über
+die Unfall-ID). Fehlende DWD-/OSM-Zuordnungen (z.\,B.\ bei sehr
+abgelegenen Unfallorten) werden nicht imputiert, sondern als fehlender
+Wert weitergereicht, damit Modelle sie explizit als Information nutzen
+können, statt eine künstliche Zuordnung vorzutäuschen.
+
+% \clearpage
+
+% =====================================================================
+\section{A\textsuperscript{3}: Algorithmus, Anwendung, Anpassung}
+\subsection*{Der 3-Klassen-Ceiling und die Reframing-Entscheidung}
+Über 19~getestete Konfigurationen, darunter Baselines, lineare Modelle,
+Baum-/Boosting-Modelle, Imbalance-Strategien (Klassengewichtung,
+Over-/Undersampling) sowie Optuna-basiertes Hyperparameter-Tuning,
+erreicht das 3-Klassen-Ziel nur einen empirischen \textbf{Ceiling von
+Macro-F1 $= 0{,}424$}, deutlich unter dem Akzeptanzkriterium von
+$0{,}55$. Für eine brauchbare Precision der Getötet-Klasse wäre eine
+$\sim\!90$-fache Odds-Lift nötig, ein Effekt, den die verfügbaren
+Merkmale (Cramér's~V $\leq 0{,}13$) schlicht nicht hergeben.
+
+\textbf{Konsequenz:} Reframing auf eine \textbf{binäre KSI-Variable}
+(Killed~or~Seriously~Injured vs.\ Leichtverletzt), die in der
+internationalen Unfallforschungs-Literatur etablierte
+Standardformulierung (Santos 2022; Pakgohar 2021; Schloessler 2024),
+die das seltene, sicherheitskritische Ereignis von der
+Alltagsverletzung trennt, statt drei ungleich seltene Klassen simultan
+zu modellieren.
+
+\subsection*{Kandidatenvergleich (Stufe 0/1, Validierung 2023)}
+Zehn klassengewichtete/balancierte Kandidaten wurden auf identischer
+Merkmalsbasis verglichen; die Auswahl erfolgt gate-bewusst
+(\code{select\_best\_candidate}): höchster Macro-F1 unter allen
+Kandidaten mit Recall(KSI)~$\geq 0{,}50$, sonst höchster Kombi-Score.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{Yrrr}
+\toprule
+\textbf{Modell} & \textbf{Macro-F1} & \textbf{Rec.\,KSI} & \textbf{Rec.\,Leicht} \\
+\midrule
+Zufallsrat. & 0{,}439 & 0{,}499 & 0{,}499 \\
+Mehrheitsklasse & 0{,}453 & 0{,}000 & 1{,}000 \\
+Logistic Regression & 0{,}558 & 0{,}638 & 0{,}634 \\
+\textbf{Random Forest (Champion)} & \textbf{0{,}601} & \textbf{0{,}540} & \textbf{0{,}747} \\
+XGBoost & 0{,}570 & 0{,}682 & 0{,}633 \\
+LightGBM & 0{,}566 & 0{,}690 & 0{,}624 \\
+CatBoost & 0{,}565 & 0{,}686 & 0{,}624 \\
+SVM (linear) & 0{,}559 & 0{,}636 & 0{,}636 \\
+SVM (RBF) & 0{,}560 & 0{,}606 & 0{,}651 \\
+SVM (SGD) & 0{,}553 & 0{,}654 & 0{,}618 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Champion:} Random Forest (balanciert), Hyperparameter
+\code{n\_estimators=180}, \code{max\_depth=23},
+\code{min\_samples\_leaf=8}; Entscheidungsschwelle $0{,}4986$
+(auf Val~2023 optimiert). Val-Macro-F1 $0{,}608$, Recall(KSI)
+$0{,}505$: beide Zielgates auf Val~2023 erfüllt. Trainingsumfang:
+$\sim$1{,}55~Mio. Zeilen (2016-2022); SVM-Varianten wurden aus
+Laufzeitgründen auf Subsamples (8\,000-500\,000~Zeilen) trainiert.
+
+% \clearpage
+
+% =====================================================================
+\section{C: Auswertung \& Vergleich}
+\subsection*{Testergebnis (Held-out 2024)}
+Macro-F1 $= 0{,}604$, Recall(KSI) $= 0{,}515$, Recall(Leicht)
+$= 0{,}769$: beide Akzeptanzgates werden auf den unberührten
+2024-Daten erneut erfüllt, ein wichtiges Indiz gegen Overfitting auf
+den Validierungssatz.
+
+\subsection*{Warum der Champion nicht der Top-Kandidat ist}
+Auf der \emph{kombinierten} Kriterienmenge (Recall, Inferenzlatenz,
+Robustheit über Resampling-Wiederholungen) liegen die drei
+Boosting-Finalisten (XGBoost/LightGBM/CatBoost) beim Recall(KSI)
+klar vorne ($0{,}68$-$0{,}69$ vs.\ $0{,}54$) und sind gleichzeitig
+$3$-$4\times$ schneller in der Inferenz (12-15~ms/1000~vs.\
+43{,}6~ms/1000~Zeilen). Nach diesen Zahlen ist Random~Forest also
+\emph{nicht} der bevorzugte Finalist. Er bleibt dennoch
+\textbf{Deployment-Champion}, weil die Modellauswahl bereits mittels
+Validierungsdaten festgelegt wurde, \emph{bevor} der Testsatz
+angefasst wurde: der Held-out-2024-Satz kann nicht nachträglich zur
+Neuauswahl zwischen Kandidaten verwendet werden, ohne die
+statistische Unabhängigkeit der bereits für Random~Forest berichteten
+Testmetriken zu verletzen. Dieser methodische Punkt (Validierung
+entscheidet, der Test bestätigt nur) ist zentral für die
+Glaubwürdigkeit des berichteten Ergebnisses und wird in der App
+(Modellvergleich-Seite) explizit erläutert.
+
+\subsection*{Permutation Importance (Champion-Modell)}
+SHAP wurde zugunsten von Permutation Importance verworfen (bessere
+Skalierbarkeit auf $\sim$270\,000 Testzeilen ohne Kernel-Approximation).
+Top-Merkmale:
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{Yr}
+\toprule
+\textbf{Merkmal} & \textbf{Importance} \\
+\midrule
+\code{UART} (Unfallart) & 0{,}0304 \\
+\code{UTYP1} (Unfalltyp) & 0{,}0175 \\
+\code{IstKrad} (Motorrad beteiligt) & 0{,}0129 \\
+\code{IstRad} (Fahrrad beteiligt) & 0{,}0106 \\
+\code{STRZUSTAND} (Straßenzustand) & 0{,}0082 \\
+\code{USTUNDE} (Unfallstunde) & 0{,}0066 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+Unfallart/-typ und die Beteiligung ungeschützter Verkehrsteilnehmer
+(Motorrad, Fahrrad) dominieren die Vorhersage, plausibel und
+konsistent mit Hypothese~H2, aber \emph{korrelativ, nicht kausal}.
+
+\subsection*{Limitationen}
+Polizeiliche Meldequote variiert nach Schweregrad (schwerere Unfälle
+werden zuverlässiger erfasst als leichte, sogenannter Meldebias);
+Regierungsbezirk/Kreis-Codes sind ohne Bundesland-Schlüssel nicht
+eindeutig lokalisierbar; Rasterzellen der Kartenansicht sind keine
+Verwaltungsgrenzen; relative Risikowerte in der Overview-Karte sind
+statistische Assoziation, kein Kausalnachweis; Shrinkage-Glättung
+($k=20$) verzerrt kleine Stichproben absichtlich Richtung
+Landesdurchschnitt, um Overfitting auf dünn besetzte Zellen zu
+vermeiden, ein bewusster Fairness-/Robustheits-Trade-off, kein Fehler.
+
+% \clearpage
+
+% =====================================================================
+\section{K: Wissenstransfer (Kommunikation)}
+Die Ergebnisse werden über zwei sich gegenseitig verlinkende
+Oberflächen kommuniziert: eine interaktive Streamlit-App und eine
+statische Notebook-Präsentation.
+
+\subsection*{Streamlit-App (\code{app/streamlit\_app.py})}
+Läuft vollständig aus committeten \code{data/processed/}-Artefakten
+(Modelle, Contract, Kartendaten); kein Notebook-Rerun nötig.
+
+\begin{itemize}
+\item \textbf{Overview:} Kennzahlen-Konsole (Macro-F1, Recall(KSI),
+  Entscheidungsschwelle), Gegenüberstellung 3-Klassen-Ceiling vs.\
+  Binär-Ergebnis, interaktive OSM-Karte mit KSI-Risiko relativ zum
+  Landesdurchschnitt (diskrete Risikobänder, einzeln umschaltbar,
+  Konfidenz-Transparenz für dünn besetzte Zellen).
+\item \textbf{Risikoprädiktor:} Klickbare Karte (Folium/OSM) statt
+  manueller Lon/Lat-Eingabe: ein Klick setzt Position und Formular
+  in einem Schritt; Formular für Kontextmerkmale (Zeit, Beteiligung,
+  Straßenzustand); Live-Vorhersage inkl.\ Konfidenz relativ zur
+  Entscheidungsschwelle.
+\item \textbf{Warum diese Vorhersage:} Permutation-Importance-Chart
+  und Eingabetabelle mit menschenlesbaren Feature-Labels (z.\,B.
+  \code{dwd\_wind\_speed\_ms}~\textrightarrow{}~\glqq{}Windgeschwindigkeit
+  (m/s)\grqq{}) statt Rohspaltennamen.
+\item \textbf{Modellvergleich:} Alle 10~Kandidaten, Pareto-Front
+  (Macro-F1 vs.\ Recall(KSI)), Konfusionsmatrix des Champions
+  (Test 2024), Erklärung der Champion-vs-Finalist-Entscheidung
+  (siehe C-Phase oben).
+\end{itemize}
+
+\subsection*{Notebook-Präsentation \& Deployment}
+Die vier ausgeführten Q/U/A\textsuperscript{3}/C-Notebooks werden
+zusätzlich als statisches, offline-fähiges HTML (Code, Text, sowie
+interaktive Plotly-Grafiken) über GitHub~Pages veröffentlicht, ohne
+lokale Installation einsehbar. App und Notebook-Präsentation sind
+gegenseitig verlinkt, sodass Leser:innen zwischen
+Analyse-Nachvollziehbarkeit (Notebooks) und interaktiver Exploration
+(App) wechseln können. Deployment der App erfolgt über Streamlit
+Community Cloud, Branch~\code{main}, ohne dass Notebooks zur Laufzeit
+neu ausgeführt werden müssen.
+
+\subsection*{Fazit \& Ausblick}
+Das Projekt zeigt exemplarisch, wie ein zunächst nicht erreichbares
+Klassifikationsziel durch begründetes, literaturgestütztes Reframing
+(3-Klassen~\textrightarrow{}~binäre KSI-Variable) doch noch belastbare,
+handlungsrelevante Ergebnisse liefert, und wie wichtig die saubere
+Trennung von Validierungs- und Testdaten für die Glaubwürdigkeit einer
+Modellauswahl ist. Mögliche Erweiterungen: Einbindung des amtlichen
+Gemeindeschlüssels (\code{ULAND}) für belastbare Kreis-Namen,
+Kalibrierung der Vorhersagewahrscheinlichkeiten, sowie eine
+zeitbasierte \glqq{}Risk-Scan\grqq{}-Simulation auf der Overview-Karte
+(aktuell bewusst zurückgestellt, um Umfang und Qualität der
+bestehenden Fixes nicht zu gefährden).
+
+\subsection*{Tech-Stack}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{lY}
+\toprule
+\textbf{Bereich} & \textbf{Bibliotheken} \\
+\midrule
+Daten & pandas, polars, duckdb, pyarrow \\
+ML & scikit-learn, xgboost, lightgbm, catboost \\
+Imbalance \& Tuning & imbalanced-learn, optuna \\
+Erklärbarkeit & Permutation Importance (statt SHAP) \\
+Geodaten & folium, streamlit-folium (optional: geopandas, h3, osmnx) \\
+App & streamlit \\
+Tooling & uv, ruff, pytest, jupytext, pre-commit \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection*{Projektstruktur \& Reproduzierbarkeit}
+Der gesamte Ablauf ist ohne manuelle Zwischenschritte reproduzierbar:
+\code{git lfs pull} (Datensatz) $\rightarrow$ \code{uv sync -{}-all-extras}
+(Abhängigkeiten) $\rightarrow$ \code{uv run streamlit run
+app/streamlit\_app.py} (App) bzw.\ \code{uv run jupyter lab}
+(Notebooks). Kein Schritt erfordert einen Notebook-Rerun, da alle für
+App und Präsentation nötigen Artefakte bereits unter
+\code{data/processed/} committet sind.
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{lY}
+\toprule
+\textbf{Verzeichnis} & \textbf{Inhalt} \\
+\midrule
+\code{notebooks/} & QUA\textsuperscript{3}CK-Phasennotebooks (Source of Truth): Q, U, A\textsuperscript{3}, C \\
+\code{src/unfallatlas/} & Wiederverwendbare Bibliothek (\code{data/}, \code{features/}, \code{models/}, \code{viz/}, \code{presentation/}) \\
+\code{app/} & Streamlit-Demo (K-Phase): Overview, Risikoprädiktor, Warum diese Vorhersage, Modellvergleich \\
+\code{data/} & \code{accidents.parquet} (Git~LFS) sowie \code{interim/}- und \code{processed/}-Artefakte (Modelle, Contract, Kartendaten) \\
+\code{tests/} & pytest-Suite inkl.\ Coverage-Report und optionalen Playwright-Browsertests \\
+\code{docs/} & Disclosure, Glossar, Datensatzbeschreibung, Prompt-Transkripte je Phase \\
+\code{reports/} & Generierte Abbildungen und Notebook-Präsentationen (GitHub~Pages) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Qualitätssicherung läuft identisch lokal und in CI (GitHub Actions):
+\code{uv run pytest} (Tests inkl.\ Coverage), \code{uv run ruff check .}
+(Linting), \code{uv run ruff format .} (Formatierung) sowie
+Pre-Commit-Hooks (Ruff, nbstripout, Commitizen, Notebook-Mirror-Check).
+
+\vspace{2pt}
+\noindent\rule{\linewidth}{0.4pt}\par\vspace{2pt}
+{\small\textbf{Weiterführende Ressourcen:}
+\href{https://github.com/jonasyr/unfallatlas-qua3ck}{GitHub-Repository} \textbar{}
+\href{https://jonasyr.github.io/unfallatlas-qua3ck/}{Live-Report (Notebooks als HTML)} \textbar{}
+\href{https://unfallatlas-qua3ck-fg5thv4lthkbhw86er3kfk.streamlit.app}{Streamlit-App} \textbar{}
+Dokumentation: \code{docs/GLOSSARY.md}, \code{docs/AI TOOL DISCLOSURE.md}, \code{docs/dataset/}\par}
+
+{\scriptsize Code: MIT-Lizenz. Unfalldaten: Datenlizenz Deutschland,
+Namensnennung 2.0 (Mobilithek/Statistisches Bundesamt, Unfallatlas
+Deutschland). Wetterdaten: Deutscher Wetterdienst (DWD), CDC Open Data.
+Straßennetz: \copyright{} OpenStreetMap-Mitwirkende, ODbL.}
+
+\end{document}

@@ -152,3 +152,11 @@ cython_debug/
 
 # Interrupted atomic presentation writes
 reports/presentation/**/.tmp-*
+
+# LaTeX build byproducts (docs/handout/ etc.) - main.pdf is committed, these are not
+*.aux
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
