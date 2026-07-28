@@ -450,6 +450,26 @@ def precision_decimals(precision: float) -> int:
 
 
 @st.cache_data
+def load_national_ksi_rate() -> float:
+    """Return the share of all accidents that are KSI, across the whole dataset.
+
+    This is the baseline the Overview map's relative-risk bands are measured
+    against. Computed live from the committed parquet rather than hardcoded, so it
+    stays correct if the dataset is ever revised.
+    """
+    try:
+        con = duckdb.connect()
+        query = f"""
+            SELECT AVG(CASE WHEN UKATGEORIE IN (1, 2) THEN 1.0 ELSE 0.0 END)
+            FROM '{ACCIDENTS_PARQUET}'
+        """  # noqa: S608
+        return float(con.execute(query).fetchone()[0])
+    except Exception:
+        logger.exception("Failed to load national KSI rate")
+        raise
+
+
+@st.cache_data
 def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
     """Aggregate accidents.parquet into a lat/lon grid with per-cell KSI/slight counts.
 
@@ -458,6 +478,12 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
     in this file). Aggregation happens entirely in DuckDB so the ~2.09M-row
     parquet is never loaded into pandas row-by-row - only the grouped result
     (a few thousand rows at precision=0.1) crosses into pandas.
+
+    `lat_bin`/`lon_bin` are the grouping key only. `center_lat`/`center_lon` are the
+    mean coordinates of the accidents actually inside the cell, and are what callers
+    should plot: the rounded bin coordinate sits a mean of 1.71 km (p95 3.80 km, max
+    6.48 km) away from the cell's own accidents, because accidents are not uniformly
+    distributed inside a ~11 km cell.
     """
     try:
         con = duckdb.connect()
@@ -465,6 +491,8 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
             SELECT
                 ROUND(LAT, {precision_decimals(precision)}) AS lat_bin,
                 ROUND(LON, {precision_decimals(precision)}) AS lon_bin,
+                AVG(LAT) AS center_lat,
+                AVG(LON) AS center_lon,
                 SUM(CASE WHEN UKATGEORIE IN (1, 2) THEN 1 ELSE 0 END) AS ksi_count,
                 SUM(CASE WHEN UKATGEORIE = 3 THEN 1 ELSE 0 END) AS slight_count,
                 COUNT(*) AS total

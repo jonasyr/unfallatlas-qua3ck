@@ -19,6 +19,7 @@ from unfallatlas.viz.streamlit_app import (
     load_champion_model,
     load_inference_contract,
     load_model_card,
+    load_national_ksi_rate,
     load_permutation_importance,
     load_severity_grid,
     predict_ksi,
@@ -310,3 +311,55 @@ def test_severity_legend_markdown_states_every_band_and_the_baseline():
     assert "18.9" in legend
     # The opacity convention must be explained, not left implicit
     assert "20" in legend and "100" in legend
+
+
+def test_load_national_ksi_rate_matches_the_measured_value():
+    # 395766 KSI rows out of 2092401 in the committed parquet
+    assert load_national_ksi_rate() == pytest.approx(0.1891444326398238)
+
+
+def test_load_severity_grid_has_expected_shape_and_columns():
+    grid = load_severity_grid()
+    assert len(grid) == 4857
+    assert {
+        "lat_bin",
+        "lon_bin",
+        "center_lat",
+        "center_lon",
+        "ksi_count",
+        "slight_count",
+        "total",
+    }.issubset(grid.columns)
+
+
+def test_load_severity_grid_counts_sum_to_the_full_dataset():
+    grid = load_severity_grid()
+    assert grid["total"].sum() == 2092401
+    assert (grid["ksi_count"] + grid["slight_count"] == grid["total"]).all()
+
+
+def test_load_severity_grid_centroids_lie_inside_their_own_cell():
+    # A centroid of points that all round to the same 0.1-degree bin cannot be more
+    # than half a bin width away from that bin's coordinate. Verified: 0 violations.
+    grid = load_severity_grid()
+    assert ((grid["center_lat"] - grid["lat_bin"]).abs() <= 0.05).all()
+    assert ((grid["center_lon"] - grid["lon_bin"]).abs() <= 0.05).all()
+
+
+def test_load_severity_grid_centroids_actually_differ_from_bin_coordinates():
+    # Guards against a regression that silently aliases center_lat back to lat_bin.
+    grid = load_severity_grid()
+    assert (grid["center_lat"] != grid["lat_bin"]).sum() > 4000
+
+
+def test_severity_grid_bands_populate_every_band():
+    # The whole point of the redesign: all five bands carry cells, instead of the
+    # old 50%-majority rule that colored only 123 of 4857 cells red.
+    grid = load_severity_grid()
+    baseline = load_national_ksi_rate()
+    indices = [
+        risk_band_index(shrunk_relative_risk(row.ksi_count, row.total, baseline))
+        for row in grid.itertuples()
+    ]
+    counts = {index: indices.count(index) for index in range(5)}
+    assert counts == {0: 239, 1: 1137, 2: 2014, 3: 1263, 4: 204}
