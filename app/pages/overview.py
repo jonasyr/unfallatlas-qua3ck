@@ -58,7 +58,11 @@ st_folium(
     feature_group_to_add=build_severity_feature_groups(),
     # streamlit-folium 0.27's `layer_control` parameter takes a folium.LayerControl
     # instance (not a bool) and attaches it to the map itself, internally, with its
-    # own variable-rewriting - we never call .add_to() on it ourselves.
+    # own variable-rewriting - we never call .add_to() on it ourselves. This
+    # internal attachment is exactly why build_severity_base_map() must not be
+    # cached: caching the map would let this attachment (and the FeatureGroups'
+    # own internal .add_to() calls) persist into the next render, baking in
+    # stale layer identifiers and reproducing the ReferenceError blank-map bug.
     layer_control=folium.LayerControl(),
     height=720,
     width=None,

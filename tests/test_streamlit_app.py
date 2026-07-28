@@ -212,16 +212,15 @@ def test_load_severity_grid_respects_precision_parameter():
 def test_build_severity_base_map_has_no_layers_attached():
     # Layers must reach the browser only via st_folium(feature_group_to_add=...).
     # Anything attached here raises a JS ReferenceError and blanks the whole map.
-    # Cache cleared first: st.cache_resource is a process-global singleton, and if
-    # this suite runs in the same process as an AppTest render of the Overview page
-    # (it does - see tests/test_overview_page.py), st_folium's own internals have
-    # already attached layers to the cached instance by the time this test runs.
-    # That attachment is legitimate (st_folium wires it up correctly, unlike the
-    # banned manual .add_to() pattern this test guards against) - clearing the
-    # cache here just ensures this assertion inspects a freshly built map.
+    # build_severity_base_map() is NOT cached (see its docstring): st_folium
+    # mutates whatever map it is given by attaching feature groups/layer control
+    # to it internally, so a cached map would carry those attachments into the
+    # next render and bake in stale, unresolved identifiers - the exact
+    # ReferenceError this test's invariant guards against. Since it is not
+    # cached, every call already returns a fresh, never-rendered map, so no
+    # cache-clearing is needed here.
     import folium
 
-    build_severity_base_map.clear()
     base_map = build_severity_base_map()
     children = base_map._children.values()
     assert not any(isinstance(child, folium.FeatureGroup) for child in children)
@@ -235,15 +234,19 @@ def test_build_severity_feature_groups_returns_one_named_group_per_band():
 
 
 def test_build_severity_feature_groups_covers_every_grid_cell_exactly_once():
-    # Cache cleared first: st_folium's internal render() adds one bookkeeping
-    # child per group the first time it renders a group (idempotent on repeat
-    # renders, but it would otherwise inflate this count by 1 per group if an
-    # AppTest render of the Overview page already ran in this process - see
-    # tests/test_overview_page.py - since st.cache_resource is a process-global
-    # singleton shared between AppTest and this direct call).
-    build_severity_feature_groups.clear()
+    import folium
+
     groups = build_severity_feature_groups()
-    circles_per_group = [len(group._children) for group in groups]
+    # Count only Circle children, not folium's own `ElementAddToElement`
+    # bookkeeping child that st_folium's internal render() attaches to each
+    # group - that bookkeeping child is a fixed-key, idempotent artifact of
+    # rendering, not a grid cell, so counting it would make this assertion
+    # depend on whether some earlier test already rendered these (cached)
+    # groups through st_folium.
+    circles_per_group = [
+        sum(isinstance(child, folium.Circle) for child in group._children.values())
+        for group in groups
+    ]
     assert sum(circles_per_group) == 4857
     assert circles_per_group == [239, 1137, 2014, 1263, 204]
 

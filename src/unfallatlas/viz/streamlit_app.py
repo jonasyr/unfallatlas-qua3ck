@@ -505,21 +505,33 @@ def load_severity_grid(precision: float = 0.1) -> pd.DataFrame:
         raise
 
 
-@st.cache_resource
 def build_severity_base_map():
-    """Return an empty, cached folium map centred on Germany.
+    """Return a fresh, empty folium map centred on Germany.
 
     Deliberately carries NO layers. Every marker layer reaches the browser through
     `st_folium(feature_group_to_add=...)` instead. An earlier version attached
     FeatureGroups and a LayerControl here with `.add_to()`, which raised
     `ReferenceError: feature_group_<hash> is not defined` in the browser and blanked
     the entire map (AppTest saw no exception at all - only a real browser catches
-    this). streamlit-folium re-injects the rendered map into its own `map_div`
-    execution context and only rewrites layer references for objects passed through
-    its own parameters, so layers baked in here do not resolve.
+    this).
 
-    folium.Map objects aren't meaningfully comparable by value, so this uses
-    cache_resource (identity-cached singleton), not cache_data.
+    NOT cached, on purpose - do not add `@st.cache_resource` back here even though
+    it looks like a natural fit for a builder function. `st_folium` mutates
+    whatever map it is given: it calls `.add_to(map)` on every feature group
+    (streamlit_folium/__init__.py:177) and on the layer control
+    (streamlit_folium/__init__.py:202) as part of its own rendering. If this map
+    were a cache_resource singleton, the first render would leave it permanently
+    owning those FeatureGroups and the LayerControl. On the *second* render (any
+    Overview rerun, navigating away and back, or simply a second user session),
+    `st_folium` builds the main map script before re-attaching the feature groups,
+    so the already-attached children from the first render get baked into that
+    script referencing their old (now-stale) `feature_group_feature_group_<n>`
+    identifiers - while the fresh re-attachment gets a different, re-hashed
+    identifier. The stale reference is undefined in the rendered script's scope,
+    which reproduces the exact `ReferenceError: feature_group_<hash> is not
+    defined` blank-map bug this task exists to prevent. Constructing an empty
+    `folium.Map` costs microseconds, so there is nothing worth caching here -
+    correctness beats latency.
     """
     import folium
 
