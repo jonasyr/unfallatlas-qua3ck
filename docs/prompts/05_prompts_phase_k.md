@@ -378,3 +378,111 @@ a headless-Playwright gate was added (`tests/test_streamlit_browser.py`, opt-in 
 in the layer control, that the map survives navigating away and back (proving the
 cached FeatureGroups re-render safely), and that one click on the picker moves the
 selected point, a direct regression test for the two-click bug.
+
+## Presentation package: handout, slide deck, speaker notes, and cue cards
+
+**Tool:** Claude Code (Opus 5)<br>
+**Model release:** 2026<br>
+**Used:** July 2026<br>
+**Effort:** Medium<br>
+**Disclosure:** [AI TOOL DISCLOSURE.md](../AI%20TOOL%20DISCLOSURE.md)<br>
+**Additional tooling:** [Gamma MCP](https://gamma.app) for slide-deck generation<br>
+**Plan:** none. This work produced presentation artefacts, not code, and was
+executed directly without a `superpowers` design spec or implementation plan.
+
+### Recorded prompt
+
+The session ran as four sequential requests (handout, handout corrections,
+Gamma deck plus speaker notes, cue cards), each refined by user feedback.
+Consolidated into the single prompt that would produce the same four
+artefacts in one pass:
+
+> Build the complete German presentation package for this project, covering
+> the full QUA³CK arc from Q to K. Investigate the whole repository first
+> (notebooks, `docs/`, `data/processed/*.json` and `*.csv`, `README.md`,
+> the Streamlit app) and take every figure from the committed artefacts
+> rather than from memory. Four deliverables:
+>
+> 1. **`docs/handout/main.tex`** — a 5-page German LaTeX handout (max 5
+>    pages, ±10%), `article` class, `tgheros`, `tcolorbox`, steel blue
+>    `#315F7D` matching the app. Everything essential from Q through K.
+>    Compile it and iterate until the page count is exact, there are zero
+>    overfull boxes, and nothing overflows the right margin. Keep the phase
+>    flow line in English so it matches the QUA³CK letters: Question →
+>    Understanding the Data → Algorithm/Adapt/Adjust → Conclude & Compare →
+>    Knowledge Transfer.
+> 2. **A German Gamma presentation** (Gamma MCP) as the primary
+>    presentation surface, roughly 35 slides, 16:9 on every card, theme
+>    matching the project's steel blue, title slide and sources slide
+>    mandatory. Write the card text yourself and pass it through with
+>    `textMode: "preserve"`; instruct Gamma explicitly to generate **no**
+>    speaker notes and to add nothing to the visible card text. If the
+>    per-generation card cap forces a split, split at the narrative
+>    midpoint so the second deck appends cleanly after the first.
+> 3. **`docs/praesentation/sprechzettel.md`** — German speaker notes, one
+>    section per slide, each with a Kernsatz, the spoken argument, every
+>    technical term and abbreviation defined, and prepared answers to the
+>    likeliest follow-up question. Plus a timing plan, the live-demo jump
+>    points, a full alphabetical glossary, and a catalogue of anticipated
+>    exam questions with answers. Notes live **only** in this file, never on
+>    the slides.
+> 4. **`docs/praesentation/karteikarten.tex`** — printable cue cards, one
+>    card per slide, each card exactly one A5 landscape page, plus a
+>    `karteikarten-a4.tex` that imposes two cards per A4 sheet with a cut
+>    line. Low clutter: Kernsatz, telegraphic bullet points (not flowing
+>    prose, so `- Selbst Macro-F1 könnte man über die beiden häufigen
+>    Klassen erreichen. - Das Recall-Gate verhindert das.` rather than a
+>    written-out paragraph), every technical term defined, and a visually
+>    distinct box on the cards where I should jump out of the deck, naming
+>    the exact target: which page of the app or which numbered notebook
+>    section, which specific visualisation, and for how long.
+>
+> Constraints: German throughout. **No em dashes or en dashes anywhere**, in
+> the sources or the rendered output. A plain hyphen only for numeric ranges
+> like 1-3, never as a sentence separator. Verify this on the rendered PDFs,
+> not just the sources. Cite in APA 7 on the slide where a citation is
+> needed, with the bibliography on the sources slide. Only cite sources you
+> can actually verify: if a literature anchor referenced elsewhere in the
+> repo has no full citation anywhere and cannot be confirmed, tell me rather
+> than reconstructing a plausible-looking entry.
+
+### The citation-integrity finding
+
+Three literature anchors used narratively across the repository (Santos 2022,
+Pakgohar 2021, Schlößler 2024) could not be verified: no `.bib` file or full
+citation exists anywhere in the repository, and four targeted searches
+confirmed none of them. `docs/project/Technical_Review_Next_Steps.md` line 108
+independently records a self-audit concluding that the cited studies are
+"mit hoher Wahrscheinlichkeit **nicht vergleichbar**", because such work
+typically has person- and vehicle-level covariates this dataset lacks, uses a
+binary KSI framing, or resamples before splitting. Rather than fabricating
+APA 7 entries, the finding was surfaced to the user, who chose to drop the
+unverifiable anchors. The sources slide therefore cites only the three
+datasets (Unfallatlas, DWD CDC, OpenStreetMap) and the method papers for the
+techniques actually used (Optuna, Random Forest, SMOTE, XGBoost, Frank-Hall
+ordinal decomposition, LightGBM, scikit-learn, CatBoost). The speaker notes
+carry a prepared answer stating this comparability limit out loud if asked.
+
+### Gamma API constraints found empirically
+
+`cardSplit: "inputTextBreaks"` caps at 10 cards, and `numCards` caps at 10 on
+the free plan and 20 on Plus, so the 37-card deck ships as two decks split at
+the narrative midpoint (slides 1-18 and 19-37) rather than as a content deck
+plus a separate frame deck, so that part 2 concatenates directly after part 1
+in the Gamma editor. `textMode: "preserve"` uses the supplied text verbatim
+but ignores `textOptions.tone`/`audience`/`amount`. There is no API field for
+true speaker notes: an `additionalInstructions` request for them made Gamma
+render the notes as *visible slide text*, which defeats their purpose, so the
+regenerated decks instruct it to produce none and the notes live only in
+`sprechzettel.md`.
+
+### Verification
+
+The handout compiles to exactly 5 pages with zero overfull boxes. The cue-card
+deck compiles to 39 A5 pages (37 slide cards plus a cockpit card carrying the
+timing plan and all jump points, and a card of the eight hardest anticipated
+questions), imposed onto 20 A4 sheets, with no card spilling to a second page.
+Both PDFs were checked at the text layer for em and en dashes and contain
+none. One dash survived an earlier pass invisibly: LaTeX's `--` ligature had
+turned the literal CLI flag `uv sync --all-extras` into an en dash in the
+rendered handout, fixed with `-{}-`.
